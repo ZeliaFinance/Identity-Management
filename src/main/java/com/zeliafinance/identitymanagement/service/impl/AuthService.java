@@ -41,17 +41,26 @@ public class AuthService {
                     .responseMessage(AccountUtils.EMAIL_EXISTS_MESSAGE)
                     .build();
         }
-
+        String password = accountUtils.generatePassword();
+        log.info(password + "password");
         UserCredential userCredential = UserCredential.builder()
                 .email(request.getEmail())
-                .password(request.getPassword())
+                .password(passwordEncoder.encode(password))
                 .build();
 
         UserCredential savedUser = userCredentialRepository.save(userCredential);
+
+        EmailDetails emailDetails = EmailDetails.builder()
+                .recipient(request.getEmail())
+                .subject("ACCOUNT CREDENTIALS")
+                .messageBody("Below are your account credentials: Kindly change your password!\nEmail: " + request.getEmail() + " \nPassword: " + password  )
+                .build();
+        emailService.sendEmailAlert(emailDetails);
+
         Object response = modelMapper.map(savedUser, UserCredentialResponse.class);
         return CustomResponse.builder()
                 .responseCode(AccountUtils.ACCOUNT_CREATION_SUCCESS_CODE)
-                .responseMessage(AccountUtils.ACCOUNT_CREATION_SUCCESS_MESSAGE)
+                .responseMessage("Temporary Password " + password)
                 .responseBody(response)
                 .build();
     }
@@ -64,7 +73,8 @@ public class AuthService {
             userCredential.setLastName(request.getLastName());
             userCredential.setOtherName(request.getOtherName());
             userCredential.setDateOBirth(request.getDateOfBirth());
-            userCredential.setEmail(request.getEmail());
+            userCredential.setEmail(userCredential.getEmail());
+            userCredential.setPassword(passwordEncoder.encode(request.getPassword()));
             userCredential.setPhoneNumber(request.getPhoneNumber());
             userCredential.setMobileNumber(request.getMobileNumber());
             userCredential.setWhatsAppNumber(request.getWhatsAppNumber());
@@ -76,12 +86,13 @@ public class AuthService {
             userCredential.setWalletId(accountUtils.generateAccountNumber());
             userCredential.setAccountStatus("PENDING");
 
+
             UserCredential updatedUser = userCredentialRepository.save(userCredential);
 
             //Sending email alert
             EmailDetails emailDetails = EmailDetails.builder()
                     .recipient(updatedUser.getEmail())
-                    .subject("ACCOUNT CREATION ALERT")
+                    .subject(AccountUtils.ACCOUNT_CREATION_ALERT_SUBJECT)
                     .messageBody("Congratulations! Your account has been successfully created. " +
                             "\nFind your account details below: \nAccount Name: " + updatedUser.getFirstName() +
                             " " + updatedUser.getLastName() + " " + updatedUser.getOtherName() +
@@ -135,8 +146,7 @@ public class AuthService {
         authentication.getName();
         authentication.getCredentials();
         log.info(authentication.getName());
-        log.info((String) authentication.getPrincipal());
-        log.info(authentication.getCredentials().toString());
+
 
         EmailDetails loginAlert = EmailDetails.builder()
                 .subject("YOU'RE LOGGED IN!")

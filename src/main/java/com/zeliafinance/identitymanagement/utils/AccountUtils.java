@@ -15,6 +15,7 @@ public class AccountUtils {
     public static final String IDENTITY_EXISTS_CODE = "003";
     public static final String IDENTITY_EXISTS_MESSAGE = "User with this identity already exists";
     public static final int LENGTH_OF_ACCOUNT_NUMBER = 10;
+    public static final int LENGTH_OF_PASSWORD = 8;
     public static final String ACCOUNT_CREATION_SUCCESS_CODE = "004";
     public static final String ACCOUNT_CREATION_SUCCESS_MESSAGE = "User Account has been successfully created!";
     public static final String ACCOUNT_CREATION_ALERT_SUBJECT = "ACCOUNT CREATION ALERT!!!";
@@ -35,6 +36,18 @@ public class AccountUtils {
             ++count;
         }
         return accountNumber.toString();
+    }
+
+
+    public String generatePassword(){
+        StringBuilder password = new StringBuilder();
+        int count = 0;
+        Random randomPassword = new Random();
+        while (count < LENGTH_OF_PASSWORD){
+            password.append((char) randomPassword.nextInt(33, 127));
+            count++;
+        }
+        return password.toString();
     }
 
 }
