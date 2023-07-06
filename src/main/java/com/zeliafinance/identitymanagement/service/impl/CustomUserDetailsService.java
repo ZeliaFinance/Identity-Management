@@ -11,6 +11,8 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -25,15 +27,7 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        UserCredential userCredential = userCredentialRepository.findByEmail(username).orElseThrow(() -> new UsernameNotFoundException (AccountUtils.USER_NOT_EXIST_MESSAGE + username));
-        Set<GrantedAuthority> authorities = userCredential.getRoleName().stream()
-                .map((role) -> new SimpleGrantedAuthority(role.getRoleName()))
-                .collect(Collectors.toSet());
+       return userCredentialRepository.findByEmail(username).orElseThrow(() -> new UsernameNotFoundException (AccountUtils.USER_NOT_EXIST_MESSAGE + username));
 
-        return new User(
-                userCredential.getEmail(),
-                userCredential.getPassword(),
-                authorities
-        );
     }
 }

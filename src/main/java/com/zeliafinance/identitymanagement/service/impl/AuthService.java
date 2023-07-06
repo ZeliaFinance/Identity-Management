@@ -2,6 +2,7 @@ package com.zeliafinance.identitymanagement.service.impl;
 
 import com.zeliafinance.identitymanagement.config.JwtTokenProvider;
 import com.zeliafinance.identitymanagement.dto.*;
+import com.zeliafinance.identitymanagement.entity.Role;
 import com.zeliafinance.identitymanagement.entity.UserCredential;
 import com.zeliafinance.identitymanagement.repository.UserCredentialRepository;
 import com.zeliafinance.identitymanagement.service.EmailService;
@@ -9,13 +10,21 @@ import com.zeliafinance.identitymanagement.utils.AccountUtils;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestBody;
+
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 
 @Service
 @AllArgsConstructor
@@ -46,7 +55,10 @@ public class AuthService {
         UserCredential userCredential = UserCredential.builder()
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(password))
+                .walletId(accountUtils.generateAccountNumber())
                 .build();
+
+        userCredential.setRole(Role.ROLE_USER);
 
         UserCredential savedUser = userCredentialRepository.save(userCredential);
 
@@ -83,22 +95,29 @@ public class AuthService {
             userCredential.setIdentityType(request.getIdentityType());
             userCredential.setIdentityNumber(request.getIdentityNumber());
             userCredential.setPin(request.getPin());
-            userCredential.setWalletId(accountUtils.generateAccountNumber());
             userCredential.setAccountStatus("PENDING");
+            userCredential.setEmailVerifyStatus("VERIFIED");
+            userCredential.setDeviceIp(request.getDeviceIp());
+            userCredential.setLiveLocation(request.getLiveLocation());
+            //boolean isRoleExists = roleRepository.existsByRoleName(request.getRole());
+
+
+            if (!userCredential.getEmailVerifyStatus().equalsIgnoreCase("VERIFIED")){
+                EmailDetails emailDetails = EmailDetails.builder()
+                        .recipient(userCredential.getEmail())
+                        .subject(AccountUtils.ACCOUNT_CREATION_ALERT_SUBJECT)
+                        .messageBody("Congratulations! Your account has been successfully created. " +
+                                "\nFind your account details below: \nAccount Name: " + request.getFirstName() +
+                                " " + request.getLastName() + " " + request.getOtherName())
+                        .build();
+                emailService.sendEmailAlert(emailDetails);
+
+            }
 
 
             UserCredential updatedUser = userCredentialRepository.save(userCredential);
 
             //Sending email alert
-            EmailDetails emailDetails = EmailDetails.builder()
-                    .recipient(updatedUser.getEmail())
-                    .subject(AccountUtils.ACCOUNT_CREATION_ALERT_SUBJECT)
-                    .messageBody("Congratulations! Your account has been successfully created. " +
-                            "\nFind your account details below: \nAccount Name: " + updatedUser.getFirstName() +
-                            " " + updatedUser.getLastName() + " " + updatedUser.getOtherName() +
-                            " \nAccount Balance: " + updatedUser.getAccountBalance())
-                    .build();
-            emailService.sendEmailAlert(emailDetails);
 
             //building response object
             Object response = modelMapper.map(updatedUser, UserCredentialResponse.class);
@@ -116,27 +135,6 @@ public class AuthService {
                 .responseBody(null)
                 .build();
     }
-
-//    public CustomResponse updateUserRole(@RequestBody UpdateRoleRequest request, Long userId){
-//        boolean isUserExist = userCredentialRepository.existsById(userId);
-//        UserCredential userCredential = userCredentialRepository.findById(userId).get();
-//        if (isUserExist){
-//            userCredential.setRole(request.getRole());
-//            UserCredential updateUser = userCredentialRepository.save(userCredential);
-//            Object response = modelMapper.map(updateUser, UserCredentialResponse.class);
-//            return CustomResponse.builder()
-//                    .responseCode(AccountUtils.USER_ROLE_SET_CODE)
-//                    .responseMessage(AccountUtils.USER_ROLE_SET_MESSAGE)
-//                    .responseBody(response)
-//                    .build();
-//        }
-//
-//        return CustomResponse.builder()
-//                .responseCode(AccountUtils.USER_NOT_EXIST_CODE)
-//                .responseMessage(AccountUtils.USER_NOT_EXIST_MESSAGE)
-//                .responseBody(null)
-//                .build();
-//    }
 
     public CustomResponse login(LoginDto loginDto){
         Authentication authentication = authenticationManager.authenticate(
@@ -160,5 +158,71 @@ public class AuthService {
                 .responseMessage(AccountUtils.LOGIN_SUCCESS_MESSAGE)
                 .responseBody(jwtTokenProvider.generateToken(authentication))
                 .build();
+    }
+
+    public CustomResponse fetchAllUsers(int pageNo, int pageSize){
+
+        Pageable pageable = PageRequest.of(pageNo-1, pageSize);
+        Page<UserCredential> userCredentials = userCredentialRepository.findAll(pageable);
+        List<UserCredential> list = userCredentials.getContent();
+
+        Object response = list.stream().map(user -> modelMapper.map(user, UserCredentialResponse.class)).collect(Collectors.toList());
+
+
+        return CustomResponse.builder()
+                .responseCode(String.valueOf(HttpStatus.OK))
+                .responseMessage("SUCCESS")
+                .responseBody(response)
+                .info(Info.builder()
+                        .totalPages(userCredentials.getTotalPages())
+                        .totalElements(userCredentials.getTotalElements())
+                        .pageSize(userCredentials.getSize())
+                        .build())
+
+                .build();
+
+    }
+
+
+    public CustomResponse fetchUser(Long userId){
+        boolean isUserExists = userCredentialRepository.existsById(userId);
+        if (!isUserExists){
+            nonExistentUserById();
+        }
+        UserCredential userCredential = userCredentialRepository.findById(userId).orElseThrow();
+        Object response = modelMapper.map(userCredential, UserCredentialResponse.class);
+        return CustomResponse.builder()
+                .responseCode(String.valueOf(HttpStatus.valueOf("OK")))
+                .responseMessage(HttpStatus.OK.name())
+                .responseBody(response)
+                .build();
+    }
+
+    public CustomResponse updateUserRole(Long userId){
+        boolean isUserExist = userCredentialRepository.existsById(userId);
+        if (!isUserExist){
+            nonExistentUserById();
+        }
+        UserCredential userCredential = userCredentialRepository.findById(userId).orElseThrow();
+        userCredential.setRole(Role.ROLE_ADMIN);
+
+        userCredentialRepository.save(userCredential);
+        Object response = modelMapper.map(userCredential, UserCredentialResponse.class);
+        return CustomResponse.builder()
+                .responseCode(AccountUtils.USER_ROLE_SET_CODE)
+                .responseBody(AccountUtils.USER_ROLE_SET_MESSAGE)
+                .responseBody(response)
+                .build();
+
+    }
+
+    private CustomResponse nonExistentUserById(){
+        return CustomResponse.builder()
+                    .responseCode(AccountUtils.USER_NOT_EXIST_CODE)
+                    .responseMessage(AccountUtils.USER_NOT_EXIST_MESSAGE)
+                    .responseBody(null)
+                    .info(null)
+                    .build();
+
     }
 }

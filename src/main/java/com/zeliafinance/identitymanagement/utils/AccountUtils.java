@@ -25,6 +25,8 @@ public class AccountUtils {
     public static final String USER_ROLE_SET_MESSAGE = "User role has been successfully updated";
     public static final String LOGIN_SUCCESS_CODE = "007";
     public static final String LOGIN_SUCCESS_MESSAGE = "Successfully Logged in.";
+    public static final String ROLE_UPDATE_SUCCESS_CODE = "008";
+    public static final String ROLE_UPDATE_SUCCESS_MESSAGE = "User role updated!";
 
     @Bean
     public String generateAccountNumber(){

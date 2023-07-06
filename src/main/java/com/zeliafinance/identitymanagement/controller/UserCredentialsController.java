@@ -3,18 +3,18 @@ package com.zeliafinance.identitymanagement.controller;
 import com.zeliafinance.identitymanagement.dto.*;
 import com.zeliafinance.identitymanagement.service.EmailService;
 import com.zeliafinance.identitymanagement.service.impl.AuthService;
-import lombok.extern.java.Log;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("api/v1/users")
+
 public class UserCredentialsController {
 
-    private AuthService service;
+    private final AuthService service;
 
-    @Autowired
-    EmailService emailService;
 
     public UserCredentialsController(AuthService service){
         this.service = service;
@@ -33,6 +33,27 @@ public class UserCredentialsController {
     @PostMapping("/login")
     public CustomResponse login(@RequestBody LoginDto loginDto){
         return service.login(loginDto);
+    }
+
+    @GetMapping
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public CustomResponse fetchAllUsers(
+            @RequestParam(value = "pageNo") int pageNo,
+            @RequestParam(value = "pageSize") int pageSize,
+            @RequestParam(value = "sortBy", required = false) String sortBy,
+            @RequestParam(value = "sortDir", required = false) String sortDir
+    ){
+        return service.fetchAllUsers(pageNo, pageSize);
+    }
+
+    @GetMapping("{userId}")
+    public CustomResponse fetchUser(@PathVariable (value = "userId") Long userId){
+        return service.fetchUser(userId);
+    }
+
+    @PutMapping("/updateRole/{userId}")
+    public CustomResponse updateUserRole(@PathVariable (value = "userId") Long userId){
+        return service.updateUserRole(userId);
     }
 
 //    @PutMapping("/updateUserRole/{userId}")

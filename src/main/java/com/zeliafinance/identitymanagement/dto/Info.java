@@ -9,6 +9,8 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class UpdateRoleRequest {
-    private String roleName;
+public class Info {
+    private Integer totalPages;
+    private Long totalElements;
+    private Integer pageSize;
 }

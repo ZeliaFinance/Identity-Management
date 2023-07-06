@@ -27,4 +27,5 @@ public class UserCredentialResponse {
     private String pin;
     private double accountBalance;
     private String role;
+    private String emailVerifyStatus;
 }
