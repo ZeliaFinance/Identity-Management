@@ -1,10 +1,7 @@
 package com.zeliafinance.identitymanagement.controller;
 
 import com.zeliafinance.identitymanagement.dto.*;
-import com.zeliafinance.identitymanagement.service.EmailService;
 import com.zeliafinance.identitymanagement.service.impl.AuthService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -39,9 +36,8 @@ public class UserCredentialsController {
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     public CustomResponse fetchAllUsers(
             @RequestParam(value = "pageNo") int pageNo,
-            @RequestParam(value = "pageSize") int pageSize,
-            @RequestParam(value = "sortBy", required = false) String sortBy,
-            @RequestParam(value = "sortDir", required = false) String sortDir
+            @RequestParam(value = "pageSize") int pageSize
+
     ){
         return service.fetchAllUsers(pageNo, pageSize);
     }
@@ -56,14 +52,4 @@ public class UserCredentialsController {
         return service.updateUserRole(userId);
     }
 
-//    @PutMapping("/updateUserRole/{userId}")
-//    public CustomResponse updateUserRole(@RequestBody UpdateRoleRequest request, @PathVariable(name = "userId") Long userId){
-//        return service.updateUserRole(request, userId);
-//    }
-
-
-//    @PostMapping("/sendMail")
-//    public void sendMail(@RequestBody EmailDetails emailDetails){
-//        emailService.sendEmailAlert(emailDetails);
-//    }
 }

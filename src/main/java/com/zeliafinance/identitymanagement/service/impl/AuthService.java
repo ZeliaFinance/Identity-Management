@@ -212,6 +212,7 @@ public class AuthService {
                 .responseCode(AccountUtils.USER_ROLE_SET_CODE)
                 .responseBody(AccountUtils.USER_ROLE_SET_MESSAGE)
                 .responseBody(response)
+                .info(null)
                 .build();
 
     }
