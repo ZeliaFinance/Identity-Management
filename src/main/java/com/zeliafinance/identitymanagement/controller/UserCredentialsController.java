@@ -7,7 +7,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("api/v1/users")
-
 public class UserCredentialsController {
 
     private final AuthService service;
@@ -35,8 +34,8 @@ public class UserCredentialsController {
     @GetMapping
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     public CustomResponse fetchAllUsers(
-            @RequestParam(value = "pageNo") int pageNo,
-            @RequestParam(value = "pageSize") int pageSize
+            @RequestParam(value = "pageNo", defaultValue = "1") int pageNo,
+            @RequestParam(value = "pageSize", defaultValue = "50") int pageSize
 
     ){
         return service.fetchAllUsers(pageNo, pageSize);
