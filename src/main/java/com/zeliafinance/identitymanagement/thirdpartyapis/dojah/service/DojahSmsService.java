@@ -25,7 +25,7 @@ public class DojahSmsService {
     @Value("${dojah.base-url}")
     private String baseUrl;
 
-    public DojahSmsResponse sendSms(DojahSmsRequest request) throws JsonProcessingException {
+    public DojahSmsResponse sendSms(DojahSmsRequest request) {
         RestTemplate restTemplate = new RestTemplate();
         restTemplate.getMessageConverters().add(new MappingJackson2HttpMessageConverter());
         String url = baseUrl + "api/v1/messaging/sms";
@@ -36,6 +36,14 @@ public class DojahSmsService {
         log.info("Response: {}", responseString);
 
         return jsonResponse;
+    }
+
+    public OtpResponse sendOtp(OtpRequest otpRequest){
+        String url = baseUrl + "api/v1/messaging/otp";
+        log.info("full url: {}", url);
+        HttpEntity<OtpRequest> entity = new HttpEntity<>(otpRequest, headers());
+        ResponseEntity<OtpResponse> responseEntity = restTemplate().exchange(url, HttpMethod.POST, entity, OtpResponse.class);
+        return responseEntity.getBody();
     }
 
     public DojahBvnResponse basicBvnLookUp(BvnRequest request){

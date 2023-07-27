@@ -1,5 +1,6 @@
 package com.zeliafinance.identitymanagement.service.impl;
 
+import com.google.common.cache.LoadingCache;
 import com.zeliafinance.identitymanagement.config.JwtTokenProvider;
 import com.zeliafinance.identitymanagement.dto.*;
 import com.zeliafinance.identitymanagement.entity.Role;
@@ -14,15 +15,19 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 
@@ -40,42 +45,47 @@ public class AuthService {
     private JwtTokenProvider jwtTokenProvider;
 
 
-
-
-    public CustomResponse signUp(SignUpRequest request){
+    public ResponseEntity<CustomResponse> signUp(SignUpRequest request){
         boolean isEmailExist = userCredentialRepository.existsByEmail(request.getEmail());
         if (isEmailExist){
-            return CustomResponse.builder()
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
                     .responseCode(AccountUtils.EMAIL_EXISTS_CODE)
                     .responseMessage(AccountUtils.EMAIL_EXISTS_MESSAGE)
-                    .build();
+                    .build());
         }
-        String password = accountUtils.generatePassword();
-        log.info(password + "password");
+        if (!request.getPassword().equals(request.getConfirmPassword())){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .responseCode(AccountUtils.PASSWORD_INCORRECT_CODE)
+                            .responseBody(AccountUtils.PASSWORD_INCORRECT_MESSAGE)
+                    .build());
+        }
+
         UserCredential userCredential = UserCredential.builder()
                 .email(request.getEmail())
-                .password(passwordEncoder.encode(password))
+                .password(passwordEncoder.encode(request.getPassword()))
                 .walletId(accountUtils.generateAccountNumber())
+                .emailVerifyStatus("UNVERIFIED")
                 .build();
 
         userCredential.setRole(Role.ROLE_USER);
-
         UserCredential savedUser = userCredentialRepository.save(userCredential);
 
         EmailDetails emailDetails = EmailDetails.builder()
                 .recipient(request.getEmail())
-                .subject("ACCOUNT CREDENTIALS")
-                .messageBody("Below are your account credentials: Kindly change your password!\nEmail: " + request.getEmail() + " \nPassword: " + password  )
+                .subject(AccountUtils.ACCOUNT_CONFIRMATION_SUBJECT)
+                .messageBody(AccountUtils.ACCOUNT_CONFIRMATION_MESSAGE)
                 .build();
         emailService.sendEmailAlert(emailDetails);
 
         Object response = modelMapper.map(savedUser, UserCredentialResponse.class);
-        return CustomResponse.builder()
+        return ResponseEntity.status(HttpStatus.CREATED).body(CustomResponse.builder()
                 .responseCode(AccountUtils.ACCOUNT_CREATION_SUCCESS_CODE)
-                .responseMessage("Temporary Password " + password)
+                .responseMessage(AccountUtils.ACCOUNT_CREATION_SUCCESS_MESSAGE)
                 .responseBody(response)
-                .build();
+                .build());
     }
+
+
 
     public CustomResponse updateUserProfile(Long userId, UserProfileRequest request){
         boolean isUserExist = userCredentialRepository.existsById(userId);

@@ -27,6 +27,16 @@ public class AccountUtils {
     public static final String LOGIN_SUCCESS_MESSAGE = "Successfully Logged in.";
     public static final String ROLE_UPDATE_SUCCESS_CODE = "008";
     public static final String ROLE_UPDATE_SUCCESS_MESSAGE = "User role updated!";
+    public static final String PASSWORD_INCORRECT_CODE  = "009";
+    public static final String PASSWORD_INCORRECT_MESSAGE= "Disparity in Password and Confirm Password fields";
+    public static final String ACCOUNT_CONFIRMATION_MESSAGE = "Congrats! Your account has been successfully created. Now click on this link to get amazing offers";
+    public static final String ACCOUNT_CONFIRMATION_SUBJECT = "WELCOME TO ZELIA";
+    public static final int LENGTH_OF_OTP = 4;
+    public static final int OTP_EXPIRE_DURATION = 4;
+    public static final String INVALID_OTP_CODE = "010";
+    public static final String INVALID_OTP_MESSAGE = "Invalid Otp. Please try again. Note! You have only 3 attempts";
+    public static final String OTP_SENT_CODE = "011";
+    public static final String OTP_SENT_MESSAGE = "Otp has been successfully sent";
 
     @Bean
     public String generateAccountNumber(){
@@ -38,6 +48,18 @@ public class AccountUtils {
             ++count;
         }
         return accountNumber.toString();
+    }
+
+    @Bean
+    public String generateOtp(){
+        StringBuilder otp = new StringBuilder();
+        Random random = new Random();
+        int count = 0;
+        while (count < LENGTH_OF_OTP){
+            otp.append(random.nextInt(10));
+            ++count;
+        }
+        return otp.toString();
     }
 
 

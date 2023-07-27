@@ -34,6 +34,7 @@ public class UserCredential implements UserDetails {
     private String whatsAppNumber;
     private String gender;
     private String bvn;
+    private String bvnVerifyStatus;
     private String identityType;
     private String identityNumber;
     private String pin;

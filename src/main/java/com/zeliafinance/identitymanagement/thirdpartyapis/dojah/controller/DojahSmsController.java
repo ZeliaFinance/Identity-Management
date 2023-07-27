@@ -18,7 +18,7 @@ public class DojahSmsController {
 
     @ResponseStatus(HttpStatus.OK)
     @RequestMapping(method = RequestMethod.POST, value = "/sendSms", consumes = "application/json", produces = "application/json")
-    public ResponseEntity<DojahSmsResponse> sendSms(@RequestBody DojahSmsRequest request) throws JsonProcessingException {
+    public ResponseEntity<DojahSmsResponse> sendSms(@RequestBody DojahSmsRequest request) {
         return ResponseEntity.ok(service.sendSms(request));
     }
 
@@ -52,5 +52,10 @@ public class DojahSmsController {
     @GetMapping("/vninLookup")
     public ResponseEntity<VNinResponse> vninLookup(@RequestBody VNinRequest request){
         return ResponseEntity.ok(service.vninLookup(request));
+    }
+
+    @PostMapping("/sendOtp")
+    public ResponseEntity<OtpResponse> sendOtp(@RequestBody OtpRequest request){
+        return ResponseEntity.ok(service.sendOtp(request));
     }
 }

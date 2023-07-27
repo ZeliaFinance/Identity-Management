@@ -2,11 +2,14 @@ package com.zeliafinance.identitymanagement.controller;
 
 import com.zeliafinance.identitymanagement.dto.*;
 import com.zeliafinance.identitymanagement.service.impl.AuthService;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("api/v1/users")
+@Slf4j
 public class UserCredentialsController {
 
     private final AuthService service;
@@ -17,7 +20,7 @@ public class UserCredentialsController {
     }
 
     @PostMapping("/registerUser")
-    public CustomResponse registerUser(@RequestBody SignUpRequest request){
+    public ResponseEntity<CustomResponse> registerUser(@RequestBody SignUpRequest request){
         return service.signUp(request);
     }
 
