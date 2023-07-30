@@ -1,14 +1,13 @@
 package com.zeliafinance.identitymanagement.dto;
 
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder
-public class OtpRequest {
-    private String otp;
+public class PasswordResetDto {
+    private String newPassword;
+    private String confirmNewPassword;
 }

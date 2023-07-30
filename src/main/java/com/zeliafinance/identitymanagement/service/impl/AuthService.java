@@ -1,12 +1,20 @@
 package com.zeliafinance.identitymanagement.service.impl;
 
-import com.google.common.cache.LoadingCache;
 import com.zeliafinance.identitymanagement.config.JwtTokenProvider;
 import com.zeliafinance.identitymanagement.dto.*;
 import com.zeliafinance.identitymanagement.entity.Role;
 import com.zeliafinance.identitymanagement.entity.UserCredential;
 import com.zeliafinance.identitymanagement.repository.UserCredentialRepository;
 import com.zeliafinance.identitymanagement.service.EmailService;
+import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.dto.request.BvnRequest;
+import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.dto.request.NinRequest;
+import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.dto.request.OtpRequest;
+import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.dto.request.ValidateOtpRequest;
+import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.dto.response.DojahBvnResponse;
+import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.dto.response.NinLookupResponse;
+import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.dto.response.OtpResponse;
+import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.dto.response.ValidateOtpResponse;
+import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.service.DojahSmsService;
 import com.zeliafinance.identitymanagement.utils.AccountUtils;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,14 +28,13 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 
@@ -43,6 +50,7 @@ public class AuthService {
     private AuthenticationManager authenticationManager;
     private PasswordEncoder passwordEncoder;
     private JwtTokenProvider jwtTokenProvider;
+    private DojahSmsService dojahSmsService;
 
 
     public ResponseEntity<CustomResponse> signUp(SignUpRequest request){
@@ -65,6 +73,8 @@ public class AuthService {
                 .password(passwordEncoder.encode(request.getPassword()))
                 .walletId(accountUtils.generateAccountNumber())
                 .emailVerifyStatus("UNVERIFIED")
+                .referralCode(accountUtils.generateReferralCode())
+                .referredBy(request.getReferredBy())
                 .build();
 
         userCredential.setRole(Role.ROLE_USER);
@@ -87,7 +97,7 @@ public class AuthService {
 
 
 
-    public CustomResponse updateUserProfile(Long userId, UserProfileRequest request){
+    public ResponseEntity<CustomResponse> updateUserProfile(Long userId, UserProfileRequest request){
         boolean isUserExist = userCredentialRepository.existsById(userId);
         UserCredential userCredential = userCredentialRepository.findById(userId).orElseThrow();
         if (isUserExist){
@@ -102,15 +112,71 @@ public class AuthService {
             userCredential.setWhatsAppNumber(request.getWhatsAppNumber());
             userCredential.setGender(request.getGender());
             userCredential.setBvn(request.getBvn());
+
+
+            DojahBvnResponse bvnResponse = dojahSmsService.basicBvnLookUp(BvnRequest.builder()
+                            .bvn(request.getBvn())
+                    .build());
+            String bvnFullName = bvnResponse.getEntity().getFirstName() + bvnResponse.getEntity().getLastName() + bvnResponse.getEntity().getMiddleName();
+            String requestName = request.getFirstName() + request.getLastName() + request.getOtherName();
+            char[] bvnFullNameArray = bvnFullName.toCharArray();
+            char[] requestNameArray = requestName.toCharArray();
+            int sumBvnChars = 0;
+            int sumRequestChars = 0;
+            for(char c : bvnFullNameArray){
+                sumBvnChars += c;
+            }
+            for (char c : requestNameArray){
+                sumRequestChars += c;
+            }
+            if (sumBvnChars == sumRequestChars){
+                userCredential.setBvn("VERIFIED");
+            } else {
+                userCredential.setBvn("UNVERIFIED");
+            }
+
             userCredential.setIdentityType(request.getIdentityType());
             userCredential.setIdentityNumber(request.getIdentityNumber());
             userCredential.setPin(request.getPin());
             userCredential.setAccountStatus("PENDING");
-            userCredential.setEmailVerifyStatus("VERIFIED");
+            OtpResponse otpResponse = dojahSmsService.sendOtp(OtpRequest.builder()
+                            .senderId("ZELIA FINANCE")
+                            .channel("email")
+                            .email(userCredential.getEmail())
+                            .expiry(4)
+                            .length(4)
+                            .priority(true)
+                    .build());
+            ValidateOtpResponse validateOtpResponse = dojahSmsService.validateOtp(ValidateOtpRequest.builder()
+                            .reference_id(otpResponse.getEntity().getReferenceId())
+                            .code(request.getCode())
+                    .build());
+            if (!validateOtpResponse.getEntity().getValid()){
+                userCredential.setEmailVerifyStatus("UNVERIFIED");
+            } else {
+                userCredential.setEmailVerifyStatus("VERIFIED");
+            }
+
             userCredential.setDeviceIp(request.getDeviceIp());
             userCredential.setLiveLocation(request.getLiveLocation());
-            //boolean isRoleExists = roleRepository.existsByRoleName(request.getRole());
-
+            userCredential.setModifiedby(SecurityContextHolder.getContext().getAuthentication().getName());
+            userCredential.setReferredBy(request.getReferredBy());
+            userCredential.setNin(request.getNin());
+            NinLookupResponse ninLookupResponse = dojahSmsService.ninLookup(NinRequest.builder()
+                            .nin(request.getNin())
+                    .build());
+            String ninFullName = ninLookupResponse.getEntity().getFirstname() + ninLookupResponse.getEntity().getMiddlename() + ninLookupResponse.getEntity().getSurname();
+            char[] ninFullNameArray = ninFullName.toCharArray();
+            int sumNinChars = 0;
+            for (char c: ninFullNameArray){
+                sumNinChars += c;
+            }
+            boolean b = (sumNinChars == sumRequestChars) && (request.getDateOfBirth().equals(LocalDate.parse(ninLookupResponse.getEntity().getBirthdate(), DateTimeFormatter.ISO_DATE))) && request.getGender().equalsIgnoreCase(ninLookupResponse.getEntity().getGender());
+            if (b){
+                userCredential.setNinVerifyStatus("VERIFIED");
+            } else {
+                userCredential.setNinVerifyStatus("UNVERIFIED");
+            }
 
             if (!userCredential.getEmailVerifyStatus().equalsIgnoreCase("VERIFIED")){
                 EmailDetails emailDetails = EmailDetails.builder()
@@ -131,22 +197,22 @@ public class AuthService {
 
             //building response object
             Object response = modelMapper.map(updatedUser, UserCredentialResponse.class);
-            return CustomResponse.builder()
+            return ResponseEntity.ok(CustomResponse.builder()
                     .responseCode(AccountUtils.ACCOUNT_CREATION_SUCCESS_CODE)
                     .responseMessage(AccountUtils.ACCOUNT_CREATION_SUCCESS_MESSAGE)
                     .responseBody(response)
-                    .build();
+                    .build());
 
         }
 
-        return CustomResponse.builder()
+        return ResponseEntity.badRequest().body(CustomResponse.builder()
                 .responseCode(AccountUtils.USER_NOT_EXIST_CODE)
                 .responseMessage(AccountUtils.USER_NOT_EXIST_MESSAGE)
                 .responseBody(null)
-                .build();
+                .build());
     }
 
-    public CustomResponse login(LoginDto loginDto){
+    public ResponseEntity<CustomResponse> login(LoginDto loginDto){
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(loginDto.getEmail(), loginDto.getPassword())
         );
@@ -163,14 +229,14 @@ public class AuthService {
                 .build();
         emailService.sendEmailAlert(loginAlert);
 
-        return CustomResponse.builder()
+        return ResponseEntity.ok(CustomResponse.builder()
                 .responseCode(AccountUtils.LOGIN_SUCCESS_CODE)
                 .responseMessage(AccountUtils.LOGIN_SUCCESS_MESSAGE)
                 .responseBody(jwtTokenProvider.generateToken(authentication))
-                .build();
+                .build());
     }
 
-    public CustomResponse fetchAllUsers(int pageNo, int pageSize){
+    public ResponseEntity<CustomResponse> fetchAllUsers(int pageNo, int pageSize){
 
         Pageable pageable = PageRequest.of(pageNo-1, pageSize);
         Page<UserCredential> userCredentials = userCredentialRepository.findAll(pageable);
@@ -179,7 +245,7 @@ public class AuthService {
         Object response = list.stream().map(user -> modelMapper.map(user, UserCredentialResponse.class)).collect(Collectors.toList());
 
 
-        return CustomResponse.builder()
+        return ResponseEntity.ok(CustomResponse.builder()
                 .responseCode(String.valueOf(HttpStatus.OK))
                 .responseMessage("SUCCESS")
                 .responseBody(response)
@@ -189,26 +255,26 @@ public class AuthService {
                         .pageSize(userCredentials.getSize())
                         .build())
 
-                .build();
+                .build());
 
     }
 
 
-    public CustomResponse fetchUser(Long userId){
+    public ResponseEntity<CustomResponse> fetchUser(Long userId){
         boolean isUserExists = userCredentialRepository.existsById(userId);
         if (!isUserExists){
             nonExistentUserById();
         }
         UserCredential userCredential = userCredentialRepository.findById(userId).orElseThrow();
         Object response = modelMapper.map(userCredential, UserCredentialResponse.class);
-        return CustomResponse.builder()
+        return ResponseEntity.ok(CustomResponse.builder()
                 .responseCode(String.valueOf(HttpStatus.valueOf("OK")))
                 .responseMessage(HttpStatus.OK.name())
                 .responseBody(response)
-                .build();
+                .build());
     }
 
-    public CustomResponse updateUserRole(Long userId){
+    public ResponseEntity<CustomResponse> updateUserRole(Long userId){
         boolean isUserExist = userCredentialRepository.existsById(userId);
         if (!isUserExist){
             nonExistentUserById();
@@ -218,14 +284,85 @@ public class AuthService {
 
         userCredentialRepository.save(userCredential);
         Object response = modelMapper.map(userCredential, UserCredentialResponse.class);
-        return CustomResponse.builder()
+        return ResponseEntity.ok(CustomResponse.builder()
                 .responseCode(AccountUtils.USER_ROLE_SET_CODE)
                 .responseBody(AccountUtils.USER_ROLE_SET_MESSAGE)
                 .responseBody(response)
                 .info(null)
-                .build();
+                .build());
 
     }
+
+    public ResponseEntity<CustomResponse> resetPassword(String email){
+        UserCredential userCredential = userCredentialRepository.findByEmail(email).orElseThrow();
+        boolean isUserExists = userCredentialRepository.existsByEmail(email);
+        if (!isUserExists){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .responseCode(AccountUtils.USER_NOT_EXIST_CODE)
+                            .responseMessage(AccountUtils.USER_NOT_EXIST_MESSAGE)
+                    .build());
+        }
+        String token = UUID.randomUUID().toString();
+        userCredential.setPasswordResetToken(token);
+        userCredential.setTokenExpiryDate(LocalDate.now().plusDays(1));
+        UserCredential requestingPassword = userCredentialRepository.save(userCredential);
+            String url = "/users/changePassword?token="+token;
+        EmailDetails emailDetails = EmailDetails.builder()
+                .recipient(email)
+                .subject(AccountUtils.PASSWORD_RESET_SUBJECT)
+                .messageBody("follow this link to change your password " + url)
+                .build();
+        emailService.sendEmailAlert(emailDetails);
+
+        return ResponseEntity.ok(CustomResponse.builder()
+                        .responseCode(AccountUtils.PASSWORD_RESET_CODE)
+                        .responseMessage(AccountUtils.PASSWORD_RESET_MESSAGE)
+                .build());
+    }
+
+    public ResponseEntity<CustomResponse> changePassword(String email, PasswordResetDto passwordResetDto){
+        boolean isUserExists = userCredentialRepository.existsByEmail(email);
+        if (!isUserExists){
+            nonExistentUserById();
+        }
+        UserCredential userCredential = userCredentialRepository.findByEmail(email).get();
+        if (userCredential.getTokenExpiryDate().isBefore(LocalDate.now())){
+            return ResponseEntity.internalServerError().body(CustomResponse.builder()
+                            .responseCode(AccountUtils.PASSWORD_TOKEN_EXPIRED_CODE)
+                            .responseMessage(AccountUtils.PASSWORD_TOKEN_EXPIRED_MESSAGE)
+                    .build());
+        }
+        if (!passwordResetDto.getNewPassword().equals(passwordResetDto.getConfirmNewPassword())){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .responseCode(AccountUtils.PASSWORD_INCORRECT_CODE)
+                            .responseMessage(AccountUtils.PASSWORD_INCORRECT_MESSAGE)
+                    .build());
+        }
+        userCredential.setPassword(passwordEncoder.encode(passwordResetDto.getNewPassword()));
+        userCredentialRepository.save(userCredential);
+        return ResponseEntity.ok(CustomResponse.builder()
+                        .responseCode(AccountUtils.PASSWORD_RESET_SUCCESS_CODE)
+                        .responseMessage(AccountUtils.PASSWORD_RESET_SUCCESS_MESSAGE)
+                .build());
+    }
+
+    public ResponseEntity<CustomResponse> generateReferralLink(String email){
+        String baseUrl = "http://localhost:5000/";
+        boolean isUserExists = userCredentialRepository.existsByEmail(email);
+        if (!isUserExists){
+            return ResponseEntity.internalServerError()
+                    .body(CustomResponse.builder()
+                            .responseCode(AccountUtils.USER_NOT_EXIST_CODE)
+                            .responseMessage(AccountUtils.USER_NOT_EXIST_MESSAGE)
+                            .build());
+        }
+        UserCredential userCredential = userCredentialRepository.findByEmail(email).get();
+        return ResponseEntity.ok(CustomResponse.builder()
+                        .responseCode(HttpStatus.OK.toString())
+                        .responseMessage(baseUrl + userCredential.getReferralCode())
+                .build());
+    }
+
 
     private CustomResponse nonExistentUserById(){
         return CustomResponse.builder()

@@ -38,6 +38,8 @@ public class UserCredential implements UserDetails {
     private String identityType;
     private String identityNumber;
     private String pin;
+    private String nin;
+    private String ninVerifyStatus;
     @Column(unique = true)
     private String walletId;
     private String accountStatus;
@@ -46,13 +48,16 @@ public class UserCredential implements UserDetails {
     private LocalDate createdAt;
     @UpdateTimestamp
     private LocalDate modifiedAt;
-
+    private String passwordResetToken;
+    private LocalDate tokenExpiryDate;
     private String emailVerifyStatus;
     private String deviceIp;
     private String liveLocation;
     private String modifiedby;
     @Enumerated(EnumType.STRING)
     private Role role;
+    private String referralCode;
+    private String referredBy;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

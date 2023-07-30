@@ -46,6 +46,14 @@ public class DojahSmsService {
         return responseEntity.getBody();
     }
 
+    public ValidateOtpResponse validateOtp(ValidateOtpRequest otpRequest){
+        String url = baseUrl + "api/v1/messaging/otp/validate";
+        log.info("full url: {}", url);
+        HttpEntity<ValidateOtpRequest> entity = new HttpEntity<>(otpRequest, headers());
+        ResponseEntity<ValidateOtpResponse> responseEntity = restTemplate().exchange(url, HttpMethod.POST, entity, ValidateOtpResponse.class);
+        return responseEntity.getBody();
+    }
+
     public DojahBvnResponse basicBvnLookUp(BvnRequest request){
         RestTemplate restTemplate = new RestTemplate();
         restTemplate.getMessageConverters().add(new MappingJackson2HttpMessageConverter());

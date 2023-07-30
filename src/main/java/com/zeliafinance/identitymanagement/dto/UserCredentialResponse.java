@@ -12,6 +12,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @NoArgsConstructor
 public class UserCredentialResponse {
+    private Long id;
     private String firstName;
     private String lastName;
     private String otherName;
@@ -28,4 +29,6 @@ public class UserCredentialResponse {
     private double accountBalance;
     private String role;
     private String emailVerifyStatus;
+    private String referralCode;
+    private String referredBy;
 }

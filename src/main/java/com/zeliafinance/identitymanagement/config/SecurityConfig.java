@@ -65,7 +65,10 @@ public class SecurityConfig {
         httpSecurity.csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorize ->
                         authorize.requestMatchers(HttpMethod.POST, "/api/v1/users/registerUser").permitAll()
-                                .requestMatchers(HttpMethod.POST, "/api/v1/users/login").permitAll().anyRequest().authenticated()
+                                .requestMatchers(HttpMethod.POST, "/api/v1/users/login").permitAll()
+                                .requestMatchers(HttpMethod.POST, "api/v1/users/resetPassword").permitAll()
+                                .requestMatchers(HttpMethod.POST, "api/v1/users/changePassword").permitAll()
+                                .anyRequest().authenticated()
                 );
 
         httpSecurity.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));

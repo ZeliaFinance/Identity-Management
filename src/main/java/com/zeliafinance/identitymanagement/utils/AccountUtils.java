@@ -37,6 +37,13 @@ public class AccountUtils {
     public static final String INVALID_OTP_MESSAGE = "Invalid Otp. Please try again. Note! You have only 3 attempts";
     public static final String OTP_SENT_CODE = "011";
     public static final String OTP_SENT_MESSAGE = "Otp has been successfully sent";
+    public static final String PASSWORD_RESET_SUBJECT = "PASSWORD RESET!!!";
+    public static final String PASSWORD_RESET_CODE = "012";
+    public static final String PASSWORD_RESET_MESSAGE = "Password reset link has been sent";
+    public static final String PASSWORD_TOKEN_EXPIRED_CODE = "013";
+    public static final String PASSWORD_TOKEN_EXPIRED_MESSAGE = "Password Reset Token is expired";
+    public static final String PASSWORD_RESET_SUCCESS_CODE = "014";
+    public static final String PASSWORD_RESET_SUCCESS_MESSAGE = "Password Reset Successfully!";
 
     @Bean
     public String generateAccountNumber(){
@@ -63,12 +70,12 @@ public class AccountUtils {
     }
 
 
-    public String generatePassword(){
+    public String generateReferralCode(){
         StringBuilder password = new StringBuilder();
         int count = 0;
         Random randomPassword = new Random();
         while (count < LENGTH_OF_PASSWORD){
-            password.append((char) randomPassword.nextInt(33, 127));
+            password.append((char) randomPassword.nextInt(33, 122));
             count++;
         }
         return password.toString();
