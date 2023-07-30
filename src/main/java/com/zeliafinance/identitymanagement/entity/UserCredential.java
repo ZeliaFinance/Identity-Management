@@ -35,11 +35,10 @@ public class UserCredential implements UserDetails {
     private String gender;
     private String bvn;
     private String bvnVerifyStatus;
-    private String identityType;
+    private IdentityType identityType;
     private String identityNumber;
+    private String identityStatus;
     private String pin;
-    private String nin;
-    private String ninVerifyStatus;
     @Column(unique = true)
     private String walletId;
     private String accountStatus;

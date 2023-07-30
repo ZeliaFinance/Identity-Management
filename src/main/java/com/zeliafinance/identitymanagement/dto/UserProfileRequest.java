@@ -32,5 +32,4 @@ public class UserProfileRequest {
     @Nullable
     private String referredBy;
     private String code;
-    private String nin;
 }

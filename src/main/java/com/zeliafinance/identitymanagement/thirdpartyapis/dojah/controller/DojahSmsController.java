@@ -58,4 +58,19 @@ public class DojahSmsController {
     public ResponseEntity<OtpResponse> sendOtp(@RequestBody OtpRequest request){
         return ResponseEntity.ok(service.sendOtp(request));
     }
+
+    @PostMapping("/dlLookup")
+    public ResponseEntity<DriverLicenseResponse> dlLookup(@RequestBody DriverLicenseRequest request){
+        return ResponseEntity.ok(service.dlLookup(request));
+    }
+
+    @PostMapping("/pvcLookup")
+    public ResponseEntity<PvcResponse> pvcLookup(@RequestBody PvcRequest request){
+        return ResponseEntity.ok(service.pvcLookup(request));
+    }
+
+    @PostMapping("/intPassportLookup")
+    public ResponseEntity<IntPassportResponse> intPassportLookup(@RequestBody IntPassportRequest request){
+        return ResponseEntity.ok(service.intPassportLookup(request));
+    }
 }

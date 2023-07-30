@@ -109,6 +109,15 @@ public class DojahSmsService {
         return responseEntity.getBody();
     }
 
+    public DriverLicenseResponse dlLookup(DriverLicenseRequest request){
+        String url = baseUrl + "api/v1/kyc/dl?license_number="+request.getLicenseNumber();
+        log.info("full url: {}", url);
+        HttpEntity<?> entity = new HttpEntity<>(headers());
+        ResponseEntity<DriverLicenseResponse> responseEntity = restTemplate().exchange(url, HttpMethod.GET, entity, DriverLicenseResponse.class);
+        log.info("response: \n{}", responseEntity.getBody());
+        return responseEntity.getBody();
+    }
+
     public VNinResponse vninLookup(VNinRequest request){
         String url = baseUrl + "api/v1/kyc/vnin?vnin="+request.getVnin();
         log.info("full url: {}", url);
@@ -116,6 +125,24 @@ public class DojahSmsService {
         ResponseEntity<VNinResponse> responseEntity = restTemplate().exchange(url, HttpMethod.GET, entity, VNinResponse.class);
         return responseEntity.getBody();
     }
+
+    public PvcResponse pvcLookup(PvcRequest request){
+        String url = baseUrl + "api/v1/kyc/vin?vin="+request.getVin();
+        log.info("full url: {}", url);
+        HttpEntity<?> entity = new HttpEntity<>(headers());
+        ResponseEntity<PvcResponse> responseEntity = restTemplate().exchange(url, HttpMethod.GET, entity, PvcResponse.class);
+        return responseEntity.getBody();
+    }
+
+    public IntPassportResponse intPassportLookup(IntPassportRequest request){
+        String url = baseUrl + "api/v1/kyc/passport?passport_number="+request.getPassportNumber()+"?surname="+request.getSurname();
+        log.info("full url: {}", url);
+        HttpEntity<?> entity = new HttpEntity<>(headers());
+        ResponseEntity<IntPassportResponse> responseEntity = restTemplate().exchange(url, HttpMethod.GET, entity, IntPassportResponse.class);
+        return responseEntity.getBody();
+    }
+
+
 
     private RestTemplate restTemplate(){
         RestTemplate restTemplate = new RestTemplate();

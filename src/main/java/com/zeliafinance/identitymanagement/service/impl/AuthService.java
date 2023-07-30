@@ -2,18 +2,13 @@ package com.zeliafinance.identitymanagement.service.impl;
 
 import com.zeliafinance.identitymanagement.config.JwtTokenProvider;
 import com.zeliafinance.identitymanagement.dto.*;
+import com.zeliafinance.identitymanagement.entity.IdentityType;
 import com.zeliafinance.identitymanagement.entity.Role;
 import com.zeliafinance.identitymanagement.entity.UserCredential;
 import com.zeliafinance.identitymanagement.repository.UserCredentialRepository;
 import com.zeliafinance.identitymanagement.service.EmailService;
-import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.dto.request.BvnRequest;
-import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.dto.request.NinRequest;
-import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.dto.request.OtpRequest;
-import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.dto.request.ValidateOtpRequest;
-import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.dto.response.DojahBvnResponse;
-import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.dto.response.NinLookupResponse;
-import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.dto.response.OtpResponse;
-import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.dto.response.ValidateOtpResponse;
+import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.dto.request.*;
+import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.dto.response.*;
 import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.service.DojahSmsService;
 import com.zeliafinance.identitymanagement.utils.AccountUtils;
 import lombok.AllArgsConstructor;
@@ -135,7 +130,7 @@ public class AuthService {
                 userCredential.setBvn("UNVERIFIED");
             }
 
-            userCredential.setIdentityType(request.getIdentityType());
+            userCredential.setIdentityType(IdentityType.valueOf(request.getIdentityType()));
             userCredential.setIdentityNumber(request.getIdentityNumber());
             userCredential.setPin(request.getPin());
             userCredential.setAccountStatus("PENDING");
@@ -161,34 +156,84 @@ public class AuthService {
             userCredential.setLiveLocation(request.getLiveLocation());
             userCredential.setModifiedby(SecurityContextHolder.getContext().getAuthentication().getName());
             userCredential.setReferredBy(request.getReferredBy());
-            userCredential.setNin(request.getNin());
-            NinLookupResponse ninLookupResponse = dojahSmsService.ninLookup(NinRequest.builder()
-                            .nin(request.getNin())
-                    .build());
-            String ninFullName = ninLookupResponse.getEntity().getFirstname() + ninLookupResponse.getEntity().getMiddlename() + ninLookupResponse.getEntity().getSurname();
-            char[] ninFullNameArray = ninFullName.toCharArray();
-            int sumNinChars = 0;
-            for (char c: ninFullNameArray){
-                sumNinChars += c;
+
+            //Verifying via NIN
+            if (request.getIdentityType().equalsIgnoreCase(String.valueOf(IdentityType.NIN))){
+                NinLookupResponse ninLookupResponse = dojahSmsService.ninLookup(NinRequest.builder()
+                        .nin(request.getIdentityNumber())
+                        .build());
+                String ninFullName = ninLookupResponse.getEntity().getFirstname() + ninLookupResponse.getEntity().getMiddlename() + ninLookupResponse.getEntity().getSurname();
+                char[] ninFullNameArray = ninFullName.toCharArray();
+                int sumNinChars = 0;
+                for (char c: ninFullNameArray){
+                    sumNinChars += c;
+                }
+                boolean b = (sumNinChars == sumRequestChars) && (request.getDateOfBirth().equals(LocalDate.parse(ninLookupResponse.getEntity().getBirthdate(), DateTimeFormatter.ISO_DATE))) && request.getGender().equalsIgnoreCase(ninLookupResponse.getEntity().getGender());
+                if (b){
+                    userCredential.setIdentityStatus("VERIFIED");
+                } else {
+                    userCredential.setIdentityStatus("UNVERIFIED");
+                }
             }
-            boolean b = (sumNinChars == sumRequestChars) && (request.getDateOfBirth().equals(LocalDate.parse(ninLookupResponse.getEntity().getBirthdate(), DateTimeFormatter.ISO_DATE))) && request.getGender().equalsIgnoreCase(ninLookupResponse.getEntity().getGender());
-            if (b){
-                userCredential.setNinVerifyStatus("VERIFIED");
-            } else {
-                userCredential.setNinVerifyStatus("UNVERIFIED");
+            //verifying via driver license
+            if (request.getIdentityType().equalsIgnoreCase(String.valueOf(IdentityType.DRIVER_LICENSE))){
+                DriverLicenseResponse dlResponse = dojahSmsService.dlLookup(DriverLicenseRequest.builder()
+                                .licenseNumber(request.getIdentityNumber())
+                        .build());
+                String dlName = dlResponse.getEntity().getFirstName() + dlResponse.getEntity().getLastName() + dlResponse.getEntity().getMiddleName();
+                char[] dlNameArray = dlName.toCharArray();
+                int sumdlNameChars = 0;
+                for (char c : dlNameArray){
+                    sumdlNameChars += c;
+                }
+                boolean b = (sumdlNameChars == sumRequestChars) && (request.getDateOfBirth().equals(LocalDate.parse(dlResponse.getEntity().getBirthDate(), DateTimeFormatter.ISO_DATE))) && request.getGender().equalsIgnoreCase(dlResponse.getEntity().getGender());
+                if (b){
+                    userCredential.setIdentityStatus("VERIFIED");
+                } else {
+                    userCredential.setIdentityStatus("UNVERIFIED");
+                }
             }
 
-            if (!userCredential.getEmailVerifyStatus().equalsIgnoreCase("VERIFIED")){
-                EmailDetails emailDetails = EmailDetails.builder()
-                        .recipient(userCredential.getEmail())
-                        .subject(AccountUtils.ACCOUNT_CREATION_ALERT_SUBJECT)
-                        .messageBody("Congratulations! Your account has been successfully created. " +
-                                "\nFind your account details below: \nAccount Name: " + request.getFirstName() +
-                                " " + request.getLastName() + " " + request.getOtherName())
-                        .build();
-                emailService.sendEmailAlert(emailDetails);
-
+            //verifying via pvc
+            if (request.getIdentityType().equalsIgnoreCase(String.valueOf(IdentityType.PVC))){
+                PvcResponse pvcResponse = dojahSmsService.pvcLookup(PvcRequest.builder()
+                        .vin(request.getIdentityNumber())
+                        .build());
+                String pvcName = pvcResponse.getEntity().getFullName();
+                char[] pvcNameArray = pvcName.toCharArray();
+                int sumPvcNameChars = 0;
+                for (char c : pvcNameArray){
+                    sumPvcNameChars += c;
+                }
+                boolean b = (sumPvcNameChars == sumRequestChars) && (request.getDateOfBirth().equals(LocalDate.parse(pvcResponse.getEntity().getDateOfBirth(), DateTimeFormatter.ISO_DATE))) && request.getGender().equalsIgnoreCase(pvcResponse.getEntity().getGender());
+                if (b){
+                    userCredential.setIdentityStatus("VERIFIED");
+                } else {
+                    userCredential.setIdentityStatus("UNVERIFIED");
+                }
             }
+
+            //verifying international passport
+
+            if (request.getIdentityType().equalsIgnoreCase(String.valueOf(IdentityType.INTERNATIONAL_PASSPORT))){
+                IntPassportResponse intPassportResponse = dojahSmsService.intPassportLookup(IntPassportRequest.builder()
+                        .passportNumber(request.getIdentityNumber())
+                                .surname(request.getLastName())
+                        .build());
+                String intPassportName = intPassportResponse.getEntity().getSurname() + intPassportResponse.getEntity().getFirstName() + intPassportResponse.getEntity().getOtherNames();
+                char[] intPassportNameArray = intPassportName.toCharArray();
+                int sumIntPassportNameChars = 0;
+                for (char c : intPassportNameArray){
+                    sumIntPassportNameChars += c;
+                }
+                boolean b = (sumIntPassportNameChars == sumRequestChars) && (request.getDateOfBirth().equals(LocalDate.parse(intPassportResponse.getEntity().getDateOfBirth(), DateTimeFormatter.ISO_DATE))) && request.getGender().equalsIgnoreCase(intPassportResponse.getEntity().getGender());
+                if (b){
+                    userCredential.setIdentityStatus("VERIFIED");
+                } else {
+                    userCredential.setIdentityStatus("UNVERIFIED");
+                }
+            }
+
 
 
             UserCredential updatedUser = userCredentialRepository.save(userCredential);
@@ -305,8 +350,7 @@ public class AuthService {
         String token = UUID.randomUUID().toString();
         userCredential.setPasswordResetToken(token);
         userCredential.setTokenExpiryDate(LocalDate.now().plusDays(1));
-        UserCredential requestingPassword = userCredentialRepository.save(userCredential);
-            String url = "/users/changePassword?token="+token;
+        String url = "/users/changePassword?token="+token;
         EmailDetails emailDetails = EmailDetails.builder()
                 .recipient(email)
                 .subject(AccountUtils.PASSWORD_RESET_SUBJECT)
