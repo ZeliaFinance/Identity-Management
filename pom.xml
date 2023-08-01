@@ -91,6 +91,15 @@
             <artifactId>guava</artifactId>
             <version>32.1.1-jre</version>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/com.netflix.eureka/eureka-client -->
+        <!-- https://mvnrepository.com/artifact/org.springframework.cloud/spring-cloud-starter-netflix-eureka-client -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+            <version>4.0.3</version>
+        </dependency>
+
+
     </dependencies>
 
 

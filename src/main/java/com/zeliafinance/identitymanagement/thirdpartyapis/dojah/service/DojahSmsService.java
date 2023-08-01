@@ -142,6 +142,17 @@ public class DojahSmsService {
         return responseEntity.getBody();
     }
 
+    public FirsTinLookupResponse firsTinLookup(FirsTinLookupRequest request){
+        String url = baseUrl + "api/v1/kyc/tin?tin="+request.getTin();
+        log.info("full url {}", url);
+        HttpEntity<?> entity = new HttpEntity<>(headers());
+        ResponseEntity<FirsTinLookupResponse> responseEntity =
+                restTemplate().exchange(url, HttpMethod.GET, entity, FirsTinLookupResponse.class);
+        log.info("response: {}", responseEntity.getBody());
+        return responseEntity.getBody();
+
+    }
+
 
 
     private RestTemplate restTemplate(){

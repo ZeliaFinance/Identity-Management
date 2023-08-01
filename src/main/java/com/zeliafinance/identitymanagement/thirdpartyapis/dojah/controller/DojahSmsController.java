@@ -73,4 +73,9 @@ public class DojahSmsController {
     public ResponseEntity<IntPassportResponse> intPassportLookup(@RequestBody IntPassportRequest request){
         return ResponseEntity.ok(service.intPassportLookup(request));
     }
+
+    @PostMapping("/firsTinLookup")
+    public ResponseEntity<FirsTinLookupResponse> firsTinLookup(@RequestBody FirsTinLookupRequest request){
+        return ResponseEntity.ok(service.firsTinLookup(request));
+    }
 }

@@ -91,7 +91,6 @@ public class AuthService {
     }
 
 
-
     public ResponseEntity<CustomResponse> updateUserProfile(Long userId, UserProfileRequest request){
         boolean isUserExist = userCredentialRepository.existsById(userId);
         UserCredential userCredential = userCredentialRepository.findById(userId).orElseThrow();
