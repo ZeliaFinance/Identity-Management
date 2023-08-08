@@ -12,11 +12,11 @@ public class HomeController {
 
     AuthService authService;
 
-//    @GetMapping
-//    public SampleJsonObject serveHomePage(){
-//        SampleJsonObject jsonObject = new SampleJsonObject();
-//        jsonObject.setServerStatus("Running");
-//        jsonObject.setSampleProperty("Some Value");
-//        return jsonObject;
-//    }
+    @GetMapping
+    public SampleJsonObject serveHomePage(){
+        SampleJsonObject jsonObject = new SampleJsonObject();
+        jsonObject.setServerStatus("Running");
+        jsonObject.setSampleProperty("Some Value");
+        return jsonObject;
+    }
 }
