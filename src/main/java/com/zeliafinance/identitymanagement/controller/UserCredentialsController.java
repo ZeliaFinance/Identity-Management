@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("api/v1/users")
 @Slf4j
-@CrossOrigin(origins = {"https://www.sandbox.zeliafinance.com", "http://www.sandbox.zeliafinance.com"})
+@CrossOrigin(origins = {"https://www.sandbox.zeliafinance.com", "http://www.sandbox.zeliafinance.com"}, maxAge = 3600)
 public class UserCredentialsController {
 
     private final AuthService service;
