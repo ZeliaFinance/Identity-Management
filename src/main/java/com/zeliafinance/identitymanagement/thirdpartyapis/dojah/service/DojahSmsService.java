@@ -5,6 +5,8 @@ import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.dto.request.*;
 import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.dto.response.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
@@ -33,7 +35,7 @@ public class DojahSmsService {
         HttpEntity<DojahSmsRequest> entity = new HttpEntity<>(request, headers());
         ResponseEntity<DojahSmsResponse> responseString = restTemplate.exchange(url, HttpMethod.POST, entity, DojahSmsResponse.class);
         DojahSmsResponse jsonResponse = responseString.getBody();
-        log.info("Response: {}", responseString);
+        log.info("Response: {}", jsonResponse);
 
         return jsonResponse;
     }

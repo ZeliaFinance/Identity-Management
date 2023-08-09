@@ -71,4 +71,24 @@ public class UserCredentialsController {
         return service.generateReferralLink(email);
     }
 
+    @PostMapping("/verifyId")
+    public ResponseEntity<CustomResponse> verifyIdentity(@RequestBody IdentityVerificationDto identityVerificationDto){
+        return service.verifyCustomerIdentity(identityVerificationDto);
+    }
+
+    @PostMapping("/verifyBvn")
+    public ResponseEntity<CustomResponse> verifyBvn(@RequestBody BvnVerificationDto bvnVerificationDto){
+        return service.verifyBvn(bvnVerificationDto);
+    }
+
+    @PostMapping("/verifyEmail")
+    public ResponseEntity<CustomResponse> sendEmailOtp(@RequestBody EmailVerificationDto emailVerificationDto){
+        return service.verifyEmail(emailVerificationDto);
+    }
+
+    @PostMapping("/validateEmail")
+    public ResponseEntity<CustomResponse> validateEmail(@RequestBody EmailValidationDto emailValidationDto){
+        return service.validateEmail(emailValidationDto);
+    }
+
 }

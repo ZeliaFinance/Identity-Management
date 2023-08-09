@@ -23,13 +23,13 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -56,10 +56,18 @@ public class AuthService {
                     .responseMessage(AccountUtils.EMAIL_EXISTS_MESSAGE)
                     .build());
         }
+
         if (!request.getPassword().equals(request.getConfirmPassword())){
             return ResponseEntity.badRequest().body(CustomResponse.builder()
                             .responseCode(AccountUtils.PASSWORD_INCORRECT_CODE)
                             .responseBody(AccountUtils.PASSWORD_INCORRECT_MESSAGE)
+                    .build());
+        }
+
+        if (!accountUtils.isPasswordValid(request.getPassword())){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .responseCode(AccountUtils.PASSWORD_INVALID_CODE)
+                            .responseMessage(AccountUtils.PASSWORD_INVALID_MESSAGE)
                     .build());
         }
 
@@ -100,141 +108,21 @@ public class AuthService {
             userCredential.setLastName(request.getLastName());
             userCredential.setOtherName(request.getOtherName());
             userCredential.setDateOBirth(request.getDateOfBirth());
-            userCredential.setEmail(userCredential.getEmail());
-            userCredential.setPassword(passwordEncoder.encode(request.getPassword()));
             userCredential.setPhoneNumber(request.getPhoneNumber());
             userCredential.setMobileNumber(request.getMobileNumber());
             userCredential.setWhatsAppNumber(request.getWhatsAppNumber());
             userCredential.setGender(request.getGender());
             userCredential.setBvn(request.getBvn());
-
-
-            DojahBvnResponse bvnResponse = dojahSmsService.basicBvnLookUp(BvnRequest.builder()
-                            .bvn(request.getBvn())
-                    .build());
-            String bvnFullName = bvnResponse.getEntity().getFirstName() + bvnResponse.getEntity().getLastName() + bvnResponse.getEntity().getMiddleName();
-            String requestName = request.getFirstName() + request.getLastName() + request.getOtherName();
-            char[] bvnFullNameArray = bvnFullName.toCharArray();
-            char[] requestNameArray = requestName.toCharArray();
-            int sumBvnChars = 0;
-            int sumRequestChars = 0;
-            for(char c : bvnFullNameArray){
-                sumBvnChars += c;
-            }
-            for (char c : requestNameArray){
-                sumRequestChars += c;
-            }
-            if (sumBvnChars == sumRequestChars){
-                userCredential.setBvn("VERIFIED");
-            } else {
-                userCredential.setBvn("UNVERIFIED");
-            }
-
             userCredential.setIdentityType(IdentityType.valueOf(request.getIdentityType()));
             userCredential.setIdentityNumber(request.getIdentityNumber());
             userCredential.setPin(request.getPin());
             userCredential.setAccountStatus("PENDING");
-            OtpResponse otpResponse = dojahSmsService.sendOtp(OtpRequest.builder()
-                            .senderId("ZELIA FINANCE")
-                            .channel("email")
-                            .email(userCredential.getEmail())
-                            .expiry(4)
-                            .length(4)
-                            .priority(true)
-                    .build());
-            ValidateOtpResponse validateOtpResponse = dojahSmsService.validateOtp(ValidateOtpRequest.builder()
-                            .reference_id(otpResponse.getEntity().getReferenceId())
-                            .code(request.getCode())
-                    .build());
-            if (!validateOtpResponse.getEntity().getValid()){
-                userCredential.setEmailVerifyStatus("UNVERIFIED");
-            } else {
-                userCredential.setEmailVerifyStatus("VERIFIED");
-            }
+
 
             userCredential.setDeviceIp(request.getDeviceIp());
             userCredential.setLiveLocation(request.getLiveLocation());
             userCredential.setModifiedby(SecurityContextHolder.getContext().getAuthentication().getName());
             userCredential.setReferredBy(request.getReferredBy());
-
-            //Verifying via NIN
-            if (request.getIdentityType().equalsIgnoreCase(String.valueOf(IdentityType.NIN))){
-                NinLookupResponse ninLookupResponse = dojahSmsService.ninLookup(NinRequest.builder()
-                        .nin(request.getIdentityNumber())
-                        .build());
-                String ninFullName = ninLookupResponse.getEntity().getFirstname() + ninLookupResponse.getEntity().getMiddlename() + ninLookupResponse.getEntity().getSurname();
-                char[] ninFullNameArray = ninFullName.toCharArray();
-                int sumNinChars = 0;
-                for (char c: ninFullNameArray){
-                    sumNinChars += c;
-                }
-                boolean b = (sumNinChars == sumRequestChars) && (request.getDateOfBirth().equals(LocalDate.parse(ninLookupResponse.getEntity().getBirthdate(), DateTimeFormatter.ISO_DATE))) && request.getGender().equalsIgnoreCase(ninLookupResponse.getEntity().getGender());
-                if (b){
-                    userCredential.setIdentityStatus("VERIFIED");
-                } else {
-                    userCredential.setIdentityStatus("UNVERIFIED");
-                }
-            }
-            //verifying via driver license
-            if (request.getIdentityType().equalsIgnoreCase(String.valueOf(IdentityType.DRIVER_LICENSE))){
-                DriverLicenseResponse dlResponse = dojahSmsService.dlLookup(DriverLicenseRequest.builder()
-                                .licenseNumber(request.getIdentityNumber())
-                        .build());
-                String dlName = dlResponse.getEntity().getFirstName() + dlResponse.getEntity().getLastName() + dlResponse.getEntity().getMiddleName();
-                char[] dlNameArray = dlName.toCharArray();
-                int sumdlNameChars = 0;
-                for (char c : dlNameArray){
-                    sumdlNameChars += c;
-                }
-                boolean b = (sumdlNameChars == sumRequestChars) && (request.getDateOfBirth().equals(LocalDate.parse(dlResponse.getEntity().getBirthDate(), DateTimeFormatter.ISO_DATE))) && request.getGender().equalsIgnoreCase(dlResponse.getEntity().getGender());
-                if (b){
-                    userCredential.setIdentityStatus("VERIFIED");
-                } else {
-                    userCredential.setIdentityStatus("UNVERIFIED");
-                }
-            }
-
-            //verifying via pvc
-            if (request.getIdentityType().equalsIgnoreCase(String.valueOf(IdentityType.PVC))){
-                PvcResponse pvcResponse = dojahSmsService.pvcLookup(PvcRequest.builder()
-                        .vin(request.getIdentityNumber())
-                        .build());
-                String pvcName = pvcResponse.getEntity().getFullName();
-                char[] pvcNameArray = pvcName.toCharArray();
-                int sumPvcNameChars = 0;
-                for (char c : pvcNameArray){
-                    sumPvcNameChars += c;
-                }
-                boolean b = (sumPvcNameChars == sumRequestChars) && (request.getDateOfBirth().equals(LocalDate.parse(pvcResponse.getEntity().getDateOfBirth(), DateTimeFormatter.ISO_DATE))) && request.getGender().equalsIgnoreCase(pvcResponse.getEntity().getGender());
-                if (b){
-                    userCredential.setIdentityStatus("VERIFIED");
-                } else {
-                    userCredential.setIdentityStatus("UNVERIFIED");
-                }
-            }
-
-            //verifying international passport
-
-            if (request.getIdentityType().equalsIgnoreCase(String.valueOf(IdentityType.INTERNATIONAL_PASSPORT))){
-                IntPassportResponse intPassportResponse = dojahSmsService.intPassportLookup(IntPassportRequest.builder()
-                        .passportNumber(request.getIdentityNumber())
-                                .surname(request.getLastName())
-                        .build());
-                String intPassportName = intPassportResponse.getEntity().getSurname() + intPassportResponse.getEntity().getFirstName() + intPassportResponse.getEntity().getOtherNames();
-                char[] intPassportNameArray = intPassportName.toCharArray();
-                int sumIntPassportNameChars = 0;
-                for (char c : intPassportNameArray){
-                    sumIntPassportNameChars += c;
-                }
-                boolean b = (sumIntPassportNameChars == sumRequestChars) && (request.getDateOfBirth().equals(LocalDate.parse(intPassportResponse.getEntity().getDateOfBirth(), DateTimeFormatter.ISO_DATE))) && request.getGender().equalsIgnoreCase(intPassportResponse.getEntity().getGender());
-                if (b){
-                    userCredential.setIdentityStatus("VERIFIED");
-                } else {
-                    userCredential.setIdentityStatus("UNVERIFIED");
-                }
-            }
-
-
 
             UserCredential updatedUser = userCredentialRepository.save(userCredential);
 
@@ -405,6 +293,199 @@ public class AuthService {
                         .responseCode(HttpStatus.OK.toString())
                         .responseMessage(baseUrl + userCredential.getReferralCode())
                 .build());
+    }
+
+    public ResponseEntity<CustomResponse> verifyCustomerIdentity(IdentityVerificationDto identity){
+        Optional<UserCredential> userCredential = userCredentialRepository.findById(identity.getUserId());
+        if (userCredential.isEmpty()){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .responseCode(AccountUtils.USER_NOT_EXIST_CODE)
+                            .responseMessage(AccountUtils.USER_NOT_EXIST_MESSAGE)
+                    .build());
+        }
+
+
+
+        String savedFullName = userCredential.get().getFirstName() + userCredential.get().getLastName() + userCredential.get().getOtherName();
+        char[] savedFullNameArray = savedFullName.toCharArray();
+        Arrays.sort(savedFullNameArray);
+        String fullNameOnGovernmentId;
+        userCredential.get().setIdentityNumber(identity.getIdentityNumber());
+
+        if (identity.getIdentityType().equalsIgnoreCase(IdentityType.NIN.toString())){
+            userCredential.get().setIdentityType(IdentityType.NIN);
+
+            NinLookupResponse response = dojahSmsService.ninLookup(NinRequest.builder()
+                            .nin(identity.getIdentityNumber())
+                    .build());
+            fullNameOnGovernmentId = response.getEntity().getFirstname() + response.getEntity().getSurname() + response.getEntity().getMiddlename();
+            char[] fullNameOnGovtIdArray = fullNameOnGovernmentId.toCharArray();
+            Arrays.sort(fullNameOnGovtIdArray);
+            if (Arrays.equals(savedFullNameArray, fullNameOnGovtIdArray)){
+                userCredential.get().setIdentityStatus("VERIFIED");
+                userCredentialRepository.save(userCredential.get());
+                return ResponseEntity.ok(CustomResponse.builder()
+                        .responseCode(AccountUtils.IDENTITY_VERIFY_SUCCESS_CODE)
+                        .responseMessage(AccountUtils.IDENTITY_VERIFY_SUCCESS_MESSAGE)
+                        .responseBody(modelMapper.map(userCredential, UserCredentialResponse.class))
+                        .build());
+            }
+
+
+
+        }
+
+        if (identity.getIdentityType().equalsIgnoreCase(IdentityType.PVC.toString())){
+            PvcResponse response = dojahSmsService.pvcLookup(PvcRequest.builder()
+                            .vin(IdentityType.PVC.toString())
+                    .build());
+            userCredential.get().setIdentityType(IdentityType.PVC);
+            fullNameOnGovernmentId = response.getEntity().getFullName();
+            fullNameOnGovernmentId = fullNameOnGovernmentId.replaceAll(" ", "");
+            char[] fullNameOnGovtIdArray = fullNameOnGovernmentId.toCharArray();
+            Arrays.sort(fullNameOnGovtIdArray);
+            if (Arrays.equals(savedFullNameArray, fullNameOnGovtIdArray)){
+                userCredential.get().setIdentityStatus("VERIFIED");
+                userCredentialRepository.save(userCredential.get());
+                return ResponseEntity.ok(CustomResponse.builder()
+                                .responseCode(AccountUtils.IDENTITY_VERIFY_SUCCESS_CODE)
+                                .responseMessage(AccountUtils.IDENTITY_VERIFY_SUCCESS_MESSAGE)
+                                .responseBody(modelMapper.map(userCredential, UserCredentialResponse.class))
+                        .build());
+            }
+        }
+
+        if (identity.getIdentityType().equalsIgnoreCase(IdentityType.DRIVER_LICENSE.toString())){
+            DriverLicenseResponse response = dojahSmsService.dlLookup(DriverLicenseRequest.builder()
+                            .licenseNumber(identity.getIdentityNumber())
+                    .build());
+            userCredential.get().setIdentityType(IdentityType.DRIVER_LICENSE);
+            fullNameOnGovernmentId = response.getEntity().getFirstName() + response.getEntity().getLastName() + response.getEntity().getMiddleName();
+            char[] fullNameOnGovtIdArray = fullNameOnGovernmentId.toCharArray();
+            Arrays.sort(fullNameOnGovtIdArray);
+            if (Arrays.equals(savedFullNameArray, fullNameOnGovtIdArray)){
+                userCredential.get().setIdentityStatus("VERIFIED");
+                userCredentialRepository.save(userCredential.get());
+                return ResponseEntity.ok(CustomResponse.builder()
+                        .responseCode(AccountUtils.IDENTITY_VERIFY_SUCCESS_CODE)
+                        .responseMessage(AccountUtils.IDENTITY_VERIFY_SUCCESS_MESSAGE)
+                        .responseBody(modelMapper.map(userCredential, UserCredentialResponse.class))
+                        .build());
+            }
+
+
+        }
+
+        if (identity.getIdentityType().equalsIgnoreCase(IdentityType.INTERNATIONAL_PASSPORT.toString())){
+            IntPassportResponse response = dojahSmsService.intPassportLookup(IntPassportRequest.builder()
+                    .surname(userCredential.get().getLastName())
+                    .passportNumber(identity.getIdentityNumber())
+                    .build());
+            userCredential.get().setIdentityType(IdentityType.INTERNATIONAL_PASSPORT);
+            fullNameOnGovernmentId = (response.getEntity().getFirstName() + response.getEntity().getSurname() + response.getEntity().getOtherNames()).trim();
+            char[] fullNameOnGovtIdArray = fullNameOnGovernmentId.toCharArray();
+            Arrays.sort(fullNameOnGovtIdArray);
+            if (Arrays.equals(savedFullNameArray, fullNameOnGovtIdArray)){
+                userCredential.get().setIdentityStatus("VERIFIED");
+                userCredentialRepository.save(userCredential.get());
+                return ResponseEntity.ok(CustomResponse.builder()
+                        .responseCode(AccountUtils.IDENTITY_VERIFY_SUCCESS_CODE)
+                        .responseMessage(AccountUtils.IDENTITY_VERIFY_SUCCESS_MESSAGE)
+                        .responseBody(modelMapper.map(userCredential, UserCredentialResponse.class))
+                        .build());
+            }
+
+        }
+        userCredential.get().setIdentityStatus("UNVERIFIED");
+        userCredentialRepository.save(userCredential.get());
+        return ResponseEntity.badRequest().body(CustomResponse.builder()
+                .responseCode(AccountUtils.INVALID_ID_CODE)
+                .responseMessage(AccountUtils.INVALID_ID_MESSAGE)
+                        .responseBody(modelMapper.map(userCredential, UserCredentialResponse.class))
+                .build());
+    }
+
+    public ResponseEntity<CustomResponse> verifyBvn(BvnVerificationDto bvnVerificationDto){
+        UserCredential userCredential = userCredentialRepository.findById(bvnVerificationDto.getUserId()).get();
+        boolean existsById = userCredentialRepository.existsById(bvnVerificationDto.getUserId());
+        if (existsById){
+            DojahBvnResponse bvnResponse = dojahSmsService.basicBvnLookUp(BvnRequest.builder()
+                    .bvn(bvnVerificationDto.getBvn())
+                    .build());
+            String bvnFullName = bvnResponse.getEntity().getFirstName() + bvnResponse.getEntity().getLastName() + bvnResponse.getEntity().getMiddleName();
+            String requestName = userCredential.getFirstName() + userCredential.getLastName() + userCredential.getOtherName();
+            char[] bvnFullNameArray = bvnFullName.toCharArray();
+            char[] requestNameArray = requestName.toCharArray();
+            Arrays.sort(bvnFullNameArray);
+            Arrays.sort(requestNameArray);
+
+            if (Arrays.equals(bvnFullNameArray, requestNameArray)){
+                userCredential.setBvnVerifyStatus("VERIFIED");
+                userCredential = userCredentialRepository.save(userCredential);
+                return ResponseEntity.ok(CustomResponse.builder()
+                                .responseCode(AccountUtils.BVN_VALID_CODE)
+                                .responseBody(modelMapper.map(userCredential, UserCredentialResponse.class))
+                                .responseMessage(AccountUtils.BVN_VALID_MESSAGE)
+                        .build());
+            }
+        }
+        userCredential.setBvnVerifyStatus("UNVERIFIED");
+        userCredential = userCredentialRepository.save(userCredential);
+        return ResponseEntity.badRequest().body(CustomResponse.builder()
+                .responseCode(AccountUtils.BVN_INVALID_CODE)
+                .responseMessage(AccountUtils.BVN_INVALID_MESSAGE)
+                .responseBody(modelMapper.map(userCredential, UserCredentialResponse.class))
+                .build());
+    }
+
+    public ResponseEntity<CustomResponse> verifyEmail(EmailVerificationDto verificationDto){
+        boolean existsByEmail = userCredentialRepository.existsByEmail(verificationDto.getEmail());
+        UserCredential userCredential = userCredentialRepository.findByEmail(verificationDto.getEmail()).orElseThrow(RuntimeException::new);
+        if (existsByEmail){
+            OtpResponse response = dojahSmsService.sendOtp(OtpRequest.builder()
+                            .priority(true)
+                            .destination(userCredential.getPhoneNumber())
+                            .length(4)
+                            .expiry(4)
+                            .email(verificationDto.getEmail())
+                            .channel("email")
+                            .senderId("ZLF")
+                    .build());
+
+            log.info("otp response\n {}", response);
+
+            return ResponseEntity.ok(CustomResponse.builder()
+                            .responseCode(AccountUtils.OTP_SENT_CODE)
+                            .responseMessage(AccountUtils.OTP_SENT_MESSAGE)
+                            .responseBody(response)
+                    .build());
+        }
+        return ResponseEntity.badRequest().body(CustomResponse.builder()
+                        .responseCode(AccountUtils.USER_NOT_EXIST_CODE)
+                        .responseMessage(AccountUtils.USER_NOT_EXIST_MESSAGE)
+                .build());
+    }
+
+    public ResponseEntity<CustomResponse> validateEmail(EmailValidationDto emailValidationDto){
+        UserCredential userCredential = userCredentialRepository.findByEmail(emailValidationDto.getEmail()).orElseThrow(RuntimeException::new);
+        ValidateOtpResponse response = dojahSmsService.validateOtp(ValidateOtpRequest.builder()
+                        .code(emailValidationDto.getCode())
+                        .reference_id(emailValidationDto.getReferenceId())
+                .build());
+
+        if (response.getEntity().getValid()){
+            userCredential.setEmailVerifyStatus("VERIFIED");
+        } else{
+            userCredential.setEmailVerifyStatus("UNVERIFIED");
+        }
+        UserCredential updatedUserCredential = userCredentialRepository.save(userCredential);
+
+        return ResponseEntity.ok(CustomResponse.builder()
+                        .responseCode(AccountUtils.OTP_VALIDATED_CODE)
+                        .responseMessage(AccountUtils.OPT_VALIDATED_MESSAGE)
+                        .responseBody(modelMapper.map(updatedUserCredential, UserCredentialResponse.class))
+                .build());
+
     }
 
 

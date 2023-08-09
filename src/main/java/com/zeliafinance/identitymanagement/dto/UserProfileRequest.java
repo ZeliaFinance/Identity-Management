@@ -17,7 +17,6 @@ public class UserProfileRequest {
     private String lastName;
     private String otherName;
     private LocalDate dateOfBirth;
-    private String password;
     private String phoneNumber;
     private String mobileNumber;
     private String whatsAppNumber;

@@ -23,8 +23,10 @@ public class UserCredentialResponse {
     private String whatsAppNumber;
     private String gender;
     private String bvn;
+    private String bvnVerifyStatus;
     private String identityType;
     private String identityNumber;
+    private String identityStatus;
     private String pin;
     private double accountBalance;
     private String role;

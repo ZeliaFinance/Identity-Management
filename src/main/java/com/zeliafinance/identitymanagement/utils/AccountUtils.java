@@ -5,6 +5,8 @@ import org.springframework.stereotype.Component;
 
 import java.security.SecureRandom;
 import java.util.Random;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Component
 public class AccountUtils {
@@ -44,6 +46,18 @@ public class AccountUtils {
     public static final String PASSWORD_TOKEN_EXPIRED_MESSAGE = "Password Reset Token is expired";
     public static final String PASSWORD_RESET_SUCCESS_CODE = "014";
     public static final String PASSWORD_RESET_SUCCESS_MESSAGE = "Password Reset Successfully!";
+    public static final String PASSWORD_INVALID_CODE = "015";
+    public static final String PASSWORD_INVALID_MESSAGE = "Your password is Invalid. Ensure Password is not less than 8 characters and not more than 20 characters. Also ensure password contains letters, numbers and at least one symbol";
+    public static final String IDENTITY_VERIFY_SUCCESS_CODE = "016";
+    public static final String IDENTITY_VERIFY_SUCCESS_MESSAGE = "NIN has been successfully verified";
+    public static final String INVALID_ID_CODE = "017";
+    public static final String INVALID_ID_MESSAGE = "Invalid ID type";
+    public static final String BVN_VALID_CODE = "018";
+    public static final String BVN_VALID_MESSAGE = "Bvn has been successfully validated";
+    public static final String BVN_INVALID_CODE = "019";
+    public static final String BVN_INVALID_MESSAGE = "Invalid Bvn";
+    public static final String OTP_VALIDATED_CODE = "020";
+    public static final String OPT_VALIDATED_MESSAGE = "Otp has been successfully validated";
 
     @Bean
     public String generateAccountNumber(){
@@ -79,6 +93,20 @@ public class AccountUtils {
             count++;
         }
         return password.toString();
+    }
+
+    public Boolean verifyPasswordLength(String password){
+        return password.length() >= 7;
+    }
+
+    public Boolean isPasswordValid(String password){
+        String regex = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=])(?=\\S+$).{8,20}$";
+        Pattern pattern = Pattern.compile(regex);
+        if (password == null){
+            return false;
+        }
+        Matcher matcher = pattern.matcher(password);
+        return matcher.matches();
     }
 
 }
