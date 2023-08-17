@@ -15,8 +15,11 @@ public class HomeController {
     @GetMapping
     public SampleJsonObject serveHomePage(){
         SampleJsonObject jsonObject = new SampleJsonObject();
-        jsonObject.setServerStatus("Running");
-        jsonObject.setSampleProperty("Some Value");
+        jsonObject.setError(false);
+        jsonObject.setErrors(null);
+        jsonObject.setMessage("Server is healthy");
+        jsonObject.setData(null);
+        jsonObject.setStatusCode(200);
         return jsonObject;
     }
 }

@@ -109,4 +109,8 @@ public class AccountUtils {
         return matcher.matches();
     }
 
+    public Boolean isPinValid(String pin, int yearOfBirth){
+        return pin.length() == 4 && !pin.equals("1234") && !pin.equals("0000") && !pin.equals(String.valueOf(yearOfBirth));
+    }
+
 }
