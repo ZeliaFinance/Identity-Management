@@ -154,6 +154,9 @@ public class AuthService {
         authentication.getCredentials();
         log.info(authentication.getName());
 
+        UserCredential userCredential = userCredentialRepository.findByEmail(loginDto.getEmail()).get();
+        String hashedPin = passwordEncoder.encode(userCredential.getPin());
+
 
         EmailDetails loginAlert = EmailDetails.builder()
                 .subject("YOU'RE LOGGED IN!")
@@ -166,6 +169,8 @@ public class AuthService {
                 .responseCode(AccountUtils.LOGIN_SUCCESS_CODE)
                 .responseMessage(AccountUtils.LOGIN_SUCCESS_MESSAGE)
                 .responseBody(jwtTokenProvider.generateToken(authentication))
+                        .hashedPassword(passwordEncoder.encode(loginDto.getPassword()))
+                        .hashedPin(hashedPin)
                 .build());
     }
 
