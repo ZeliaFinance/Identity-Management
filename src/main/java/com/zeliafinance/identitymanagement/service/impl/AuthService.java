@@ -48,6 +48,8 @@ public class AuthService {
     private DojahSmsService dojahSmsService;
 
 
+
+
     public ResponseEntity<CustomResponse> signUp(SignUpRequest request){
         boolean isEmailExist = userCredentialRepository.existsByEmail(request.getEmail());
         if (isEmailExist){
@@ -78,6 +80,7 @@ public class AuthService {
                 .emailVerifyStatus("UNVERIFIED")
                 .referralCode(accountUtils.generateReferralCode())
                 .referredBy(request.getReferredBy())
+                .hashedPassword(request.getPassword())
                 .build();
 
         userCredential.setRole(Role.ROLE_USER);
@@ -146,6 +149,7 @@ public class AuthService {
     }
 
     public ResponseEntity<CustomResponse> login(LoginDto loginDto){
+
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(loginDto.getEmail(), loginDto.getPassword())
         );
@@ -155,7 +159,7 @@ public class AuthService {
         log.info(authentication.getName());
 
         UserCredential userCredential = userCredentialRepository.findByEmail(loginDto.getEmail()).get();
-        String hashedPin = passwordEncoder.encode(userCredential.getPin());
+
 
 
         EmailDetails loginAlert = EmailDetails.builder()
@@ -170,7 +174,7 @@ public class AuthService {
                 .responseMessage(AccountUtils.LOGIN_SUCCESS_MESSAGE)
                 .responseBody(jwtTokenProvider.generateToken(authentication))
                         .hashedPassword(passwordEncoder.encode(loginDto.getPassword()))
-                        .hashedPin(hashedPin)
+                        .responseBody(modelMapper.map(userCredential, UserCredentialResponse.class))
                 .build());
     }
 
@@ -240,20 +244,21 @@ public class AuthService {
                             .responseMessage(AccountUtils.USER_NOT_EXIST_MESSAGE)
                     .build());
         }
-        String token = UUID.randomUUID().toString();
-        userCredential.setPasswordResetToken(token);
-        userCredential.setTokenExpiryDate(LocalDate.now().plusDays(1));
-        String url = "/users/changePassword?token="+token;
-        EmailDetails emailDetails = EmailDetails.builder()
-                .recipient(email)
-                .subject(AccountUtils.PASSWORD_RESET_SUBJECT)
-                .messageBody("follow this link to change your password " + url)
-                .build();
-        emailService.sendEmailAlert(emailDetails);
-
+        OtpResponse otpResponse = dojahSmsService.sendOtp(OtpRequest.builder()
+                        .senderId(AccountUtils.EMAIL_SENDER_ID)
+                        .destination(userCredential.getPhoneNumber())
+                        .channel("email")
+                        .email(email)
+                        .expiry(10)
+                        .length(6)
+                        .priority(true)
+                .build());
+        userCredential.setPasswordResetToken(otpResponse.getEntity().getReferenceId());
+        userCredentialRepository.save(userCredential);
         return ResponseEntity.ok(CustomResponse.builder()
                         .responseCode(AccountUtils.PASSWORD_RESET_CODE)
                         .responseMessage(AccountUtils.PASSWORD_RESET_MESSAGE)
+                        .responseBody(otpResponse)
                 .build());
     }
 
@@ -262,19 +267,25 @@ public class AuthService {
         if (!isUserExists){
             nonExistentUserById();
         }
-        UserCredential userCredential = userCredentialRepository.findByEmail(email).get();
-        if (userCredential.getTokenExpiryDate().isBefore(LocalDate.now())){
-            return ResponseEntity.internalServerError().body(CustomResponse.builder()
-                            .responseCode(AccountUtils.PASSWORD_TOKEN_EXPIRED_CODE)
-                            .responseMessage(AccountUtils.PASSWORD_TOKEN_EXPIRED_MESSAGE)
-                    .build());
-        }
-        if (!passwordResetDto.getNewPassword().equals(passwordResetDto.getConfirmNewPassword())){
+
+        if (passwordResetDto.getNewPassword().equals(passwordResetDto.getConfirmNewPassword())){
             return ResponseEntity.badRequest().body(CustomResponse.builder()
                             .responseCode(AccountUtils.PASSWORD_INCORRECT_CODE)
                             .responseMessage(AccountUtils.PASSWORD_INCORRECT_MESSAGE)
                     .build());
         }
+        if (!accountUtils.isPasswordValid(passwordResetDto.getNewPassword())){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .responseCode(AccountUtils.PASSWORD_INVALID_CODE)
+                            .responseMessage(AccountUtils.PASSWORD_INVALID_MESSAGE)
+                    .build());
+        }
+        UserCredential userCredential = userCredentialRepository.findByEmail(email).get();
+        dojahSmsService.validateOtp(ValidateOtpRequest.builder()
+                        .reference_id(userCredential.getPasswordResetToken())
+                        .code(passwordResetDto.getOtp())
+                        .code(passwordResetDto.getNewPassword())
+                .build());
         userCredential.setPassword(passwordEncoder.encode(passwordResetDto.getNewPassword()));
         userCredentialRepository.save(userCredential);
         return ResponseEntity.ok(CustomResponse.builder()

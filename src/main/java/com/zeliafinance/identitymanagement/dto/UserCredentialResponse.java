@@ -33,4 +33,5 @@ public class UserCredentialResponse {
     private String emailVerifyStatus;
     private String referralCode;
     private String referredBy;
+    private String hashedPassword;
 }

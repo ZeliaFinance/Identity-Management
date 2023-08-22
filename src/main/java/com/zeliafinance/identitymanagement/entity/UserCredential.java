@@ -57,6 +57,7 @@ public class UserCredential implements UserDetails {
     private Role role;
     private String referralCode;
     private String referredBy;
+    private String hashedPassword;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

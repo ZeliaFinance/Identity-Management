@@ -1,14 +1,19 @@
 package com.zeliafinance.identitymanagement.utils;
 
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
 import java.security.SecureRandom;
+import java.util.Arrays;
+import java.util.Base64;
 import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Component
+@Slf4j
 public class AccountUtils {
     public static final String BVN_EXISTS_CODE = "001";
     public static final String BVN_EXISTS_MESSAGE = "User with this bvn already exists";
@@ -58,6 +63,8 @@ public class AccountUtils {
     public static final String BVN_INVALID_MESSAGE = "Invalid Bvn";
     public static final String OTP_VALIDATED_CODE = "020";
     public static final String OPT_VALIDATED_MESSAGE = "Otp has been successfully validated";
+
+    public static final String EMAIL_SENDER_ID = "majibade5@gmail.com";
 
     @Bean
     public String generateAccountNumber(){
@@ -111,6 +118,15 @@ public class AccountUtils {
 
     public Boolean isPinValid(String pin, int yearOfBirth){
         return pin.length() == 4 && !pin.equals("1234") && !pin.equals("0000") && !pin.equals(String.valueOf(yearOfBirth));
+    }
+
+    public String encodePassword(String password){
+        log.info(Base64.getEncoder().encodeToString(password.getBytes()));
+        return Base64.getEncoder().encodeToString(password.getBytes());
+    }
+
+    public String decodePassword(String encodedPassword){
+        return Arrays.toString(Base64.getDecoder().decode(encodedPassword));
     }
 
 }
