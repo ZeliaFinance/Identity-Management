@@ -67,6 +67,8 @@ public class AccountUtils {
     public static final String OPT_VALIDATED_MESSAGE = "Otp has been successfully validated";
     public static final String BIOMETRIC_INFO_SAVED_CODE = "021";
     public static final String BIOMETRIC_INFO_SAVED_MESSAGE = "Biometric info has been saved";
+    public static final String UNDERAGE_CODE = "022";
+    public static final String UNDERAGE_MESSAGE = "You must be at least 18 years old";
 
     public static final String EMAIL_SENDER_ID = "majibade5@gmail.com";
 
@@ -111,7 +113,7 @@ public class AccountUtils {
     }
 
     public Boolean isPasswordValid(String password){
-        String regex = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=])(?=\\S+$).{8,20}$";
+        String regex = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=])(?=\\S+$).{6,20}$";
         Pattern pattern = Pattern.compile(regex);
         if (password == null){
             return false;

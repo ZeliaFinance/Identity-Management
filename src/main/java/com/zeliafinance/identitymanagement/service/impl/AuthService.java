@@ -29,6 +29,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -126,6 +127,15 @@ public class AuthService {
     public ResponseEntity<CustomResponse> updateUserProfile(Long userId, UserProfileRequest request){
         boolean isUserExist = userCredentialRepository.existsById(userId);
         UserCredential userCredential = userCredentialRepository.findById(userId).orElseThrow();
+        LocalDate currentDate = LocalDate.now();
+        long age = ChronoUnit.YEARS.between(currentDate, request.getDateOfBirth());
+        if (age < 18){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .responseCode(AccountUtils.UNDERAGE_CODE)
+                            .responseMessage(AccountUtils.UNDERAGE_MESSAGE)
+                    .build());
+        }
+
         if (isUserExist){
             userCredential.setFirstName(request.getFirstName());
             userCredential.setLastName(request.getLastName());
@@ -140,7 +150,6 @@ public class AuthService {
             userCredential.setIdentityNumber(request.getIdentityNumber());
             userCredential.setPin(request.getPin());
             userCredential.setAccountStatus("PENDING");
-
 
             userCredential.setDeviceIp(request.getDeviceIp());
             userCredential.setLiveLocation(request.getLiveLocation());
@@ -310,6 +319,7 @@ public class AuthService {
                         .code(passwordResetDto.getNewPassword())
                 .build());
         userCredential.setPassword(passwordEncoder.encode(passwordResetDto.getNewPassword()));
+        userCredential.setHashedPassword(accountUtils.encode(passwordResetDto.getNewPassword(), 3));
         userCredentialRepository.save(userCredential);
         return ResponseEntity.ok(CustomResponse.builder()
                         .responseCode(AccountUtils.PASSWORD_RESET_SUCCESS_CODE)
