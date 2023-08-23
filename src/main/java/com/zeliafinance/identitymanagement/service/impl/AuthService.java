@@ -149,19 +149,23 @@ public class AuthService {
     }
 
     public ResponseEntity<CustomResponse> login(LoginDto loginDto){
+        Authentication authentication;
+        UserCredential userCredential = userCredentialRepository.findByEmail(loginDto.getEmail()).get();
+        if (loginDto.getAuthMethod().equalsIgnoreCase("biometric")){
+            log.info("using biometric login");
+            authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(loginDto.getEmail(), accountUtils.decode(userCredential.getHashedPassword(), 3))
+            );
+        } else {
+            authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(loginDto.getEmail(), loginDto.getPassword())
+            );
+        }
 
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(loginDto.getEmail(), loginDto.getPassword())
-        );
         SecurityContextHolder.getContext().setAuthentication(authentication);
         authentication.getName();
         authentication.getCredentials();
         log.info(authentication.getName());
-
-        UserCredential userCredential = userCredentialRepository.findByEmail(loginDto.getEmail()).get();
-
-
-
         EmailDetails loginAlert = EmailDetails.builder()
                 .subject("YOU'RE LOGGED IN!")
                 .recipient(loginDto.getEmail())
@@ -172,9 +176,8 @@ public class AuthService {
         return ResponseEntity.ok(CustomResponse.builder()
                 .responseCode(AccountUtils.LOGIN_SUCCESS_CODE)
                 .responseMessage(AccountUtils.LOGIN_SUCCESS_MESSAGE)
-                .responseBody(jwtTokenProvider.generateToken(authentication))
-                        .hashedPassword(passwordEncoder.encode(loginDto.getPassword()))
-                        .responseBody(modelMapper.map(userCredential, UserCredentialResponse.class))
+                .token(jwtTokenProvider.generateToken(authentication))
+                .responseBody(modelMapper.map(userCredential, UserCredentialResponse.class))
                 .build());
     }
 
@@ -268,7 +271,7 @@ public class AuthService {
             nonExistentUserById();
         }
 
-        if (passwordResetDto.getNewPassword().equals(passwordResetDto.getConfirmNewPassword())){
+        if (!passwordResetDto.getNewPassword().equals(passwordResetDto.getConfirmNewPassword())){
             return ResponseEntity.badRequest().body(CustomResponse.builder()
                             .responseCode(AccountUtils.PASSWORD_INCORRECT_CODE)
                             .responseMessage(AccountUtils.PASSWORD_INCORRECT_MESSAGE)
@@ -514,4 +517,26 @@ public class AuthService {
                     .build();
 
     }
+
+    public ResponseEntity<CustomResponse> saveBiometricInfo(LoginDto loginDto){
+        boolean isEmailExists = userCredentialRepository.existsByEmail(loginDto.getEmail());
+        if (!isEmailExists){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .responseCode(AccountUtils.USER_NOT_EXIST_CODE)
+                            .responseMessage(AccountUtils.USER_NOT_EXIST_MESSAGE)
+                    .build());
+        }
+
+        UserCredential userCredential = userCredentialRepository.findByEmail(loginDto.getEmail()).get();
+
+        userCredential.setHashedPassword(accountUtils.encode(loginDto.getPassword(), 3));
+        userCredentialRepository.save(userCredential);
+        return ResponseEntity.ok(CustomResponse.builder()
+                        .responseCode(AccountUtils.BIOMETRIC_INFO_SAVED_CODE)
+                        .responseMessage(AccountUtils.BIOMETRIC_INFO_SAVED_MESSAGE)
+                        .responseBody(modelMapper.map(userCredential, UserCredentialResponse.class))
+                .build());
+
+    }
+
 }

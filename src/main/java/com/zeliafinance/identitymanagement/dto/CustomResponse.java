@@ -16,6 +16,7 @@ public class CustomResponse{
     private String responseCode;
     private String responseMessage;
     private Object responseBody;
+    private String token;
     private String hashedPassword;
     private String hashedPin;
     private Info info;

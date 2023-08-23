@@ -5,6 +5,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Base64;
@@ -63,6 +65,8 @@ public class AccountUtils {
     public static final String BVN_INVALID_MESSAGE = "Invalid Bvn";
     public static final String OTP_VALIDATED_CODE = "020";
     public static final String OPT_VALIDATED_MESSAGE = "Otp has been successfully validated";
+    public static final String BIOMETRIC_INFO_SAVED_CODE = "021";
+    public static final String BIOMETRIC_INFO_SAVED_MESSAGE = "Biometric info has been saved";
 
     public static final String EMAIL_SENDER_ID = "majibade5@gmail.com";
 
@@ -120,10 +124,30 @@ public class AccountUtils {
         return pin.length() == 4 && !pin.equals("1234") && !pin.equals("0000") && !pin.equals(String.valueOf(yearOfBirth));
     }
 
-    public String encodePassword(String password){
-        log.info(Base64.getEncoder().encodeToString(password.getBytes()));
-        return Base64.getEncoder().encodeToString(password.getBytes());
+    public String encode(String text, int shift) {
+        StringBuilder result = new StringBuilder();
+
+        for (char ch : text.toCharArray()) {
+            if (Character.isLetter(ch)) {
+                char base = Character.isLowerCase(ch) ? 'a' : 'A';
+                result.append((char) ((ch - base + shift) % 26 + base));
+            } else {
+                result.append(ch);
+            }
+        }
+
+        return result.toString();
     }
+
+    // Function to decode text using Caesar Cipher
+    public String decode(String text, int shift) {
+        return encode(text, 26 - shift);
+    }
+
+    public static void main(String[] args) {
+
+    }
+
 
     public String decodePassword(String encodedPassword){
         return Arrays.toString(Base64.getDecoder().decode(encodedPassword));

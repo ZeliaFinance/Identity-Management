@@ -14,8 +14,8 @@ import lombok.NoArgsConstructor;
 public class LoginDto {
     @Email(message = "Enter a valid email")
     private String email;
-    @Nullable
     private String password;
+    private String authMethod;
     @Nullable
     private String hashedPassword;
 }

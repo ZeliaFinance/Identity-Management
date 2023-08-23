@@ -91,4 +91,9 @@ public class UserCredentialsController {
         return service.validateEmail(emailValidationDto);
     }
 
+    @PostMapping("/saveBiometricInfo")
+    public ResponseEntity<CustomResponse> biometricInfo(@RequestBody LoginDto loginDto){
+        return service.saveBiometricInfo(loginDto);
+    }
+
 }
