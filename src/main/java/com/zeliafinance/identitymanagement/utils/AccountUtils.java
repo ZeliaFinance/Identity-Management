@@ -18,7 +18,7 @@ public class AccountUtils {
     public static final String BVN_EXISTS_CODE = "001";
     public static final String BVN_EXISTS_MESSAGE = "User with this bvn already exists";
     public static final String EMAIL_EXISTS_CODE = "002";
-    public static final String EMAIL_EXISTS_MESSAGE = "User witht this email address exists";
+    public static final String EMAIL_EXISTS_MESSAGE = "User with this email address exists";
     public static final String IDENTITY_EXISTS_CODE = "003";
     public static final String IDENTITY_EXISTS_MESSAGE = "User with this identity already exists";
     public static final int LENGTH_OF_ACCOUNT_NUMBER = 10;

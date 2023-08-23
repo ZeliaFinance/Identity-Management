@@ -246,7 +246,7 @@ public class AuthService {
         }
         OtpResponse otpResponse = dojahSmsService.sendOtp(OtpRequest.builder()
                         .senderId(AccountUtils.EMAIL_SENDER_ID)
-                        .destination(userCredential.getPhoneNumber())
+                        .destination("08139148963")
                         .channel("email")
                         .email(email)
                         .expiry(10)
