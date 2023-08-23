@@ -16,4 +16,5 @@ public class SignUpRequest {
     private String password;
     private String confirmPassword;
     private String referredBy;
+    private String otp;
 }

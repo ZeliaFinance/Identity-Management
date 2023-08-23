@@ -73,11 +73,31 @@ public class AuthService {
                     .build());
         }
 
+        OtpResponse otpResponse = dojahSmsService.sendOtp(OtpRequest.builder()
+                        .destination("08139148963")
+                        .email(request.getEmail())
+                        .priority(true)
+                        .length(4)
+                        .expiry(10)
+                        .channel("email")
+                .build());
+
+        ValidateOtpResponse validateOtpResponse = dojahSmsService.validateOtp(ValidateOtpRequest.builder()
+                        .code(request.getOtp())
+                        .reference_id(otpResponse.getEntity().getReferenceId())
+                .build());
+        if(!validateOtpResponse.getEntity().getValid()){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .responseCode(AccountUtils.INVALID_OTP_CODE)
+                            .responseMessage(AccountUtils.INVALID_OTP_MESSAGE)
+                    .build());
+        }
+
         UserCredential userCredential = UserCredential.builder()
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .walletId(accountUtils.generateAccountNumber())
-                .emailVerifyStatus("UNVERIFIED")
+                .emailVerifyStatus("VERIFIED")
                 .referralCode(accountUtils.generateReferralCode())
                 .referredBy(request.getReferredBy())
                 .hashedPassword(request.getPassword())
@@ -149,14 +169,14 @@ public class AuthService {
     }
 
     public ResponseEntity<CustomResponse> login(LoginDto loginDto){
-        Authentication authentication;
+        Authentication authentication=null;
         UserCredential userCredential = userCredentialRepository.findByEmail(loginDto.getEmail()).get();
         if (loginDto.getAuthMethod().equalsIgnoreCase("biometric")){
             log.info("using biometric login");
             authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(loginDto.getEmail(), accountUtils.decode(userCredential.getHashedPassword(), 3))
             );
-        } else {
+        } else if(loginDto.getAuthMethod().equalsIgnoreCase("nonBiometric")){
             authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(loginDto.getEmail(), loginDto.getPassword())
             );
