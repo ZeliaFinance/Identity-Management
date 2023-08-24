@@ -109,6 +109,7 @@ public class AuthService {
                 .build();
         emailService.sendEmailAlert(emailDetails);
 
+
         Object response = modelMapper.map(savedUser, UserCredentialResponse.class);
         return ResponseEntity.status(HttpStatus.CREATED).body(CustomResponse.builder()
                 .responseCode(AccountUtils.ACCOUNT_CREATION_SUCCESS_CODE)
@@ -197,7 +198,10 @@ public class AuthService {
                 .recipient(loginDto.getEmail())
                 .messageBody("You logged into your account!!!")
                 .build();
-        emailService.sendEmailAlert(loginAlert);
+        if (LocalDateTime.now().isAfter(userCredential.getOtpExpiryDate()) || userCredential.getOtp().equals("")){
+                emailService.sendEmailAlert(loginAlert);
+        }
+
 
         return ResponseEntity.ok(CustomResponse.builder()
                 .responseCode(AccountUtils.LOGIN_SUCCESS_CODE)
@@ -528,7 +532,7 @@ public class AuthService {
 
         return ResponseEntity.ok(CustomResponse.builder()
                         .responseCode(AccountUtils.OTP_VALIDATED_CODE)
-                        .responseMessage(AccountUtils.OPT_VALIDATED_MESSAGE)
+                        .responseMessage(AccountUtils.OTP_VALIDATED_MESSAGE)
                         .responseBody(modelMapper.map(updatedUserCredential, UserCredentialResponse.class))
                 .build());
 
@@ -612,6 +616,7 @@ public class AuthService {
                         .otpStatus(true)
                         .responseBody(modelMapper.map(userCredential, UserCredentialResponse.class))
                 .build());
+
     }
 
 }

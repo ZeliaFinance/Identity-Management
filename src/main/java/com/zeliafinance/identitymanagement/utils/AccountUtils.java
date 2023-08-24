@@ -64,15 +64,13 @@ public class AccountUtils {
     public static final String BVN_INVALID_CODE = "019";
     public static final String BVN_INVALID_MESSAGE = "Invalid Bvn";
     public static final String OTP_VALIDATED_CODE = "020";
-    public static final String OPT_VALIDATED_MESSAGE = "Otp has been successfully validated";
+    public static final String OTP_VALIDATED_MESSAGE = "Otp has been successfully validated";
     public static final String BIOMETRIC_INFO_SAVED_CODE = "021";
     public static final String BIOMETRIC_INFO_SAVED_MESSAGE = "Biometric info has been saved";
     public static final String UNDERAGE_CODE = "022";
     public static final String UNDERAGE_MESSAGE = "You must be at least 18 years old";
     public static final String OTP_EXPIRED_CODE = "023";
     public static final String OTP_EXPIRED_MESSAGE = "Otp is expired! Kindly resend another otp";
-    public static final String OTP_VALIDATED_MESSAGE = "Otp is successfully validated";
-
     public static final String EMAIL_SENDER_ID = "majibade5@gmail.com";
 
     @Bean

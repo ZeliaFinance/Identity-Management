@@ -11,6 +11,5 @@ import lombok.NoArgsConstructor;
 @Builder
 public class ValidateOtpDto {
     private String otp;
-    private String referenceId;
     private String email;
 }
