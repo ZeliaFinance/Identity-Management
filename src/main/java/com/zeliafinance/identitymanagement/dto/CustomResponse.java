@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Data
 @Builder
 @AllArgsConstructor
@@ -20,4 +22,8 @@ public class CustomResponse{
     private String hashedPassword;
     private String hashedPin;
     private Info info;
+    private Boolean otpStatus;
+    private String referenceId;
+    private LocalDateTime expiry;
+
 }

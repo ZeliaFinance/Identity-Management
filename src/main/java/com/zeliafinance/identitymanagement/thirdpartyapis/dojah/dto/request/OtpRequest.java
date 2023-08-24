@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class OtpDto {
+public class OtpRequest {
     @JsonProperty("sender_id")
     private String senderId;
     @Nullable

@@ -1,5 +1,6 @@
 package com.zeliafinance.identitymanagement.thirdpartyapis.dojah.controller;
 
+import com.zeliafinance.identitymanagement.dto.OtpDto;
 import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.dto.request.*;
 import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.dto.response.*;
 import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.service.DojahSmsService;
@@ -53,10 +54,7 @@ public class DojahSmsController {
         return ResponseEntity.ok(service.vninLookup(request));
     }
 
-    @PostMapping("/sendOtp")
-    public ResponseEntity<OtpResponse> sendOtp(@RequestBody OtpDto request){
-        return ResponseEntity.ok(service.sendOtp(request));
-    }
+
 
     @PostMapping("/dlLookup")
     public ResponseEntity<DriverLicenseResponse> dlLookup(@RequestBody DriverLicenseRequest request){

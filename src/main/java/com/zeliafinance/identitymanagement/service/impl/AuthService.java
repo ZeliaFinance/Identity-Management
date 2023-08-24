@@ -2,7 +2,6 @@ package com.zeliafinance.identitymanagement.service.impl;
 
 import com.zeliafinance.identitymanagement.config.JwtTokenProvider;
 import com.zeliafinance.identitymanagement.dto.*;
-import com.zeliafinance.identitymanagement.dto.OtpRequest;
 import com.zeliafinance.identitymanagement.entity.IdentityType;
 import com.zeliafinance.identitymanagement.entity.Role;
 import com.zeliafinance.identitymanagement.entity.UserCredential;
@@ -12,6 +11,7 @@ import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.dto.request.*;
 import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.dto.response.*;
 import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.service.DojahSmsService;
 import com.zeliafinance.identitymanagement.utils.AccountUtils;
+
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -77,34 +77,26 @@ public class AuthService {
                     .build());
         }
 
-        OtpResponse otpResponse = dojahSmsService.sendOtp(OtpRequest.builder()
-                        .destination("08139148963")
-                        .email(request.getEmail())
-                        .priority(true)
-                        .length(4)
-                        .expiry(10)
-                        .channel("email")
-                .build());
+        CustomResponse otpResponse = sendOtp(OtpDto.builder()
+                .email(request.getEmail())
+                .build()).getBody();
 
-        ValidateOtpResponse validateOtpResponse = dojahSmsService.validateOtp(ValidateOtpRequest.builder()
-                        .code(request.getOtp())
-                        .reference_id(otpResponse.getEntity().getReferenceId())
-                .build());
-        if(!validateOtpResponse.getEntity().getValid()){
-            return ResponseEntity.badRequest().body(CustomResponse.builder()
-                            .responseCode(AccountUtils.INVALID_OTP_CODE)
-                            .responseMessage(AccountUtils.INVALID_OTP_MESSAGE)
-                    .build());
-        }
+        String otp = otpResponse.getReferenceId().substring(0, 6);
+        String referenceId = otpResponse.getReferenceId().substring(6);
+        LocalDateTime expiryDate = otpResponse.getExpiry();
+
 
         UserCredential userCredential = UserCredential.builder()
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .walletId(accountUtils.generateAccountNumber())
-                .emailVerifyStatus("VERIFIED")
+                .emailVerifyStatus("UNVERIFIED")
                 .referralCode(accountUtils.generateReferralCode())
                 .referredBy(request.getReferredBy())
                 .hashedPassword(request.getPassword())
+                .otp(otp)
+                .referenceId(referenceId)
+                .otpExpiryDate(expiryDate)
                 .build();
 
         userCredential.setRole(Role.ROLE_USER);
@@ -122,6 +114,8 @@ public class AuthService {
                 .responseCode(AccountUtils.ACCOUNT_CREATION_SUCCESS_CODE)
                 .responseMessage(AccountUtils.ACCOUNT_CREATION_SUCCESS_MESSAGE)
                 .responseBody(response)
+                        .referenceId(userCredential.getReferenceId())
+                        .expiry(userCredential.getOtpExpiryDate())
                 .build());
     }
 
@@ -574,39 +568,50 @@ public class AuthService {
 
     public ResponseEntity<CustomResponse> sendOtp(OtpDto request){
         String otp = accountUtils.generateOtp();
-        String referenceId = UUID.randomUUID().toString();
+        String referenceId = otp + UUID.randomUUID();
         LocalDateTime expiryDate = LocalDateTime.now().plus(10, ChronoUnit.MINUTES);
 
-        UserCredential userCredential = userCredentialRepository.findByEmail(request.getEmail()).get();
-        boolean isUserExists = userCredentialRepository.existsByEmail(request.getEmail());
-        if (!isUserExists){
-            return ResponseEntity.badRequest().body(CustomResponse.builder()
-                            .responseCode(AccountUtils.USER_NOT_EXIST_CODE)
-                            .responseMessage(AccountUtils.USER_NOT_EXIST_MESSAGE)
-                    .build());
-        }
 
-        userCredential.setOtp(otp);
-        userCredential.setReferenceId(referenceId);
-        userCredential.setOtpExpiryDate(expiryDate);
 
-        userCredentialRepository.save(userCredential);
+
         emailService.sendEmailAlert(EmailDetails.builder()
                         .messageBody("Your pending Otp from zelia is " + otp + ". Valid for 8 minutes. PLEASE DO NOT DISCLOSE!")
                         .subject("ZELIAFINANCE")
-                        .recipient(userCredential.getEmail())
+                        .recipient(request.getEmail())
                 .build());
 
         return ResponseEntity.ok(CustomResponse.builder()
                         .responseCode(AccountUtils.OTP_SENT_CODE)
                         .responseMessage(AccountUtils.OTP_SENT_MESSAGE)
-                        .responseBody(referenceId)
+                        .referenceId(referenceId)
+                        .expiry(expiryDate)
                 .build());
     }
 
-    public boolean validateOtp(OtpDto request, String email){
-        UserCredential userCredential = userCredentialRepository.findByEmail(email).orElseThrow();
-        return userCredential.getOtpExpiryDate().isBefore(LocalDateTime.now());
+    public ResponseEntity<CustomResponse> validateOtp(ValidateOtpDto request){
+        UserCredential userCredential = userCredentialRepository.findByEmail(request.getEmail()).orElseThrow();
+        if (!LocalDateTime.now().isBefore(userCredential.getOtpExpiryDate())){
+            return ResponseEntity.internalServerError().body(CustomResponse.builder()
+                            .responseCode(AccountUtils.OTP_EXPIRED_CODE)
+                            .responseMessage(AccountUtils.OTP_EXPIRED_MESSAGE)
+                            .otpStatus(false)
+                    .build());
+        }
+
+        if (!request.getOtp().equals(userCredential.getOtp())){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .responseCode(AccountUtils.INVALID_OTP_CODE)
+                            .responseMessage(AccountUtils.INVALID_OTP_MESSAGE)
+                            .otpStatus(false)
+                    .build());
+        }
+        userCredential.setEmailVerifyStatus("VERIFIED");
+        return ResponseEntity.ok(CustomResponse.builder()
+                        .responseCode(AccountUtils.OTP_VALIDATED_CODE)
+                        .responseMessage(AccountUtils.OTP_VALIDATED_MESSAGE)
+                        .otpStatus(true)
+                        .responseBody(modelMapper.map(userCredential, UserCredentialResponse.class))
+                .build());
     }
 
 }

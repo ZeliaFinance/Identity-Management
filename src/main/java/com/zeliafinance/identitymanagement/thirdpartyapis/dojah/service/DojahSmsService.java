@@ -1,5 +1,6 @@
 package com.zeliafinance.identitymanagement.thirdpartyapis.dojah.service;
 
+import com.zeliafinance.identitymanagement.dto.OtpDto;
 import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.dto.request.*;
 import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.dto.response.*;
 import lombok.RequiredArgsConstructor;
@@ -37,10 +38,10 @@ public class DojahSmsService {
         return jsonResponse;
     }
 
-    public OtpResponse sendOtp(OtpDto otpRequest){
+    public OtpResponse sendOtp(OtpRequest otpRequest){
         String url = baseUrl + "api/v1/messaging/otp";
         log.info("full url: {}", url);
-        HttpEntity<OtpDto> entity = new HttpEntity<>(otpRequest, headers());
+        HttpEntity<OtpRequest> entity = new HttpEntity<>(otpRequest, headers());
         ResponseEntity<OtpResponse> responseEntity = restTemplate().exchange(url, HttpMethod.POST, entity, OtpResponse.class);
         return responseEntity.getBody();
     }

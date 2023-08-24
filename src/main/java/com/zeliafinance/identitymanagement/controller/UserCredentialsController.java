@@ -96,4 +96,14 @@ public class UserCredentialsController {
         return service.saveBiometricInfo(loginDto);
     }
 
+    @PostMapping("/sendOtp")
+    public ResponseEntity<CustomResponse> sendOtp(@RequestBody OtpDto otpDto){
+        return service.sendOtp(otpDto);
+    }
+
+    @PostMapping("/validateOtp")
+    public ResponseEntity<CustomResponse> validateOtp(@RequestBody ValidateOtpDto otpDto){
+        return service.validateOtp(otpDto);
+    }
+
 }
