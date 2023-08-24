@@ -198,9 +198,9 @@ public class AuthService {
                 .recipient(loginDto.getEmail())
                 .messageBody("You logged into your account!!!")
                 .build();
-        if (LocalDateTime.now().isAfter(userCredential.getOtpExpiryDate()) || userCredential.getOtp().equals("")){
-                emailService.sendEmailAlert(loginAlert);
-        }
+
+        emailService.sendEmailAlert(loginAlert);
+
 
 
         return ResponseEntity.ok(CustomResponse.builder()
