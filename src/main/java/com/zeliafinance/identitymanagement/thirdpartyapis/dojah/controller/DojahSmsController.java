@@ -1,6 +1,5 @@
 package com.zeliafinance.identitymanagement.thirdpartyapis.dojah.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.dto.request.*;
 import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.dto.response.*;
 import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.service.DojahSmsService;
@@ -55,7 +54,7 @@ public class DojahSmsController {
     }
 
     @PostMapping("/sendOtp")
-    public ResponseEntity<OtpResponse> sendOtp(@RequestBody OtpRequest request){
+    public ResponseEntity<OtpResponse> sendOtp(@RequestBody OtpDto request){
         return ResponseEntity.ok(service.sendOtp(request));
     }
 

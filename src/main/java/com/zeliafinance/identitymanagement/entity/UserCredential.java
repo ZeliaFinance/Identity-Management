@@ -9,6 +9,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
@@ -58,6 +59,9 @@ public class UserCredential implements UserDetails {
     private String referralCode;
     private String referredBy;
     private String hashedPassword;
+    private String otp;
+    private String referenceId;
+    private LocalDateTime otpExpiryDate;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

@@ -40,7 +40,7 @@ public class AccountUtils {
     public static final String PASSWORD_INCORRECT_MESSAGE= "Disparity in Password and Confirm Password fields";
     public static final String ACCOUNT_CONFIRMATION_MESSAGE = "Congrats! Your account has been successfully created. Now click on this link to get amazing offers";
     public static final String ACCOUNT_CONFIRMATION_SUBJECT = "WELCOME TO ZELIA";
-    public static final int LENGTH_OF_OTP = 4;
+    public static final int LENGTH_OF_OTP = 6;
     public static final int OTP_EXPIRE_DURATION = 4;
     public static final String INVALID_OTP_CODE = "010";
     public static final String INVALID_OTP_MESSAGE = "Invalid Otp. Please try again. Note! You have only 3 attempts";

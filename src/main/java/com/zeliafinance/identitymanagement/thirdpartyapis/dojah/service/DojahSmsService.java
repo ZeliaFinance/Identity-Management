@@ -1,12 +1,9 @@
 package com.zeliafinance.identitymanagement.thirdpartyapis.dojah.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.dto.request.*;
 import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.dto.response.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
@@ -40,10 +37,10 @@ public class DojahSmsService {
         return jsonResponse;
     }
 
-    public OtpResponse sendOtp(OtpRequest otpRequest){
+    public OtpResponse sendOtp(OtpDto otpRequest){
         String url = baseUrl + "api/v1/messaging/otp";
         log.info("full url: {}", url);
-        HttpEntity<OtpRequest> entity = new HttpEntity<>(otpRequest, headers());
+        HttpEntity<OtpDto> entity = new HttpEntity<>(otpRequest, headers());
         ResponseEntity<OtpResponse> responseEntity = restTemplate().exchange(url, HttpMethod.POST, entity, OtpResponse.class);
         return responseEntity.getBody();
     }

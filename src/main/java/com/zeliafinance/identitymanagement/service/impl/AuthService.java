@@ -2,6 +2,7 @@ package com.zeliafinance.identitymanagement.service.impl;
 
 import com.zeliafinance.identitymanagement.config.JwtTokenProvider;
 import com.zeliafinance.identitymanagement.dto.*;
+import com.zeliafinance.identitymanagement.dto.OtpRequest;
 import com.zeliafinance.identitymanagement.entity.IdentityType;
 import com.zeliafinance.identitymanagement.entity.Role;
 import com.zeliafinance.identitymanagement.entity.UserCredential;
@@ -28,8 +29,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -567,6 +570,43 @@ public class AuthService {
                         .responseBody(modelMapper.map(userCredential, UserCredentialResponse.class))
                 .build());
 
+    }
+
+    public ResponseEntity<CustomResponse> sendOtp(OtpDto request){
+        String otp = accountUtils.generateOtp();
+        String referenceId = UUID.randomUUID().toString();
+        LocalDateTime expiryDate = LocalDateTime.now().plus(10, ChronoUnit.MINUTES);
+
+        UserCredential userCredential = userCredentialRepository.findByEmail(request.getEmail()).get();
+        boolean isUserExists = userCredentialRepository.existsByEmail(request.getEmail());
+        if (!isUserExists){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .responseCode(AccountUtils.USER_NOT_EXIST_CODE)
+                            .responseMessage(AccountUtils.USER_NOT_EXIST_MESSAGE)
+                    .build());
+        }
+
+        userCredential.setOtp(otp);
+        userCredential.setReferenceId(referenceId);
+        userCredential.setOtpExpiryDate(expiryDate);
+
+        userCredentialRepository.save(userCredential);
+        emailService.sendEmailAlert(EmailDetails.builder()
+                        .messageBody("Your pending Otp from zelia is " + otp + ". Valid for 8 minutes. PLEASE DO NOT DISCLOSE!")
+                        .subject("ZELIAFINANCE")
+                        .recipient(userCredential.getEmail())
+                .build());
+
+        return ResponseEntity.ok(CustomResponse.builder()
+                        .responseCode(AccountUtils.OTP_SENT_CODE)
+                        .responseMessage(AccountUtils.OTP_SENT_MESSAGE)
+                        .responseBody(referenceId)
+                .build());
+    }
+
+    public boolean validateOtp(OtpDto request, String email){
+        UserCredential userCredential = userCredentialRepository.findByEmail(email).orElseThrow();
+        return userCredential.getOtpExpiryDate().isBefore(LocalDateTime.now());
     }
 
 }
