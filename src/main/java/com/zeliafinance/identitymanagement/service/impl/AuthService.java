@@ -609,6 +609,7 @@ public class AuthService {
                             .otpStatus(false)
                     .build());
         }
+
         userCredential.setEmailVerifyStatus("VERIFIED");
         return ResponseEntity.ok(CustomResponse.builder()
                         .responseCode(AccountUtils.OTP_VALIDATED_CODE)
