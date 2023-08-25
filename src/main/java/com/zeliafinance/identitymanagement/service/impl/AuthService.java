@@ -12,9 +12,13 @@ import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.dto.response.*;
 import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.service.DojahSmsService;
 import com.zeliafinance.identitymanagement.utils.AccountUtils;
 
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.security.Keys;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -28,6 +32,7 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.security.Key;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -609,15 +614,32 @@ public class AuthService {
                             .otpStatus(false)
                     .build());
         }
-
+        String token = generateToken(request.getEmail());
         userCredential.setEmailVerifyStatus("VERIFIED");
         return ResponseEntity.ok(CustomResponse.builder()
                         .responseCode(AccountUtils.OTP_VALIDATED_CODE)
                         .responseMessage(AccountUtils.OTP_VALIDATED_MESSAGE)
                         .otpStatus(true)
+                        .token(token)
                         .responseBody(modelMapper.map(userCredential, UserCredentialResponse.class))
                 .build());
 
+    }
+
+    private String generateToken(String subject){
+        Date now = new Date();
+        Date expiration = new Date(now.getTime() + AccountUtils.JWT_EXPIRATION);
+
+        return Jwts.builder()
+                .setSubject(subject)
+                .setIssuedAt(now)
+                .setExpiration(expiration)
+                .signWith(key())
+                .compact();
+    }
+
+    private Key key(){
+        return Keys.hmacShaKeyFor(Decoders.BASE64.decode(AccountUtils.JWT_SECRET));
     }
 
 }

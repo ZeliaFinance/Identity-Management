@@ -72,6 +72,9 @@ public class AccountUtils {
     public static final String OTP_EXPIRED_CODE = "023";
     public static final String OTP_EXPIRED_MESSAGE = "Otp is expired! Kindly resend another otp";
     public static final String EMAIL_SENDER_ID = "majibade5@gmail.com";
+    public static final String JWT_SECRET="RPTyyaBeHl04wqPFd86G/tssX+pTxPq6HHCa2QnCOAU=";
+    public static final long JWT_EXPIRATION=86400000;
+
 
     @Bean
     public String generateAccountNumber(){
