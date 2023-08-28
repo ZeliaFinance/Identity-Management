@@ -12,9 +12,14 @@ import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.dto.response.*;
 import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.service.DojahSmsService;
 import com.zeliafinance.identitymanagement.utils.AccountUtils;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.security.Keys;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -28,6 +33,7 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.security.Key;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -277,16 +283,19 @@ public class AuthService {
                             .responseMessage(AccountUtils.USER_NOT_EXIST_MESSAGE)
                     .build());
         }
-        OtpResponse otpResponse = dojahSmsService.sendOtp(OtpRequest.builder()
-                        .senderId(AccountUtils.EMAIL_SENDER_ID)
-                        .destination("08139148963")
-                        .channel("email")
-                        .email(email)
-                        .expiry(10)
-                        .length(6)
-                        .priority(true)
-                .build());
-        userCredential.setPasswordResetToken(otpResponse.getEntity().getReferenceId());
+
+        CustomResponse otpResponse = sendOtp(OtpDto.builder()
+                .email(email)
+                .build()).getBody();
+
+        String otp = otpResponse.getReferenceId().substring(0, 6);
+        String referenceId = otpResponse.getReferenceId().substring(6);
+        LocalDateTime expiryDate = otpResponse.getExpiry();
+
+        userCredential.setOtp(otp);
+        userCredential.setReferenceId(referenceId);
+        userCredential.setOtpExpiryDate(expiryDate);
+
         userCredentialRepository.save(userCredential);
         return ResponseEntity.ok(CustomResponse.builder()
                         .responseCode(AccountUtils.PASSWORD_RESET_CODE)
@@ -314,11 +323,18 @@ public class AuthService {
                     .build());
         }
         UserCredential userCredential = userCredentialRepository.findByEmail(email).get();
-        dojahSmsService.validateOtp(ValidateOtpRequest.builder()
-                        .reference_id(userCredential.getPasswordResetToken())
-                        .code(passwordResetDto.getOtp())
-                        .code(passwordResetDto.getNewPassword())
-                .build());
+        CustomResponse validationResponse = validateOtp(ValidateOtpDto.builder()
+                .email(email)
+                .otp(passwordResetDto.getOtp())
+                .build()).getBody();
+
+        if (!validationResponse.getOtpStatus()){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .responseCode(AccountUtils.INVALID_OTP_CODE)
+                            .responseMessage(AccountUtils.INVALID_OTP_MESSAGE)
+                    .build());
+        }
+
         userCredential.setPassword(passwordEncoder.encode(passwordResetDto.getNewPassword()));
         userCredential.setHashedPassword(accountUtils.encode(passwordResetDto.getNewPassword(), 3));
         userCredentialRepository.save(userCredential);
@@ -609,15 +625,51 @@ public class AuthService {
                             .otpStatus(false)
                     .build());
         }
-
+        String token = generateToken(request.getEmail());
         userCredential.setEmailVerifyStatus("VERIFIED");
         return ResponseEntity.ok(CustomResponse.builder()
                         .responseCode(AccountUtils.OTP_VALIDATED_CODE)
                         .responseMessage(AccountUtils.OTP_VALIDATED_MESSAGE)
                         .otpStatus(true)
+                        .token(token)
                         .responseBody(modelMapper.map(userCredential, UserCredentialResponse.class))
                 .build());
 
     }
+
+    public String generateToken(String subject) {
+        final long EXPIRATION_TIME_MS = 86400000;
+
+        Date now = new Date();
+        Date expiration = new Date(now.getTime() + EXPIRATION_TIME_MS);
+
+        return Jwts.builder()
+                .setSubject(subject)
+                .setIssuedAt(now)
+                .setExpiration(expiration)
+                .signWith(key())
+                .compact();
+    }
+
+    public static String validateToken(String token, String email){
+        //get email from token, and compare to the user's email
+        Claims claims = Jwts.parserBuilder()
+                .setSigningKey(key())
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+
+        if (claims.getSubject().equalsIgnoreCase(email)){
+            return "Verification Passed";
+        } else {
+            return "Verification failed";
+        }
+    }
+
+    private static Key key(){
+        final String SECRET_KEY = "RPTyyaBeHl04wqPFd86G/tssX+pTxPq6HHCa2QnCOAU=";
+        return Keys.hmacShaKeyFor(Decoders.BASE64.decode(SECRET_KEY));
+    }
+
 
 }

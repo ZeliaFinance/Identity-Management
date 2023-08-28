@@ -10,6 +10,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Locale;
 import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -148,7 +149,7 @@ public class AccountUtils {
     }
 
     public static void main(String[] args) {
-
+        System.out.println(Arrays.toString(Locale.getAvailableLocales()));
     }
 
 

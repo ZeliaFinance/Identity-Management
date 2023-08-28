@@ -13,7 +13,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
-import java.util.Date;
+import java.util.*;
 
 @Component
 @Slf4j
@@ -27,9 +27,9 @@ public class JwtTokenProvider {
 
     public String generateToken(Authentication authentication){
         String username = authentication.getName();
+        TimeZone.setDefault(TimeZone.getTimeZone("Africa/Lagos"));
         Date currentDate = new Date();
         Date expireDate = new Date(currentDate.getTime() + jwtExpirationDate);
-
         return Jwts.builder()
                 .setSubject(username)
                 .setIssuedAt(currentDate)
