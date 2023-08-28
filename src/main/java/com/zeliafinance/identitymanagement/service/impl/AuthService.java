@@ -610,6 +610,7 @@ public class AuthService {
     public ResponseEntity<CustomResponse> validateOtp(ValidateOtpDto request){
         UserCredential userCredential = userCredentialRepository.findByEmail(request.getEmail()).orElseThrow();
         if (!LocalDateTime.now().isBefore(userCredential.getOtpExpiryDate())){
+            //bad request
             return ResponseEntity.badRequest().body(CustomResponse.builder()
                             .responseCode(AccountUtils.OTP_EXPIRED_CODE)
                             .responseMessage(AccountUtils.OTP_EXPIRED_MESSAGE)
