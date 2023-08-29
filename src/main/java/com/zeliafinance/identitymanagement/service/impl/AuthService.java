@@ -553,6 +553,24 @@ public class AuthService {
 
     }
 
+    public ResponseEntity<CustomResponse> loggedInUser(String email){
+        boolean isEmailExists = userCredentialRepository.existsByEmail(email);
+        UserCredential userCredential = userCredentialRepository.findByEmail(email).get();
+
+        if (!isEmailExists){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .responseCode(AccountUtils.USER_NOT_EXIST_CODE)
+                            .responseMessage(AccountUtils.USER_NOT_EXIST_MESSAGE)
+                    .build());
+        }
+
+        return ResponseEntity.ok(CustomResponse.builder()
+                        .responseCode(AccountUtils.SUCCESS_CODE)
+                        .responseMessage(AccountUtils.SUCCESS_MESSAGE)
+                        .responseBody(modelMapper.map(userCredential, UserCredentialResponse.class))
+                .build());
+    }
+
 
     private CustomResponse nonExistentUserById(){
         return CustomResponse.builder()
@@ -590,7 +608,14 @@ public class AuthService {
         String referenceId = otp + UUID.randomUUID();
         LocalDateTime expiryDate = LocalDateTime.now().plus(10, ChronoUnit.MINUTES);
 
+        boolean isEmailExist = userCredentialRepository.existsByEmail(request.getEmail());
 
+        if (!isEmailExist){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .responseCode(AccountUtils.USER_NOT_EXIST_CODE)
+                            .responseMessage(AccountUtils.USER_NOT_EXIST_MESSAGE)
+                    .build());
+        }
 
 
         emailService.sendEmailAlert(EmailDetails.builder()

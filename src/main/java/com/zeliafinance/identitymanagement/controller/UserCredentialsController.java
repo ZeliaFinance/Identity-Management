@@ -5,6 +5,7 @@ import com.zeliafinance.identitymanagement.service.impl.AuthService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -104,6 +105,12 @@ public class UserCredentialsController {
     @PostMapping("/validateOtp")
     public ResponseEntity<CustomResponse> validateOtp(@RequestBody ValidateOtpDto otpDto){
         return service.validateOtp(otpDto);
+    }
+
+    @GetMapping("/loggedInUser")
+    public ResponseEntity<CustomResponse> getLoggedInUser(){
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        return service.loggedInUser(email);
     }
 
 }

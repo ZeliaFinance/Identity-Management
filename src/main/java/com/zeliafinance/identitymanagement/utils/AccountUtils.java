@@ -74,6 +74,8 @@ public class AccountUtils {
     public static final String EMAIL_SENDER_ID = "majibade5@gmail.com";
     public static final String JWT_SECRET="RPTyyaBeHl04wqPFd86G/tssX+pTxPq6HHCa2QnCOAU=";
     public static final long JWT_EXPIRATION=86400000;
+    public static final String SUCCESS_CODE = "024";
+    public static final String SUCCESS_MESSAGE = "Success";
 
 
     @Bean
