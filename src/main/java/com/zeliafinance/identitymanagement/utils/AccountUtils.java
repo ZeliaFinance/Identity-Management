@@ -76,6 +76,10 @@ public class AccountUtils {
     public static final long JWT_EXPIRATION=86400000;
     public static final String SUCCESS_CODE = "024";
     public static final String SUCCESS_MESSAGE = "Success";
+    public static final String INVALID_PIN_CODE = "025";
+    public static final String INVALID_PIN_MESSAGE = "Your pin is invalid. Ensure your pin is NOT 1234 nor your year of birth nor 0000";
+    public static final String PIN_DISPARITY_CODE = "026";
+    public static final String PIN_DISPARITY_MESSAGE = "There's a disparity between your pin and confirm pin";
 
 
     @Bean

@@ -25,6 +25,7 @@ public class UserProfileRequest {
     private String identityType;
     private String identityNumber;
     private String pin;
+    private String confirmPin;
     private String role;
     private String liveLocation;
     private String deviceIp;

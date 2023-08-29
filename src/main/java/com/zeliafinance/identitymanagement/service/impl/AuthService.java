@@ -151,6 +151,20 @@ public class AuthService {
             userCredential.setBvn(request.getBvn());
             userCredential.setIdentityType(IdentityType.valueOf(request.getIdentityType()));
             userCredential.setIdentityNumber(request.getIdentityNumber());
+            String pin = request.getPin();
+            if (!accountUtils.isPinValid(pin, request.getDateOfBirth().getYear())){
+                return ResponseEntity.badRequest().body(CustomResponse.builder()
+                                .responseCode(AccountUtils.INVALID_PIN_CODE)
+                                .responseMessage(AccountUtils.INVALID_PIN_MESSAGE)
+                        .build());
+            }
+
+            if (!pin.equals(request.getConfirmPin())){
+                return ResponseEntity.badRequest().body(CustomResponse.builder()
+                                .responseCode(AccountUtils.PIN_DISPARITY_CODE)
+                                .responseMessage(AccountUtils.PIN_DISPARITY_MESSAGE)
+                        .build());
+            }
             userCredential.setPin(request.getPin());
             userCredential.setAccountStatus("PENDING");
 
