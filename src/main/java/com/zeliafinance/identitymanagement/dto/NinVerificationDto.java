@@ -6,10 +6,10 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
+@Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder
-public class BvnVerificationDto {
+public class NinVerificationDto {
     private String email;
-    private String bvn;
+    private String nin;
 }

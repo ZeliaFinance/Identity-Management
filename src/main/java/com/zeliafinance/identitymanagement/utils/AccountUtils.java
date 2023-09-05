@@ -80,6 +80,10 @@ public class AccountUtils {
     public static final String INVALID_PIN_MESSAGE = "Your pin is invalid. Ensure your pin is NOT 1234 nor your year of birth nor 0000";
     public static final String PIN_DISPARITY_CODE = "026";
     public static final String PIN_DISPARITY_MESSAGE = "There's a disparity between your pin and confirm pin";
+    public static final String IDENTITY_VERIFICATION_FAIL_CODE = "027";
+    public static final String IDENTITY_VERIFICATION_FAIL_MESSAGE = "Identity Mismatch";
+    public static final String INVALID_CREDENTIALS_CODE = "028";
+    public static final String INVALID_CREDENTIALS_MESSAGE = "Username or password invalid";
 
 
     @Bean

@@ -26,7 +26,7 @@ public class UserCredentialsController {
         return service.signUp(request);
     }
 
-    @PutMapping("/updateUser/{userId}")
+    @PatchMapping("/updateUser/{userId}")
     public ResponseEntity<CustomResponse> updateProfile(@RequestBody UserProfileRequest request, @PathVariable(name = "userId") Long userId){
         return service.updateUserProfile(userId, request);
     }
@@ -73,7 +73,7 @@ public class UserCredentialsController {
     }
 
     @PostMapping("/verifyId")
-    public ResponseEntity<CustomResponse> verifyIdentity(@RequestBody IdentityVerificationDto identityVerificationDto){
+    public ResponseEntity<CustomResponse> verifyIdentity(@RequestBody NinVerificationDto identityVerificationDto){
         return service.verifyCustomerIdentity(identityVerificationDto);
     }
 

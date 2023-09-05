@@ -22,8 +22,7 @@ public class UserProfileRequest {
     private String whatsAppNumber;
     private String gender;
     private String bvn;
-    private String identityType;
-    private String identityNumber;
+    private String nin;
     private String pin;
     private String confirmPin;
     private String role;

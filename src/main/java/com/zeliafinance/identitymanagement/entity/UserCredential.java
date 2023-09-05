@@ -36,9 +36,8 @@ public class UserCredential implements UserDetails {
     private String gender;
     private String bvn;
     private String bvnVerifyStatus;
-    private IdentityType identityType;
-    private String identityNumber;
-    private String identityStatus;
+    private String nin;
+    private String ninStatus;
     private String pin;
     @Column(unique = true)
     private String walletId;
