@@ -82,6 +82,11 @@ public class UserCredentialsController {
         return service.verifyBvn(bvnVerificationDto);
     }
 
+    @PostMapping("/verifyNin")
+    public ResponseEntity<CustomResponse> verifyNin(@RequestBody NinVerificationDto ninVerificationDto){
+        return service.verifyNin(ninVerificationDto);
+    }
+
     @PostMapping("/verifyEmail")
     public ResponseEntity<CustomResponse> sendEmailOtp(@RequestBody EmailVerificationDto emailVerificationDto){
         return service.verifyEmail(emailVerificationDto);

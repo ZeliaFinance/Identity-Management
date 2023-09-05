@@ -128,7 +128,8 @@ public class AuthService {
         LocalDate currentDate = LocalDate.now();
 
         if (request.getDateOfBirth() != null){
-            long age = ChronoUnit.YEARS.between(currentDate, request.getDateOfBirth());
+            long age = ChronoUnit.YEARS.between(request.getDateOfBirth(), currentDate);
+            log.info("age {}", age);
             if (age < 18){
                 return ResponseEntity.badRequest().body(CustomResponse.builder()
                         .responseCode(AccountUtils.UNDERAGE_CODE)
@@ -147,26 +148,10 @@ public class AuthService {
             userCredential.setMobileNumber(request.getMobileNumber());
             userCredential.setWhatsAppNumber(request.getWhatsAppNumber());
             userCredential.setGender(request.getGender());
-            String bvn;
-            if (!request.getBvn().equals("") && !userCredential.getBvnVerifyStatus().equals("VERIFIED")){
-                bvn = request.getBvn();
-                userCredential.setBvn(bvn);
-                verifyBvn(BvnVerificationDto.builder()
-                        .email(userCredential.getEmail())
-                        .bvn(bvn)
-                        .build());
-            } else {
-                userCredential.setBvn(userCredential.getBvn());
-            }
-            if (request.getNin().equals("") && !userCredential.getNinStatus().equals("")){
-                userCredential.setNin(userCredential.getNin());
-            } else {
-                userCredential.setNin(request.getNin());
-                verifyCustomerIdentity(NinVerificationDto.builder()
-                        .nin(request.getNin())
-                        .email(userCredential.getEmail())
-                        .build());
-            }
+            userCredential.setBvn(request.getBvn());
+            userCredential.setBvnVerifyStatus(userCredential.getBvnVerifyStatus());
+            userCredential.setNin(request.getNin());
+            userCredential.setNinStatus(userCredential.getNinStatus());
             String pin=userCredential.getPin();
             if (!request.getPin().equals("")){
                 pin = request.getPin();
@@ -461,6 +446,40 @@ public class AuthService {
             }
         }
         userCredential.setBvnVerifyStatus("UNVERIFIED");
+        userCredential = userCredentialRepository.save(userCredential);
+        return ResponseEntity.badRequest().body(CustomResponse.builder()
+                .responseCode(AccountUtils.BVN_INVALID_CODE)
+                .responseMessage(AccountUtils.BVN_INVALID_MESSAGE)
+                .responseBody(modelMapper.map(userCredential, UserCredentialResponse.class))
+                .build());
+    }
+
+    public ResponseEntity<CustomResponse> verifyNin(NinVerificationDto ninVerificationDto){
+        UserCredential userCredential = userCredentialRepository.findByEmail(ninVerificationDto.getEmail()).get();
+        boolean existsByEmail = userCredentialRepository.existsByEmail(ninVerificationDto.getEmail());
+        if (existsByEmail){
+            NinLookupResponse ninLookupResponse =dojahSmsService.ninLookup(NinRequest.builder()
+                            .nin(ninVerificationDto.getNin())
+                    .build());
+
+            String ninFullName = ninLookupResponse.getEntity().getFirstname() + ninLookupResponse.getEntity().getSurname() + ninLookupResponse.getEntity().getMiddlename();
+            String requestName = userCredential.getFirstName() + userCredential.getLastName() + userCredential.getOtherName();
+            char[] ninFullNameArray = ninFullName.toCharArray();
+            char[] requestNameArray = requestName.toCharArray();
+            Arrays.sort(ninFullNameArray);
+            Arrays.sort(requestNameArray);
+
+            if (Arrays.equals(ninFullNameArray, requestNameArray)){
+                userCredential.setNinStatus("VERIFIED");
+                userCredential = userCredentialRepository.save(userCredential);
+                return ResponseEntity.ok(CustomResponse.builder()
+                        .responseCode(AccountUtils.BVN_VALID_CODE)
+                        .responseBody(modelMapper.map(userCredential, UserCredentialResponse.class))
+                        .responseMessage(AccountUtils.BVN_VALID_MESSAGE)
+                        .build());
+            }
+        }
+        userCredential.setNinStatus("UNVERIFIED");
         userCredential = userCredentialRepository.save(userCredential);
         return ResponseEntity.badRequest().body(CustomResponse.builder()
                 .responseCode(AccountUtils.BVN_INVALID_CODE)
