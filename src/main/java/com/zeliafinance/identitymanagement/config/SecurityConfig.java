@@ -80,6 +80,7 @@ public class SecurityConfig {
     CorsConfigurationSource corsConfigurationSource(){
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of("http://www.sandbox.zeliafinance.com/"));
+        configuration.setAllowedOrigins(List.of("https://www.sandbox.zeliafinance.com/"));
         configuration.setAllowedMethods(List.of("*"));
         configuration.setAllowedHeaders(List.of("*"));
 
