@@ -76,6 +76,20 @@ public class AuthService {
                     .build());
         }
 
+        UserCredential userCredential = UserCredential.builder()
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .walletId(accountUtils.generateAccountNumber())
+                .emailVerifyStatus("UNVERIFIED")
+                .referralCode(accountUtils.generateReferralCode())
+                .referredBy(request.getReferredBy())
+                .hashedPassword(request.getPassword())
+                .build();
+
+        userCredential.setRole(Role.ROLE_USER);
+        UserCredential savedUser = userCredentialRepository.save(userCredential);
+
+
         CustomResponse otpResponse = sendOtp(OtpDto.builder()
                 .email(request.getEmail())
                 .build()).getBody();
@@ -85,22 +99,11 @@ public class AuthService {
         String referenceId = otpResponse.getReferenceId().substring(6);
         LocalDateTime expiryDate = otpResponse.getExpiry();
 
+        savedUser.setOtp(otp);
+        savedUser.setReferenceId(referenceId);
+        savedUser.setOtpExpiryDate(expiryDate);
 
-        UserCredential userCredential = UserCredential.builder()
-                .email(request.getEmail())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .walletId(accountUtils.generateAccountNumber())
-                .emailVerifyStatus("UNVERIFIED")
-                .referralCode(accountUtils.generateReferralCode())
-                .referredBy(request.getReferredBy())
-                .hashedPassword(request.getPassword())
-                .otp(otp)
-                .referenceId(referenceId)
-                .otpExpiryDate(expiryDate)
-                .build();
-
-        userCredential.setRole(Role.ROLE_USER);
-        UserCredential savedUser = userCredentialRepository.save(userCredential);
+        userCredentialRepository.save(savedUser);
 
         EmailDetails emailDetails = EmailDetails.builder()
                 .recipient(request.getEmail())
