@@ -161,7 +161,8 @@ public class AccountUtils {
     }
 
     public static void main(String[] args) {
-
+        AccountUtils accountUtils = new AccountUtils();
+        System.out.println(accountUtils.encode("musa", 3));
     }
 
 

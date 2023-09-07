@@ -83,7 +83,7 @@ public class AuthService {
                 .emailVerifyStatus("UNVERIFIED")
                 .referralCode(accountUtils.generateReferralCode())
                 .referredBy(request.getReferredBy())
-                .hashedPassword(request.getPassword())
+                .hashedPassword(accountUtils.encode(request.getPassword(), 3))
                 .build();
 
         userCredential.setRole(Role.ROLE_USER);
