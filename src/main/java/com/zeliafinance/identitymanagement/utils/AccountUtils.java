@@ -84,7 +84,8 @@ public class AccountUtils {
     public static final String IDENTITY_VERIFICATION_FAIL_MESSAGE = "Identity Mismatch";
     public static final String INVALID_CREDENTIALS_CODE = "028";
     public static final String INVALID_CREDENTIALS_MESSAGE = "Username or password invalid";
-
+    public static final String EMAIL_NOT_VERIFIED_CODE = "029";
+    public static final String EMAIL_NOT_VERIFIED_MESSAGE = "User Email has not been verified";
 
     @Bean
     public String generateAccountNumber(){

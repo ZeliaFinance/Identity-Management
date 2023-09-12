@@ -21,6 +21,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -141,6 +142,15 @@ public class AuthService {
             }
         }
 
+        boolean isEmailVerified = userCredentialRepository.existsByEmailAndEmailVerifyStatusContains(userCredential.getEmail(), "VERIFIED");
+        log.info("Email verification Status: {}", isEmailVerified);
+
+        if (userCredential.getEmailVerifyStatus().equalsIgnoreCase("UNVERIFIED")){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .responseCode(AccountUtils.EMAIL_NOT_VERIFIED_CODE)
+                            .responseMessage(AccountUtils.EMAIL_NOT_VERIFIED_MESSAGE)
+                    .build());
+        }
 
         if (isUserExist){
             userCredential.setFirstName(request.getFirstName());
@@ -216,6 +226,13 @@ public class AuthService {
             authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(loginDto.getEmail(), loginDto.getPassword())
             );
+        }
+
+        if (!authentication.isAuthenticated()){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .responseCode(AccountUtils.INVALID_CREDENTIALS_CODE)
+                            .responseMessage(AccountUtils.INVALID_CREDENTIALS_MESSAGE)
+                    .build());
         }
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
