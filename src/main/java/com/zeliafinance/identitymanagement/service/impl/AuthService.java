@@ -142,9 +142,6 @@ public class AuthService {
             }
         }
 
-        boolean isEmailVerified = userCredentialRepository.existsByEmailAndEmailVerifyStatusContains(userCredential.getEmail(), "VERIFIED");
-        log.info("Email verification Status: {}", isEmailVerified);
-
         if (userCredential.getEmailVerifyStatus().equalsIgnoreCase("UNVERIFIED")){
             return ResponseEntity.badRequest().body(CustomResponse.builder()
                             .responseCode(AccountUtils.EMAIL_NOT_VERIFIED_CODE)

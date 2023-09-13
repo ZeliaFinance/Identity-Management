@@ -86,7 +86,8 @@ public class AccountUtils {
     public static final String INVALID_CREDENTIALS_MESSAGE = "Username or password invalid";
     public static final String EMAIL_NOT_VERIFIED_CODE = "029";
     public static final String EMAIL_NOT_VERIFIED_MESSAGE = "User Email has not been verified";
-
+    public static final String RESOURCE_NOT_FOUND_CODE = "030";
+    public static final String RESOURCE_NOT_FOUND_MESSAGE = "Resource with given lookupCode does not exist";
     @Bean
     public String generateAccountNumber(){
         StringBuilder accountNumber = new StringBuilder();
