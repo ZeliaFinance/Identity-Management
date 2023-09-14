@@ -33,4 +33,5 @@ public class UserCredentialResponse {
     private String referralCode;
     private String referredBy;
     private String hashedPassword;
+    private String maritalStatus;
 }

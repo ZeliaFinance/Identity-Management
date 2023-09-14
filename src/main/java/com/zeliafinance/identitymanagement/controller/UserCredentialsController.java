@@ -87,16 +87,6 @@ public class UserCredentialsController {
         return service.verifyNin(ninVerificationDto);
     }
 
-    @PostMapping("/verifyEmail")
-    public ResponseEntity<CustomResponse> sendEmailOtp(@RequestBody EmailVerificationDto emailVerificationDto){
-        return service.verifyEmail(emailVerificationDto);
-    }
-
-    @PostMapping("/validateEmail")
-    public ResponseEntity<CustomResponse> validateEmail(@RequestBody EmailValidationDto emailValidationDto){
-        return service.validateEmail(emailValidationDto);
-    }
-
     @PostMapping("/saveBiometricInfo")
     public ResponseEntity<CustomResponse> biometricInfo(@RequestBody LoginDto loginDto){
         return service.saveBiometricInfo(loginDto);
@@ -116,6 +106,16 @@ public class UserCredentialsController {
     public ResponseEntity<CustomResponse> getLoggedInUser(){
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return service.loggedInUser(email);
+    }
+
+    @PostMapping("/createPin")
+    public ResponseEntity<CustomResponse> createPin(@RequestBody PinSetupDto pinSetupDto){
+        return service.pinSetup(pinSetupDto);
+    }
+
+    @PostMapping("/verifyPin")
+    public ResponseEntity<CustomResponse> verifyPin(@RequestBody PinSetupDto pinSetupDto){
+        return service.verifyPin(pinSetupDto);
     }
 
 }

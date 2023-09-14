@@ -88,6 +88,10 @@ public class AccountUtils {
     public static final String EMAIL_NOT_VERIFIED_MESSAGE = "User Email has not been verified";
     public static final String RESOURCE_NOT_FOUND_CODE = "030";
     public static final String RESOURCE_NOT_FOUND_MESSAGE = "Resource with given lookupCode does not exist";
+    public static final String PIN_SETUP_SUCCESS_CODE = "031";
+    public static final String PIN_SETUP_SUCCESS_MESSAGE = "Pin has been successfully set up";
+    public static final String PIN_VALIDATED_CODE = "032";
+    public static final String PIN_VALIDATED_MESSAGE = "PIN VALIDATED SUCCESSFULLY";
     @Bean
     public String generateAccountNumber(){
         StringBuilder accountNumber = new StringBuilder();
@@ -162,9 +166,19 @@ public class AccountUtils {
         return encode(text, 26 - shift);
     }
 
-    public static void main(String[] args) {
-        AccountUtils accountUtils = new AccountUtils();
-        System.out.println(accountUtils.encode("musa", 3));
+//    public static void main(String[] args) {
+//        AccountUtils accountUtils = new AccountUtils();
+//        System.out.println(accountUtils.encode("musa", 3));
+//        System.out.println(encodePin("1234"));
+//        System.out.println(decode("MTIzNA"));
+//    }
+
+    public String encodePin(String pin){
+        return Base64.getEncoder().encodeToString(pin.getBytes());
+    }
+
+    public String decodePin(String pin){
+        return new String(Base64.getDecoder().decode(pin));
     }
 
 

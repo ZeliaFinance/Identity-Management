@@ -162,31 +162,13 @@ public class AuthService {
             userCredential.setBvnVerifyStatus(userCredential.getBvnVerifyStatus());
             userCredential.setNin(request.getNin());
             userCredential.setNinStatus(userCredential.getNinStatus());
-            String pin=userCredential.getPin();
-            if (!request.getPin().equals("")){
-                pin = request.getPin();
-                if (!accountUtils.isPinValid(pin, request.getDateOfBirth().getYear())){
-                    return ResponseEntity.badRequest().body(CustomResponse.builder()
-                            .responseCode(AccountUtils.INVALID_PIN_CODE)
-                            .responseMessage(AccountUtils.INVALID_PIN_MESSAGE)
-                            .build());
-                }
-
-                if (!pin.equals(request.getConfirmPin())){
-                    return ResponseEntity.badRequest().body(CustomResponse.builder()
-                            .responseCode(AccountUtils.PIN_DISPARITY_CODE)
-                            .responseMessage(AccountUtils.PIN_DISPARITY_MESSAGE)
-                            .build());
-                }
-            }
-            userCredential.setPin(pin);
-
             userCredential.setAccountStatus("PENDING");
 
             userCredential.setDeviceIp(request.getDeviceIp());
             userCredential.setLiveLocation(request.getLiveLocation());
             userCredential.setModifiedby(SecurityContextHolder.getContext().getAuthentication().getName());
             userCredential.setReferredBy(request.getReferredBy());
+            userCredential.setMaritalStatus(request.getMaritalStatus());
 
             UserCredential updatedUser = userCredentialRepository.save(userCredential);
 
@@ -505,56 +487,6 @@ public class AuthService {
                 .build());
     }
 
-    public ResponseEntity<CustomResponse> verifyEmail(EmailVerificationDto verificationDto){
-        boolean existsByEmail = userCredentialRepository.existsByEmail(verificationDto.getEmail());
-        UserCredential userCredential = userCredentialRepository.findByEmail(verificationDto.getEmail()).orElseThrow(RuntimeException::new);
-        if (existsByEmail){
-            OtpResponse response = dojahSmsService.sendOtp(OtpRequest.builder()
-                            .priority(true)
-                            .destination(userCredential.getPhoneNumber())
-                            .length(4)
-                            .expiry(4)
-                            .email(verificationDto.getEmail())
-                            .channel("email")
-                            .senderId("ZLF")
-                    .build());
-
-            log.info("otp response\n {}", response);
-
-            return ResponseEntity.ok(CustomResponse.builder()
-                            .responseCode(AccountUtils.OTP_SENT_CODE)
-                            .responseMessage(AccountUtils.OTP_SENT_MESSAGE)
-                            .responseBody(response)
-                    .build());
-        }
-        return ResponseEntity.badRequest().body(CustomResponse.builder()
-                        .responseCode(AccountUtils.USER_NOT_EXIST_CODE)
-                        .responseMessage(AccountUtils.USER_NOT_EXIST_MESSAGE)
-                .build());
-    }
-
-    public ResponseEntity<CustomResponse> validateEmail(EmailValidationDto emailValidationDto){
-        UserCredential userCredential = userCredentialRepository.findByEmail(emailValidationDto.getEmail()).orElseThrow(RuntimeException::new);
-        ValidateOtpResponse response = dojahSmsService.validateOtp(ValidateOtpRequest.builder()
-                        .code(emailValidationDto.getCode())
-                        .reference_id(emailValidationDto.getReferenceId())
-                .build());
-
-        if (response.getEntity().getValid()){
-            userCredential.setEmailVerifyStatus("VERIFIED");
-        } else{
-            userCredential.setEmailVerifyStatus("UNVERIFIED");
-        }
-        UserCredential updatedUserCredential = userCredentialRepository.save(userCredential);
-
-        return ResponseEntity.ok(CustomResponse.builder()
-                        .responseCode(AccountUtils.OTP_VALIDATED_CODE)
-                        .responseMessage(AccountUtils.OTP_VALIDATED_MESSAGE)
-                        .responseBody(modelMapper.map(updatedUserCredential, UserCredentialResponse.class))
-                .build());
-
-    }
-
     public ResponseEntity<CustomResponse> loggedInUser(String email){
         boolean isEmailExists = userCredentialRepository.existsByEmail(email);
         UserCredential userCredential = userCredentialRepository.findByEmail(email).get();
@@ -611,6 +543,7 @@ public class AuthService {
         LocalDateTime expiryDate = LocalDateTime.now().plus(10, ChronoUnit.MINUTES);
 
         boolean isEmailExist = userCredentialRepository.existsByEmail(request.getEmail());
+        UserCredential userCredential = userCredentialRepository.findByEmail(request.getEmail()).get();
 
         if (!isEmailExist){
             return ResponseEntity.badRequest().body(CustomResponse.builder()
@@ -618,6 +551,12 @@ public class AuthService {
                             .responseMessage(AccountUtils.USER_NOT_EXIST_MESSAGE)
                     .build());
         }
+
+        userCredential.setOtp(otp);
+        userCredential.setReferenceId(referenceId);
+        userCredential.setOtpExpiryDate(expiryDate);
+
+        userCredentialRepository.save(userCredential);
 
 
         emailService.sendEmailAlert(EmailDetails.builder()
@@ -636,13 +575,15 @@ public class AuthService {
 
     public ResponseEntity<CustomResponse> validateOtp(ValidateOtpDto request){
         UserCredential userCredential = userCredentialRepository.findByEmail(request.getEmail()).orElseThrow();
-        if (!LocalDateTime.now().isBefore(userCredential.getOtpExpiryDate())){
+        if (LocalDateTime.now().isAfter(userCredential.getOtpExpiryDate())){
             return ResponseEntity.badRequest().body(CustomResponse.builder()
                             .responseCode(AccountUtils.OTP_EXPIRED_CODE)
                             .responseMessage(AccountUtils.OTP_EXPIRED_MESSAGE)
                             .otpStatus(false)
                     .build());
         }
+
+        log.info("otp expiry date : {}", userCredential.getOtpExpiryDate());
 
         if (!request.getOtp().equals(userCredential.getOtp())){
             return ResponseEntity.badRequest().body(CustomResponse.builder()
@@ -653,6 +594,7 @@ public class AuthService {
         }
         String token = generateToken(request.getEmail());
         userCredential.setEmailVerifyStatus("VERIFIED");
+        userCredentialRepository.save(userCredential);
         return ResponseEntity.ok(CustomResponse.builder()
                         .responseCode(AccountUtils.OTP_VALIDATED_CODE)
                         .responseMessage(AccountUtils.OTP_VALIDATED_MESSAGE)
@@ -661,6 +603,69 @@ public class AuthService {
                         .responseBody(modelMapper.map(userCredential, UserCredentialResponse.class))
                 .build());
 
+    }
+
+    public ResponseEntity<CustomResponse> pinSetup(PinSetupDto request){
+        UserCredential userCredential = userCredentialRepository.findByEmail(request.getEmail()).get();
+        boolean isEmailExists = userCredentialRepository.existsByEmail(request.getEmail());
+        if (!userCredential.getEmailVerifyStatus().equalsIgnoreCase("VERIFIED")){
+            return ResponseEntity.ok(CustomResponse.builder()
+                            .responseCode(AccountUtils.EMAIL_NOT_VERIFIED_CODE)
+                            .responseMessage(AccountUtils.EMAIL_NOT_VERIFIED_MESSAGE)
+                    .build());
+        }
+        if (!isEmailExists){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .responseCode(AccountUtils.USER_NOT_EXIST_CODE)
+                            .responseMessage(AccountUtils.USER_NOT_EXIST_MESSAGE)
+                    .build());
+        }
+        boolean isPinValid = accountUtils.isPinValid(request.getPin(), userCredential.getDateOBirth().getYear());
+        if (!isPinValid){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .responseCode(AccountUtils.INVALID_PIN_CODE)
+                            .responseMessage(AccountUtils.INVALID_PIN_MESSAGE)
+                    .build());
+        }
+
+        if (!request.getPin().equals(request.getConfirmPin())){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .responseCode(AccountUtils.PIN_DISPARITY_CODE)
+                            .responseMessage(AccountUtils.PIN_DISPARITY_MESSAGE)
+                    .build());
+        }
+
+        userCredential.setPin(accountUtils.encodePin(request.getPin()));
+        userCredentialRepository.save(userCredential);
+        return ResponseEntity.ok(CustomResponse.builder()
+                        .responseCode(AccountUtils.PIN_SETUP_SUCCESS_CODE)
+                        .responseMessage(AccountUtils.PIN_SETUP_SUCCESS_MESSAGE)
+                        .responseBody(modelMapper.map(userCredential, UserCredentialResponse.class))
+                .build());
+    }
+
+    public ResponseEntity<CustomResponse> verifyPin(PinSetupDto pinSetupDto){
+        UserCredential userCredential = userCredentialRepository.findByEmail(pinSetupDto.getEmail()).orElseThrow();
+        String savedPin = accountUtils.decodePin(userCredential.getPin());
+        log.info(savedPin);
+        if (!pinSetupDto.getPin().equals(pinSetupDto.getConfirmPin())){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .responseCode(AccountUtils.PIN_DISPARITY_CODE)
+                            .responseMessage(AccountUtils.PIN_DISPARITY_MESSAGE)
+                    .build());
+        }
+
+        if (!savedPin.equals(pinSetupDto.getPin())){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                    .responseCode(AccountUtils.INVALID_PIN_CODE)
+                    .responseMessage(AccountUtils.INVALID_PIN_MESSAGE)
+                    .build());
+        }
+
+        return ResponseEntity.ok(CustomResponse.builder()
+                        .responseCode(AccountUtils.PIN_VALIDATED_CODE)
+                        .responseMessage(AccountUtils.PIN_VALIDATED_MESSAGE)
+                .build());
     }
 
     private String generateToken(String subject){
