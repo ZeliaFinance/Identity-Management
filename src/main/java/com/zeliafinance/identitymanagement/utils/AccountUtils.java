@@ -92,6 +92,13 @@ public class AccountUtils {
     public static final String PIN_SETUP_SUCCESS_MESSAGE = "Pin has been successfully set up";
     public static final String PIN_VALIDATED_CODE = "032";
     public static final String PIN_VALIDATED_MESSAGE = "PIN VALIDATED SUCCESSFULLY";
+    public static final int BVN_LENGTH = 11;
+    public static final String BVN_MISMATCH_CODE = "033";
+    public static final String BVN_MISMATCH_MESSAGE = "BVN Mismatch";
+    public static final String NIN_INVALID_CODE = "034";
+    public static final String NIN_INVALID_MESSAGE = "Nin invalid";
+    public static final String NIN_MISMATCH_CODE = "035";
+    public static final String NIN_MISMATCH_MESSAGE = "Nin Mismatch";
     @Bean
     public String generateAccountNumber(){
         StringBuilder accountNumber = new StringBuilder();
