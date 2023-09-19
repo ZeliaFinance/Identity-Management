@@ -17,6 +17,7 @@ import io.jsonwebtoken.security.Keys;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -85,6 +86,8 @@ public class AuthService {
                 .referralCode(accountUtils.generateReferralCode())
                 .referredBy(request.getReferredBy())
                 .hashedPassword(accountUtils.encode(request.getPassword(), 3))
+                .accountStatus("PENDING")
+                .accountBalance(0)
                 .build();
 
         userCredential.setRole(Role.ROLE_USER);
@@ -150,22 +153,8 @@ public class AuthService {
         }
 
         if (isUserExist){
-            userCredential.setFirstName(request.getFirstName());
-            userCredential.setLastName(request.getLastName());
-            userCredential.setOtherName(request.getOtherName());
-            userCredential.setDateOBirth(request.getDateOfBirth());
-            userCredential.setPhoneNumber(request.getPhoneNumber());
-            userCredential.setMobileNumber(request.getMobileNumber());
-            userCredential.setWhatsAppNumber(request.getWhatsAppNumber());
-            userCredential.setGender(request.getGender());
-            userCredential.setBvn(request.getBvn());
-            userCredential.setBvnVerifyStatus(userCredential.getBvnVerifyStatus());
-            userCredential.setNin(request.getNin());
-            userCredential.setNinStatus(userCredential.getNinStatus());
-            userCredential.setAccountStatus("PENDING");
 
-            userCredential.setDeviceIp(request.getDeviceIp());
-            userCredential.setLiveLocation(request.getLiveLocation());
+            BeanUtils.copyProperties(request, userCredential, "id", "createdAt", "modifiedAt");
             userCredential.setModifiedby(SecurityContextHolder.getContext().getAuthentication().getName());
             userCredential.setReferredBy(request.getReferredBy());
             userCredential.setMaritalStatus(request.getMaritalStatus());

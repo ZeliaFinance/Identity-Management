@@ -26,7 +26,7 @@ public class UserCredentialsController {
         return service.signUp(request);
     }
 
-    @PatchMapping("/updateUser/{userId}")
+    @PutMapping("/updateUser/{userId}")
     public ResponseEntity<CustomResponse> updateProfile(@RequestBody UserProfileRequest request, @PathVariable(name = "userId") Long userId){
         return service.updateUserProfile(userId, request);
     }
