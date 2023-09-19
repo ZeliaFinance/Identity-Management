@@ -1,6 +1,7 @@
 package com.zeliafinance.identitymanagement.controller;
 
 import com.zeliafinance.identitymanagement.dto.*;
+import com.zeliafinance.identitymanagement.entity.UserCredential;
 import com.zeliafinance.identitymanagement.service.impl.AuthService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -26,7 +27,7 @@ public class UserCredentialsController {
         return service.signUp(request);
     }
 
-    @PutMapping("/updateUser/{userId}")
+    @PatchMapping("/updateUser/{userId}")
     public ResponseEntity<CustomResponse> updateProfile(@RequestBody UserProfileRequest request, @PathVariable(name = "userId") Long userId){
         return service.updateUserProfile(userId, request);
     }

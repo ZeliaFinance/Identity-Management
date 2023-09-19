@@ -17,12 +17,10 @@ import io.jsonwebtoken.security.Keys;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -153,12 +151,57 @@ public class AuthService {
         }
 
         if (isUserExist){
-
-            BeanUtils.copyProperties(request, userCredential, "id", "createdAt", "modifiedAt");
-            userCredential.setModifiedby(SecurityContextHolder.getContext().getAuthentication().getName());
-            userCredential.setReferredBy(request.getReferredBy());
-            userCredential.setMaritalStatus(request.getMaritalStatus());
-
+            if (request.getFirstName() != null){
+                userCredential.setFirstName(request.getFirstName());
+            }
+            if (request.getLastName() != null){
+                userCredential.setLastName(request.getLastName());
+            }
+            if (request.getOtherName() != null){
+                userCredential.setOtherName(request.getOtherName());
+            }
+            if (request.getDateOfBirth() != null){
+                userCredential.setDateOBirth(request.getDateOfBirth());
+            }
+            if (request.getPhoneNumber() != null){
+                userCredential.setPhoneNumber(request.getPhoneNumber());
+            }
+            if (request.getMobileNumber() != null){
+                userCredential.setMobileNumber(request.getMobileNumber());
+            }
+            if (request.getWhatsAppNumber() != null){
+                userCredential.setWhatsAppNumber(request.getWhatsAppNumber());
+            }
+            if (request.getGender() != null){
+                userCredential.setGender(request.getGender());
+            }
+            if (request.getBvn() != null){
+                userCredential.setBvn(request.getBvn());
+            }
+            if (request.getNin() != null){
+                userCredential.setNin(request.getNin());
+            }
+            if (request.getPin() != null){
+                userCredential.setPin(request.getPin());
+            }
+            if (request.getRole() != null){
+                userCredential.setRole(Role.valueOf(request.getRole()));
+            }
+            if (request.getLiveLocation() != null){
+                userCredential.setLiveLocation(request.getLiveLocation());
+            }
+            if (request.getDeviceIp() != null){
+                userCredential.setDeviceIp(request.getDeviceIp());
+            }
+            if (request.getReferredBy() != null){
+                userCredential.setReferredBy(request.getReferredBy());
+            }
+            if (request.getCode() != null){
+                userCredential.setReferralCode(request.getCode());
+            }
+            if (request.getMaritalStatus() != null){
+                userCredential.setMaritalStatus(request.getMaritalStatus());
+            }
             UserCredential updatedUser = userCredentialRepository.save(userCredential);
 
             //Sending email alert
