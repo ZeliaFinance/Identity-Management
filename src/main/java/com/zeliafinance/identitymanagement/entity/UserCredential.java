@@ -62,6 +62,10 @@ public class UserCredential implements UserDetails {
     private String referenceId;
     private LocalDateTime otpExpiryDate;
     private String maritalStatus;
+    private Integer profileSetupLevel;
+    private String address;
+    private String securityQuestion;
+    private String securityAnswer;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

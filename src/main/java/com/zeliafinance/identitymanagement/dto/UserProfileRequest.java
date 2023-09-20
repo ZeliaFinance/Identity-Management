@@ -32,4 +32,8 @@ public class UserProfileRequest {
     private String referredBy;
     private String code;
     private String maritalStatus;
+    private String address;
+    private String securityQuestion;
+    private String securityAnswer;
+
 }

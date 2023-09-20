@@ -202,8 +202,30 @@ public class AuthService {
             if (request.getMaritalStatus() != null){
                 userCredential.setMaritalStatus(request.getMaritalStatus());
             }
+            if (request.getAddress() != null){
+                userCredential.setAddress(request.getAddress());
+            }
+            if (request.getSecurityQuestion() != null){
+                userCredential.setSecurityQuestion(request.getSecurityQuestion());
+                userCredential.setSecurityAnswer(request.getSecurityAnswer());
+            }
             UserCredential updatedUser = userCredentialRepository.save(userCredential);
-
+            if(updatedUser.getFirstName() != null && updatedUser.getLastName() != null && updatedUser.getOtherName() != null && updatedUser.getAddress() != null && updatedUser.getPhoneNumber() != null && updatedUser.getDateOBirth() != null && updatedUser.getGender() != null && updatedUser.getMaritalStatus() != null){
+                updatedUser.setProfileSetupLevel(1);
+            }
+            if (updatedUser.getBvn()!= null){
+                updatedUser.setProfileSetupLevel(2);
+            }
+            if (updatedUser.getNin() != null){
+                updatedUser.setProfileSetupLevel(3);
+            }
+            if (updatedUser.getPin() != null){
+                updatedUser.setProfileSetupLevel(4);
+            }
+            if (updatedUser.getSecurityAnswer() != null && updatedUser.getSecurityQuestion() != null){
+                updatedUser.setProfileSetupLevel(5);
+            }
+            userCredentialRepository.save(updatedUser);
             //Sending email alert
 
             //building response object

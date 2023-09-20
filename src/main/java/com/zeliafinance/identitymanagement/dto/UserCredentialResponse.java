@@ -16,6 +16,7 @@ public class UserCredentialResponse {
     private String firstName;
     private String lastName;
     private String otherName;
+    private String address;
     private LocalDate dateOBirth;
     private String email;
     private String phoneNumber;
@@ -34,4 +35,7 @@ public class UserCredentialResponse {
     private String referredBy;
     private String hashedPassword;
     private String maritalStatus;
+    private String securityQuestion;
+    private String securityAnswer;
+    private Integer profileSetupLevel;
 }
