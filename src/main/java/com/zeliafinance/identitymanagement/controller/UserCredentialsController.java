@@ -32,6 +32,21 @@ public class UserCredentialsController {
         return service.updateUserProfile(userId, request);
     }
 
+    @PutMapping("/updateUserBvn/{userId}")
+    public ResponseEntity<CustomResponse> updateUserBvn(@RequestBody UserProfileRequest request, @PathVariable(name = "userId") Long userId){
+        return service.updateUserBvn(userId, request);
+    }
+
+    @PutMapping("/updateUserNin/{userId}")
+    public ResponseEntity<CustomResponse> updateUserNin(@RequestBody UserProfileRequest userProfileRequest, @PathVariable(name = "userId") Long userId){
+        return service.updateUserNin(userId, userProfileRequest);
+    }
+
+    @PutMapping("/updateSecurityQuestion/{userId}")
+    public ResponseEntity<CustomResponse> updateUserSecurityQuestion(@RequestBody UserProfileRequest request, @PathVariable(name = "userId") Long userId){
+        return service.updateUserSecurityQuestion(userId, request);
+    }
+
     @PostMapping("/login")
     public ResponseEntity<CustomResponse> login(@RequestBody LoginDto loginDto){
         return service.login(loginDto);

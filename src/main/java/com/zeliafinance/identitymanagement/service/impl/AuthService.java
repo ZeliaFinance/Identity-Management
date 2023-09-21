@@ -166,38 +166,8 @@ public class AuthService {
             if (request.getPhoneNumber() != null){
                 userCredential.setPhoneNumber(request.getPhoneNumber());
             }
-            if (request.getMobileNumber() != null){
-                userCredential.setMobileNumber(request.getMobileNumber());
-            }
-            if (request.getWhatsAppNumber() != null){
-                userCredential.setWhatsAppNumber(request.getWhatsAppNumber());
-            }
             if (request.getGender() != null){
                 userCredential.setGender(request.getGender());
-            }
-            if (request.getBvn() != null){
-                userCredential.setBvn(request.getBvn());
-            }
-            if (request.getNin() != null){
-                userCredential.setNin(request.getNin());
-            }
-            if (request.getPin() != null){
-                userCredential.setPin(request.getPin());
-            }
-            if (request.getRole() != null){
-                userCredential.setRole(Role.valueOf(request.getRole()));
-            }
-            if (request.getLiveLocation() != null){
-                userCredential.setLiveLocation(request.getLiveLocation());
-            }
-            if (request.getDeviceIp() != null){
-                userCredential.setDeviceIp(request.getDeviceIp());
-            }
-            if (request.getReferredBy() != null){
-                userCredential.setReferredBy(request.getReferredBy());
-            }
-            if (request.getCode() != null){
-                userCredential.setReferralCode(request.getCode());
             }
             if (request.getMaritalStatus() != null){
                 userCredential.setMaritalStatus(request.getMaritalStatus());
@@ -205,27 +175,13 @@ public class AuthService {
             if (request.getAddress() != null){
                 userCredential.setAddress(request.getAddress());
             }
-            if (request.getSecurityQuestion() != null){
-                userCredential.setSecurityQuestion(request.getSecurityQuestion());
-                userCredential.setSecurityAnswer(request.getSecurityAnswer());
+            int level;
+            if (userCredential.getProfileSetupLevel() < 1){
+                level = 1;
+                userCredential.setProfileSetupLevel(level);
             }
+
             UserCredential updatedUser = userCredentialRepository.save(userCredential);
-            if(updatedUser.getFirstName() != null && updatedUser.getLastName() != null && updatedUser.getOtherName() != null && updatedUser.getAddress() != null && updatedUser.getPhoneNumber() != null && updatedUser.getDateOBirth() != null && updatedUser.getGender() != null && updatedUser.getMaritalStatus() != null){
-                updatedUser.setProfileSetupLevel(1);
-            }
-            if (updatedUser.getBvn()!= null){
-                updatedUser.setProfileSetupLevel(2);
-            }
-            if (updatedUser.getNin() != null){
-                updatedUser.setProfileSetupLevel(3);
-            }
-            if (updatedUser.getPin() != null){
-                updatedUser.setProfileSetupLevel(4);
-            }
-            if (updatedUser.getSecurityAnswer() != null && updatedUser.getSecurityQuestion() != null){
-                updatedUser.setProfileSetupLevel(5);
-            }
-            userCredentialRepository.save(updatedUser);
             //Sending email alert
 
             //building response object
@@ -244,6 +200,125 @@ public class AuthService {
                 .responseBody(null)
                 .build());
     }
+
+    public ResponseEntity<CustomResponse> updateUserBvn(Long userId, UserProfileRequest request){
+        boolean isUserExist = userCredentialRepository.existsById(userId);
+        UserCredential userCredential = userCredentialRepository.findById(userId).get();
+
+        if (userCredential.getEmailVerifyStatus().equalsIgnoreCase("UNVERIFIED")){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                    .responseCode(AccountUtils.EMAIL_NOT_VERIFIED_CODE)
+                    .responseMessage(AccountUtils.EMAIL_NOT_VERIFIED_MESSAGE)
+                    .build());
+        }
+
+        if (isUserExist){
+            if (request.getBvn() != null){
+                userCredential.setBvn(request.getBvn());
+            }
+            if (userCredential.getProfileSetupLevel() < 2){
+                userCredential.setProfileSetupLevel(2);
+            }
+
+            UserCredential updatedUser = userCredentialRepository.save(userCredential);
+            //Sending email alert
+
+            //building response object
+            Object response = modelMapper.map(updatedUser, UserCredentialResponse.class);
+            return ResponseEntity.ok(CustomResponse.builder()
+                    .responseCode(AccountUtils.ACCOUNT_CREATION_SUCCESS_CODE)
+                    .responseMessage(AccountUtils.ACCOUNT_CREATION_SUCCESS_MESSAGE)
+                    .responseBody(response)
+                    .build());
+
+        }
+
+        return ResponseEntity.badRequest().body(CustomResponse.builder()
+                .responseCode(AccountUtils.USER_NOT_EXIST_CODE)
+                .responseMessage(AccountUtils.USER_NOT_EXIST_MESSAGE)
+                .responseBody(null)
+                .build());
+    }
+
+    public ResponseEntity<CustomResponse> updateUserNin(Long userId, UserProfileRequest request){
+        boolean isUserExist = userCredentialRepository.existsById(userId);
+        UserCredential userCredential = userCredentialRepository.findById(userId).get();
+
+        if (userCredential.getEmailVerifyStatus().equalsIgnoreCase("UNVERIFIED")){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                    .responseCode(AccountUtils.EMAIL_NOT_VERIFIED_CODE)
+                    .responseMessage(AccountUtils.EMAIL_NOT_VERIFIED_MESSAGE)
+                    .build());
+        }
+
+        if (isUserExist){
+            if (request.getNin() != null){
+                userCredential.setNin(request.getNin());
+            }
+            if (userCredential.getProfileSetupLevel() < 3){
+                userCredential.setProfileSetupLevel(3);
+            }
+
+            UserCredential updatedUser = userCredentialRepository.save(userCredential);
+            //Sending email alert
+
+            //building response object
+            Object response = modelMapper.map(updatedUser, UserCredentialResponse.class);
+            return ResponseEntity.ok(CustomResponse.builder()
+                    .responseCode(AccountUtils.ACCOUNT_CREATION_SUCCESS_CODE)
+                    .responseMessage(AccountUtils.ACCOUNT_CREATION_SUCCESS_MESSAGE)
+                    .responseBody(response)
+                    .build());
+
+        }
+
+        return ResponseEntity.badRequest().body(CustomResponse.builder()
+                .responseCode(AccountUtils.USER_NOT_EXIST_CODE)
+                .responseMessage(AccountUtils.USER_NOT_EXIST_MESSAGE)
+                .responseBody(null)
+                .build());
+    }
+
+    public ResponseEntity<CustomResponse> updateUserSecurityQuestion(Long userId, UserProfileRequest request){
+        boolean isUserExist = userCredentialRepository.existsById(userId);
+        UserCredential userCredential = userCredentialRepository.findById(userId).get();
+
+        if (userCredential.getEmailVerifyStatus().equalsIgnoreCase("UNVERIFIED")){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                    .responseCode(AccountUtils.EMAIL_NOT_VERIFIED_CODE)
+                    .responseMessage(AccountUtils.EMAIL_NOT_VERIFIED_MESSAGE)
+                    .build());
+        }
+
+        if (isUserExist){
+            if (request.getSecurityQuestion() != null){
+                userCredential.setSecurityQuestion(request.getSecurityQuestion());
+                userCredential.setSecurityAnswer(request.getSecurityAnswer());
+            }
+            if (userCredential.getProfileSetupLevel() < 5){
+                userCredential.setProfileSetupLevel(5);
+            }
+
+            UserCredential updatedUser = userCredentialRepository.save(userCredential);
+            //Sending email alert
+
+            //building response object
+            Object response = modelMapper.map(updatedUser, UserCredentialResponse.class);
+            return ResponseEntity.ok(CustomResponse.builder()
+                    .responseCode(AccountUtils.ACCOUNT_CREATION_SUCCESS_CODE)
+                    .responseMessage(AccountUtils.ACCOUNT_CREATION_SUCCESS_MESSAGE)
+                    .responseBody(response)
+                    .build());
+
+        }
+
+        return ResponseEntity.badRequest().body(CustomResponse.builder()
+                .responseCode(AccountUtils.USER_NOT_EXIST_CODE)
+                .responseMessage(AccountUtils.USER_NOT_EXIST_MESSAGE)
+                .responseBody(null)
+                .build());
+    }
+
 
     public ResponseEntity<CustomResponse> login(LoginDto loginDto){
         Authentication authentication=null;
@@ -685,6 +760,10 @@ public class AuthService {
         }
 
         userCredential.setPin(accountUtils.encodePin(request.getPin()));
+        if (userCredential.getProfileSetupLevel() < 4){
+            userCredential.setProfileSetupLevel(4);
+        }
+
         userCredentialRepository.save(userCredential);
         return ResponseEntity.ok(CustomResponse.builder()
                         .responseCode(AccountUtils.PIN_SETUP_SUCCESS_CODE)
