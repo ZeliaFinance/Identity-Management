@@ -176,7 +176,7 @@ public class AuthService {
                 userCredential.setAddress(request.getAddress());
             }
             int level;
-            if (userCredential.getProfileSetupLevel() < 1){
+            if (userCredential.getProfileSetupLevel() == null){
                 level = 1;
                 userCredential.setProfileSetupLevel(level);
             }
