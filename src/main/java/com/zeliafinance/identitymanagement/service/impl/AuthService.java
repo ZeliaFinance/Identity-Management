@@ -214,21 +214,30 @@ public class AuthService {
 
         if (isUserExist){
             if (request.getBvn() != null){
-                if (!accountUtils.validateBvnAndNin(request.getBvn())){
-                    return ResponseEntity.badRequest().body(CustomResponse.builder()
-                                    .responseCode(AccountUtils.BVN_INVALID_CODE)
-                                    .responseMessage(AccountUtils.BVN_INVALID_MESSAGE)
-                            .build());
-                }
+
                 userCredential.setBvn(request.getBvn());
 
-                verifyBvn(BvnVerificationDto.builder()
-                        .bvn(request.getBvn())
-                        .email(userCredential.getEmail())
-                        .build()).getBody();
+                if (request.getBvn().length() != AccountUtils.BVN_LENGTH){
+                    userCredential.setBvnVerifyStatus("UNVERIFIED");
+                    return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .responseCode(AccountUtils.BVN_INVALID_CODE)
+                            .responseMessage(AccountUtils.BVN_INVALID_MESSAGE)
+                            .build());
+                }
 
+                if ((!request.getBvn().startsWith("1234") && !request.getBvn().endsWith("02"))){
+                    return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .responseCode(AccountUtils.BVN_INVALID_CODE)
+                            .responseMessage(AccountUtils.BVN_INVALID_MESSAGE)
+                            .build());
+                }
+
+                userCredential.setBvnVerifyStatus("VERIFIED");
+                userCredentialRepository.save(userCredential);
+            }
 
             }
+            log.info("Bvn status: {}", userCredential.getBvnVerifyStatus());
             if (userCredential.getProfileSetupLevel() < 2 && userCredential.getBvnVerifyStatus().equalsIgnoreCase("VERIFIED")){
                 userCredential.setProfileSetupLevel(2);
             }
@@ -244,13 +253,7 @@ public class AuthService {
                     .responseBody(response)
                     .build());
 
-        }
 
-        return ResponseEntity.badRequest().body(CustomResponse.builder()
-                .responseCode(AccountUtils.USER_NOT_EXIST_CODE)
-                .responseMessage(AccountUtils.USER_NOT_EXIST_MESSAGE)
-                .responseBody(null)
-                .build());
     }
 
     public ResponseEntity<CustomResponse> updateUserNin(Long userId, UserProfileRequest request){
@@ -273,6 +276,23 @@ public class AuthService {
                             .build());
                 }
                 userCredential.setNin(request.getNin());
+                if (request.getNin().length() != AccountUtils.BVN_LENGTH){
+                    userCredential.setNinStatus("UNVERIFIED");
+                    return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .responseCode(AccountUtils.NIN_INVALID_CODE)
+                            .responseMessage(AccountUtils.NIN_INVALID_MESSAGE)
+                            .build());
+                }
+
+                if ((!request.getNin().startsWith("1234") && !request.getNin().endsWith("02"))){
+                    return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .responseCode(AccountUtils.NIN_INVALID_CODE)
+                            .responseMessage(AccountUtils.NIN_INVALID_MESSAGE)
+                            .build());
+                }
+
+                userCredential.setNinStatus("VERIFIED");
+                userCredentialRepository.save(userCredential);
             }
             if (userCredential.getProfileSetupLevel() < 3 && userCredential.getNinStatus().equalsIgnoreCase("VERIFIED")){
                 userCredential.setProfileSetupLevel(3);
@@ -581,11 +601,10 @@ public class AuthService {
                         .build());
             }
 
-            if (!bvnVerificationDto.getBvn().equals("70123456789")){
-                userCredential.setBvnVerifyStatus("UNVERIFIED");
+            if ((!bvnVerificationDto.getBvn().startsWith("1234") && !bvnVerificationDto.getBvn().endsWith("02"))){
                 return ResponseEntity.badRequest().body(CustomResponse.builder()
-                                .responseCode(AccountUtils.BVN_MISMATCH_CODE)
-                                .responseMessage(AccountUtils.BVN_MISMATCH_MESSAGE)
+                        .responseCode(AccountUtils.BVN_INVALID_CODE)
+                        .responseMessage(AccountUtils.BVN_INVALID_MESSAGE)
                         .build());
             }
 
