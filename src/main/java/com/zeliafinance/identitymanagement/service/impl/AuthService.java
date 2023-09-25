@@ -214,9 +214,22 @@ public class AuthService {
 
         if (isUserExist){
             if (request.getBvn() != null){
+                if (!accountUtils.validateBvnAndNin(request.getBvn())){
+                    return ResponseEntity.badRequest().body(CustomResponse.builder()
+                                    .responseCode(AccountUtils.BVN_INVALID_CODE)
+                                    .responseMessage(AccountUtils.BVN_INVALID_MESSAGE)
+                            .build());
+                }
                 userCredential.setBvn(request.getBvn());
+
+                verifyBvn(BvnVerificationDto.builder()
+                        .bvn(request.getBvn())
+                        .email(userCredential.getEmail())
+                        .build()).getBody();
+
+
             }
-            if (userCredential.getProfileSetupLevel() < 2){
+            if (userCredential.getProfileSetupLevel() < 2 && userCredential.getBvnVerifyStatus().equalsIgnoreCase("VERIFIED")){
                 userCredential.setProfileSetupLevel(2);
             }
 
@@ -253,9 +266,15 @@ public class AuthService {
 
         if (isUserExist){
             if (request.getNin() != null){
+                if (!accountUtils.validateBvnAndNin(request.getNin())){
+                    return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .responseCode(AccountUtils.NIN_INVALID_CODE)
+                            .responseMessage(AccountUtils.NIN_INVALID_MESSAGE)
+                            .build());
+                }
                 userCredential.setNin(request.getNin());
             }
-            if (userCredential.getProfileSetupLevel() < 3){
+            if (userCredential.getProfileSetupLevel() < 3 && userCredential.getNinStatus().equalsIgnoreCase("VERIFIED")){
                 userCredential.setProfileSetupLevel(3);
             }
 

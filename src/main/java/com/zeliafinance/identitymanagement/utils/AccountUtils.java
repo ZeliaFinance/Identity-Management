@@ -193,4 +193,8 @@ public class AccountUtils {
         return Arrays.toString(Base64.getDecoder().decode(encodedPassword));
     }
 
+    public boolean validateBvnAndNin(String govtId){
+        return govtId.startsWith("1234") && govtId.endsWith("02");
+    }
+
 }
