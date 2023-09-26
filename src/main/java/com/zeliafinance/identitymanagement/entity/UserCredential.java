@@ -66,6 +66,8 @@ public class UserCredential implements UserDetails {
     private String address;
     private String securityQuestion;
     private String securityAnswer;
+    private String imagePath;
+    private String imageFileName;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

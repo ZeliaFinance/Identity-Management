@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("api/v1/users")
@@ -132,6 +133,12 @@ public class UserCredentialsController {
     @PostMapping("/verifyPin")
     public ResponseEntity<CustomResponse> verifyPin(@RequestBody PinSetupDto pinSetupDto){
         return service.verifyPin(pinSetupDto);
+    }
+
+    @PostMapping("/{userId}/uploadFile")
+    public ResponseEntity<CustomResponse> uploadFile(@RequestPart(value = "file") final MultipartFile multipartFile, @PathVariable Long userId ){
+        return service.uploadFile(multipartFile, userId);
+
     }
 
 }

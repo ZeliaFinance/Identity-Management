@@ -1,5 +1,8 @@
 package com.zeliafinance.identitymanagement.service.impl;
 
+import com.amazonaws.AmazonServiceException;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.zeliafinance.identitymanagement.config.JwtTokenProvider;
 import com.zeliafinance.identitymanagement.dto.*;
 import com.zeliafinance.identitymanagement.entity.Role;
@@ -28,6 +31,12 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.file.FileStore;
 import java.security.Key;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -49,6 +58,11 @@ public class AuthService {
     private PasswordEncoder passwordEncoder;
     private JwtTokenProvider jwtTokenProvider;
     private DojahSmsService dojahSmsService;
+    private AmazonS3 amazonS3;
+    
+
+
+
 
 
 
@@ -850,4 +864,58 @@ public class AuthService {
         return Keys.hmacShaKeyFor(Decoders.BASE64.decode(AccountUtils.JWT_SECRET));
     }
 
+
+    public ResponseEntity<CustomResponse> uploadFile(final MultipartFile multipartFile, Long userId){
+        UserCredential userCredential = userCredentialRepository.findById(userId).get();
+        boolean existsById = userCredentialRepository.existsById(userId);
+        if (!existsById){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .responseCode(AccountUtils.USER_NOT_EXIST_CODE)
+                            .responseMessage(AccountUtils.USER_NOT_EXIST_MESSAGE)
+                    .build());
+        }
+
+
+        log.info("File upload initiated.");
+
+
+        try {
+            final File file = convertMultiPartFileToFile(multipartFile);
+            String fileName = uploadFileToS3Bucket(file);
+            log.info("File upload is completed.");
+            userCredential.setImageFileName(fileName);
+            userCredential.setImagePath(file.getPath());
+            userCredentialRepository.save(userCredential);
+            file.delete();
+        } catch (final AmazonServiceException e) {
+            log.info("File upload failed.");
+            log.error("Error = {} while uploading file.", e.getMessage());
+            throw new RuntimeException(e);
+        }
+
+        return ResponseEntity.ok(CustomResponse.builder()
+                        .responseCode(AccountUtils.SUCCESS_CODE)
+                        .responseMessage(AccountUtils.SUCCESS_MESSAGE)
+                        .responseBody(modelMapper.map(userCredential, UserCredentialResponse.class))
+                .build());
+    }
+
+    private File convertMultiPartFileToFile(final MultipartFile multipartFile){
+        final File file = new File(Objects.requireNonNull(multipartFile.getOriginalFilename()));
+        try (final FileOutputStream outputStream = new FileOutputStream(file)){
+             outputStream.write(multipartFile.getBytes());
+        } catch (IOException e) {
+            log.error("Error converting multipart file to file= {}", e.getMessage());
+            throw new RuntimeException(e);
+        }
+        return file;
+    }
+
+    private String uploadFileToS3Bucket(final File file){
+        final String uniqueFileName = LocalDateTime.now() + "_" + file.getName();
+        log.info("Uploading file with name= " + uniqueFileName);
+        final PutObjectRequest putObjectRequest = new PutObjectRequest(AccountUtils.BUCKET_NAME, uniqueFileName, file);
+        amazonS3.putObject(putObjectRequest);
+        return uniqueFileName;
+    }
 }
