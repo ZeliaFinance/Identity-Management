@@ -174,12 +174,10 @@ public class AccountUtils {
         return encode(text, 26 - shift);
     }
 
-//    public static void main(String[] args) {
-//        AccountUtils accountUtils = new AccountUtils();
-//        System.out.println(accountUtils.encode("musa", 3));
-//        System.out.println(encodePin("1234"));
-//        System.out.println(decode("MTIzNA"));
-//    }
+    public static void main(String[] args) {
+        AccountUtils accountUtils = new AccountUtils();
+
+    }
 
     public String encodePin(String pin){
         return Base64.getEncoder().encodeToString(pin.getBytes());
