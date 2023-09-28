@@ -40,5 +40,4 @@ public class UserCredentialResponse {
     private Integer profileSetupLevel;
     private String imagePath;
     private String imageFileName;
-    private String imageBaseUrl="https://zelia-file-storage.s3.amazonaws.com/";
 }
