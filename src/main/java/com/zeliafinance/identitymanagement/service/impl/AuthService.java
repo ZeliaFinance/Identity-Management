@@ -128,6 +128,8 @@ public class AuthService {
                 .build();
         emailService.sendEmailAlert(emailDetails);
 
+        String token = generateToken(request.getEmail());
+
 
         Object response = modelMapper.map(savedUser, UserCredentialResponse.class);
         return ResponseEntity.status(HttpStatus.CREATED).body(CustomResponse.builder()
@@ -136,6 +138,7 @@ public class AuthService {
                 .responseBody(response)
                         .referenceId(userCredential.getReferenceId())
                         .expiry(userCredential.getOtpExpiryDate())
+                        .token(token)
                 .build());
     }
 
