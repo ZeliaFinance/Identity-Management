@@ -25,4 +25,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity.internalServerError().body(errorDetails);
     }
 
+
+
 }
