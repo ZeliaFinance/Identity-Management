@@ -141,7 +141,7 @@ public class AccountUtils {
     }
 
     public Boolean isPasswordValid(String password){
-        String regex = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=])(?=\\S+$).{6,20}$";
+        String regex = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&+=])(?=\\S+$).{6,20}$";
         Pattern pattern = Pattern.compile(regex);
         if (password == null){
             return false;
