@@ -5,6 +5,7 @@ import com.zeliafinance.identitymanagement.dto.ResourcesDto;
 import com.zeliafinance.identitymanagement.service.ResourcesService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -14,6 +15,7 @@ public class ResourcesController {
 
     private ResourcesService service;
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @PostMapping
     public ResponseEntity<CustomResponse> addResource(@RequestBody ResourcesDto resourcesDto){
         return service.saveResource(resourcesDto);

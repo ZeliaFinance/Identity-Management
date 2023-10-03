@@ -100,6 +100,7 @@ public class AccountUtils {
     public static final String NIN_MISMATCH_CODE = "035";
     public static final String NIN_MISMATCH_MESSAGE = "Nin Mismatch";
     public static final String BUCKET_NAME = "zelia-file-storage";
+    public static final int INTEREST_RATE = 8;
     @Bean
     public String generateAccountNumber(){
         StringBuilder accountNumber = new StringBuilder();
