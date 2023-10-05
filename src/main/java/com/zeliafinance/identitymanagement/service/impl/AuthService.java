@@ -181,6 +181,13 @@ public class AuthService {
                 userCredential.setDateOBirth(request.getDateOfBirth());
             }
             if (request.getPhoneNumber() != null){
+                boolean isPhoneNumberExists = userCredentialRepository.existsByPhoneNumber(request.getPhoneNumber());
+                if (isPhoneNumberExists){
+                    return ResponseEntity.badRequest().body(CustomResponse.builder()
+                                    .responseCode(AccountUtils.NON_UNIQUE_PHONE_NUMBER_CODE)
+                                    .responseMessage(AccountUtils.NON_UNIQUE_PHONE_NUMBER_MESSAGE)
+                            .build());
+                }
                 userCredential.setPhoneNumber(request.getPhoneNumber());
             }
             if (request.getGender() != null){
@@ -231,6 +238,14 @@ public class AuthService {
 
         if (isUserExist){
             if (request.getBvn() != null){
+
+                boolean isBvnExist = userCredentialRepository.existsByBvn(request.getBvn());
+                if (isBvnExist){
+                    return ResponseEntity.badRequest().body(CustomResponse.builder()
+                                    .responseCode(AccountUtils.NON_UNIQUE_BVN_CODE)
+                                    .responseMessage(AccountUtils.NON_UNIQUE_BVN_MESSAGE)
+                            .build());
+                }
 
                 userCredential.setBvn(request.getBvn());
 

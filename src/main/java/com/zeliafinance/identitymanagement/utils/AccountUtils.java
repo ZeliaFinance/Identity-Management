@@ -101,6 +101,10 @@ public class AccountUtils {
     public static final String NIN_MISMATCH_MESSAGE = "Nin Mismatch";
     public static final String BUCKET_NAME = "zelia-file-storage";
     public static final int INTEREST_RATE = 8;
+    public static final String NON_UNIQUE_PHONE_NUMBER_CODE = "036";
+    public static final String NON_UNIQUE_PHONE_NUMBER_MESSAGE = "Phone Number must be unique";
+    public static final String NON_UNIQUE_BVN_CODE = "037";
+    public static final String NON_UNIQUE_BVN_MESSAGE = "Bvn must be unique";
     @Bean
     public String generateAccountNumber(){
         StringBuilder accountNumber = new StringBuilder();
@@ -152,7 +156,10 @@ public class AccountUtils {
     }
 
     public Boolean isPinValid(String pin, int yearOfBirth){
-        return pin.length() == 4 && !pin.equals("1234") && !pin.equals("0000") && !pin.equals(String.valueOf(yearOfBirth));
+        String regex = "^(.)\\1*$";
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(pin);
+        return pin.length() == 4 && !pin.equals("1234") && !matcher.matches() && !pin.equals(String.valueOf(yearOfBirth));
     }
 
     public String encode(String text, int shift) {
@@ -177,6 +184,7 @@ public class AccountUtils {
 
     public static void main(String[] args) {
         AccountUtils accountUtils = new AccountUtils();
+        System.out.println(accountUtils.isPinValid("1990", 1990));
 
     }
 
