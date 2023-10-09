@@ -184,8 +184,7 @@ public class AccountUtils {
 
     public static void main(String[] args) {
         AccountUtils accountUtils = new AccountUtils();
-        System.out.println(accountUtils.isPinValid("1990", 1990));
-
+        System.out.println(accountUtils.encode("1a681e8737c1ca89a4b5e96eeff44cef", 3));
     }
 
     public String encodePin(String pin){

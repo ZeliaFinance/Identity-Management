@@ -12,9 +12,8 @@ import java.time.LocalDateTime;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@JsonInclude(JsonInclude.Include.NON_NULL)
-
 public class CustomResponse{
+    private String statusCode;
     private String responseCode;
     private String responseMessage;
     private Object responseBody;

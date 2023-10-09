@@ -71,6 +71,7 @@ public class AuthService {
         boolean isEmailExist = userCredentialRepository.existsByEmail(request.getEmail());
         if (isEmailExist){
             return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .statusCode(HttpStatus.BAD_REQUEST.toString())
                     .responseCode(AccountUtils.EMAIL_EXISTS_CODE)
                     .responseMessage(AccountUtils.EMAIL_EXISTS_MESSAGE)
                     .build());
@@ -78,6 +79,7 @@ public class AuthService {
 
         if (!request.getPassword().equals(request.getConfirmPassword())){
             return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .statusCode(HttpStatus.BAD_REQUEST.toString())
                             .responseCode(AccountUtils.PASSWORD_INCORRECT_CODE)
                             .responseBody(AccountUtils.PASSWORD_INCORRECT_MESSAGE)
                     .build());
@@ -85,7 +87,8 @@ public class AuthService {
 
         if (!accountUtils.isPasswordValid(request.getPassword())){
             return ResponseEntity.badRequest().body(CustomResponse.builder()
-                            .responseCode(AccountUtils.PASSWORD_INVALID_CODE)
+                            .statusCode(HttpStatus.BAD_REQUEST.toString())
+                    .responseCode(AccountUtils.PASSWORD_INVALID_CODE)
                             .responseMessage(AccountUtils.PASSWORD_INVALID_MESSAGE)
                     .build());
         }
@@ -133,6 +136,7 @@ public class AuthService {
 
         Object response = modelMapper.map(savedUser, UserCredentialResponse.class);
         return ResponseEntity.status(HttpStatus.CREATED).body(CustomResponse.builder()
+                        .statusCode(HttpStatus.OK.toString())
                 .responseCode(AccountUtils.ACCOUNT_CREATION_SUCCESS_CODE)
                 .responseMessage(AccountUtils.ACCOUNT_CREATION_SUCCESS_MESSAGE)
                 .responseBody(response)
@@ -154,6 +158,7 @@ public class AuthService {
             log.info("age {}", age);
             if (age < 18){
                 return ResponseEntity.badRequest().body(CustomResponse.builder()
+                                .statusCode(HttpStatus.BAD_REQUEST.toString())
                         .responseCode(AccountUtils.UNDERAGE_CODE)
                         .responseMessage(AccountUtils.UNDERAGE_MESSAGE)
                         .build());
@@ -162,6 +167,7 @@ public class AuthService {
 
         if (userCredential.getEmailVerifyStatus().equalsIgnoreCase("UNVERIFIED")){
             return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .statusCode(HttpStatus.BAD_REQUEST.toString())
                             .responseCode(AccountUtils.EMAIL_NOT_VERIFIED_CODE)
                             .responseMessage(AccountUtils.EMAIL_NOT_VERIFIED_MESSAGE)
                     .build());
@@ -184,7 +190,8 @@ public class AuthService {
                 boolean isPhoneNumberExists = userCredentialRepository.existsByPhoneNumber(request.getPhoneNumber());
                 if (isPhoneNumberExists){
                     return ResponseEntity.badRequest().body(CustomResponse.builder()
-                                    .responseCode(AccountUtils.NON_UNIQUE_PHONE_NUMBER_CODE)
+                                    .statusCode(HttpStatus.BAD_REQUEST.toString())
+                            .responseCode(AccountUtils.NON_UNIQUE_PHONE_NUMBER_CODE)
                                     .responseMessage(AccountUtils.NON_UNIQUE_PHONE_NUMBER_MESSAGE)
                             .build());
                 }
@@ -211,6 +218,7 @@ public class AuthService {
             //building response object
             Object response = modelMapper.map(updatedUser, UserCredentialResponse.class);
             return ResponseEntity.ok(CustomResponse.builder()
+                            .statusCode(HttpStatus.OK.toString())
                     .responseCode(AccountUtils.ACCOUNT_CREATION_SUCCESS_CODE)
                     .responseMessage(AccountUtils.ACCOUNT_CREATION_SUCCESS_MESSAGE)
                     .responseBody(response)
@@ -219,6 +227,7 @@ public class AuthService {
         }
 
         return ResponseEntity.badRequest().body(CustomResponse.builder()
+                        .statusCode(HttpStatus.OK.toString())
                 .responseCode(AccountUtils.USER_NOT_EXIST_CODE)
                 .responseMessage(AccountUtils.USER_NOT_EXIST_MESSAGE)
                 .responseBody(null)
@@ -231,6 +240,7 @@ public class AuthService {
 
         if (userCredential.getEmailVerifyStatus().equalsIgnoreCase("UNVERIFIED")){
             return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .statusCode(HttpStatus.OK.toString())
                     .responseCode(AccountUtils.EMAIL_NOT_VERIFIED_CODE)
                     .responseMessage(AccountUtils.EMAIL_NOT_VERIFIED_MESSAGE)
                     .build());
@@ -242,7 +252,8 @@ public class AuthService {
                 boolean isBvnExist = userCredentialRepository.existsByBvn(request.getBvn());
                 if (isBvnExist){
                     return ResponseEntity.badRequest().body(CustomResponse.builder()
-                                    .responseCode(AccountUtils.NON_UNIQUE_BVN_CODE)
+                                    .statusCode(HttpStatus.BAD_REQUEST.toString())
+                            .responseCode(AccountUtils.NON_UNIQUE_BVN_CODE)
                                     .responseMessage(AccountUtils.NON_UNIQUE_BVN_MESSAGE)
                             .build());
                 }
@@ -252,6 +263,7 @@ public class AuthService {
                 if (request.getBvn().length() != AccountUtils.BVN_LENGTH){
                     userCredential.setBvnVerifyStatus("UNVERIFIED");
                     return ResponseEntity.badRequest().body(CustomResponse.builder()
+                                    .statusCode(HttpStatus.BAD_REQUEST.toString())
                             .responseCode(AccountUtils.BVN_INVALID_CODE)
                             .responseMessage(AccountUtils.BVN_INVALID_MESSAGE)
                             .build());
@@ -259,6 +271,7 @@ public class AuthService {
 
                 if ((!request.getBvn().startsWith("1234") && !request.getBvn().endsWith("02"))){
                     return ResponseEntity.badRequest().body(CustomResponse.builder()
+                                    .statusCode(HttpStatus.BAD_REQUEST.toString())
                             .responseCode(AccountUtils.BVN_INVALID_CODE)
                             .responseMessage(AccountUtils.BVN_INVALID_MESSAGE)
                             .build());
@@ -280,6 +293,7 @@ public class AuthService {
             //building response object
             Object response = modelMapper.map(updatedUser, UserCredentialResponse.class);
             return ResponseEntity.ok(CustomResponse.builder()
+                            .statusCode(HttpStatus.BAD_REQUEST.toString())
                     .responseCode(AccountUtils.ACCOUNT_CREATION_SUCCESS_CODE)
                     .responseMessage(AccountUtils.ACCOUNT_CREATION_SUCCESS_MESSAGE)
                     .responseBody(response)
@@ -294,6 +308,7 @@ public class AuthService {
 
         if (userCredential.getEmailVerifyStatus().equalsIgnoreCase("UNVERIFIED")){
             return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .statusCode(HttpStatus.BAD_REQUEST.toString())
                     .responseCode(AccountUtils.EMAIL_NOT_VERIFIED_CODE)
                     .responseMessage(AccountUtils.EMAIL_NOT_VERIFIED_MESSAGE)
                     .build());
@@ -303,6 +318,7 @@ public class AuthService {
             if (request.getNin() != null){
                 if (!accountUtils.validateBvnAndNin(request.getNin())){
                     return ResponseEntity.badRequest().body(CustomResponse.builder()
+                                    .statusCode(HttpStatus.BAD_REQUEST.toString())
                             .responseCode(AccountUtils.NIN_INVALID_CODE)
                             .responseMessage(AccountUtils.NIN_INVALID_MESSAGE)
                             .build());
@@ -311,6 +327,7 @@ public class AuthService {
                 if (request.getNin().length() != AccountUtils.BVN_LENGTH){
                     userCredential.setNinStatus("UNVERIFIED");
                     return ResponseEntity.badRequest().body(CustomResponse.builder()
+                                    .statusCode(HttpStatus.BAD_REQUEST.toString())
                             .responseCode(AccountUtils.NIN_INVALID_CODE)
                             .responseMessage(AccountUtils.NIN_INVALID_MESSAGE)
                             .build());
@@ -318,6 +335,7 @@ public class AuthService {
 
                 if ((!request.getNin().startsWith("1234") && !request.getNin().endsWith("02"))){
                     return ResponseEntity.badRequest().body(CustomResponse.builder()
+                                    .statusCode(HttpStatus.BAD_REQUEST.toString())
                             .responseCode(AccountUtils.NIN_INVALID_CODE)
                             .responseMessage(AccountUtils.NIN_INVALID_MESSAGE)
                             .build());
@@ -336,6 +354,7 @@ public class AuthService {
             //building response object
             Object response = modelMapper.map(updatedUser, UserCredentialResponse.class);
             return ResponseEntity.ok(CustomResponse.builder()
+                            .statusCode(HttpStatus.OK.toString())
                     .responseCode(AccountUtils.ACCOUNT_CREATION_SUCCESS_CODE)
                     .responseMessage(AccountUtils.ACCOUNT_CREATION_SUCCESS_MESSAGE)
                     .responseBody(response)
@@ -344,6 +363,7 @@ public class AuthService {
         }
 
         return ResponseEntity.badRequest().body(CustomResponse.builder()
+                        .statusCode(HttpStatus.BAD_REQUEST.toString())
                 .responseCode(AccountUtils.USER_NOT_EXIST_CODE)
                 .responseMessage(AccountUtils.USER_NOT_EXIST_MESSAGE)
                 .responseBody(null)
@@ -356,6 +376,7 @@ public class AuthService {
 
         if (userCredential.getEmailVerifyStatus().equalsIgnoreCase("UNVERIFIED")){
             return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .statusCode(HttpStatus.BAD_REQUEST.toString())
                     .responseCode(AccountUtils.EMAIL_NOT_VERIFIED_CODE)
                     .responseMessage(AccountUtils.EMAIL_NOT_VERIFIED_MESSAGE)
                     .build());
@@ -804,12 +825,14 @@ public class AuthService {
         boolean isEmailExists = userCredentialRepository.existsByEmail(request.getEmail());
         if (!userCredential.getEmailVerifyStatus().equalsIgnoreCase("VERIFIED")){
             return ResponseEntity.ok(CustomResponse.builder()
+                            .statusCode(HttpStatus.BAD_REQUEST.toString())
                             .responseCode(AccountUtils.EMAIL_NOT_VERIFIED_CODE)
                             .responseMessage(AccountUtils.EMAIL_NOT_VERIFIED_MESSAGE)
                     .build());
         }
         if (!isEmailExists){
             return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .statusCode(HttpStatus.BAD_REQUEST.toString())
                             .responseCode(AccountUtils.USER_NOT_EXIST_CODE)
                             .responseMessage(AccountUtils.USER_NOT_EXIST_MESSAGE)
                     .build());
@@ -817,6 +840,7 @@ public class AuthService {
         boolean isPinValid = accountUtils.isPinValid(request.getPin(), userCredential.getDateOBirth().getYear());
         if (!isPinValid){
             return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .statusCode(HttpStatus.BAD_REQUEST.toString())
                             .responseCode(AccountUtils.INVALID_PIN_CODE)
                             .responseMessage(AccountUtils.INVALID_PIN_MESSAGE)
                     .build());
@@ -824,6 +848,7 @@ public class AuthService {
 
         if (!request.getPin().equals(request.getConfirmPin())){
             return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .statusCode(HttpStatus.BAD_REQUEST.toString())
                             .responseCode(AccountUtils.PIN_DISPARITY_CODE)
                             .responseMessage(AccountUtils.PIN_DISPARITY_MESSAGE)
                     .build());
@@ -836,6 +861,7 @@ public class AuthService {
 
         userCredentialRepository.save(userCredential);
         return ResponseEntity.ok(CustomResponse.builder()
+                        .statusCode(HttpStatus.OK.toString())
                         .responseCode(AccountUtils.PIN_SETUP_SUCCESS_CODE)
                         .responseMessage(AccountUtils.PIN_SETUP_SUCCESS_MESSAGE)
                         .responseBody(modelMapper.map(userCredential, UserCredentialResponse.class))
@@ -848,6 +874,7 @@ public class AuthService {
         log.info(savedPin);
         if (!pinSetupDto.getPin().equals(pinSetupDto.getConfirmPin())){
             return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .statusCode(HttpStatus.BAD_REQUEST.toString())
                             .responseCode(AccountUtils.PIN_DISPARITY_CODE)
                             .responseMessage(AccountUtils.PIN_DISPARITY_MESSAGE)
                     .build());
@@ -855,12 +882,14 @@ public class AuthService {
 
         if (!savedPin.equals(pinSetupDto.getPin())){
             return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .statusCode(HttpStatus.BAD_REQUEST.toString())
                     .responseCode(AccountUtils.INVALID_PIN_CODE)
                     .responseMessage(AccountUtils.INVALID_PIN_MESSAGE)
                     .build());
         }
 
         return ResponseEntity.ok(CustomResponse.builder()
+                        .statusCode(HttpStatus.OK.toString())
                         .responseCode(AccountUtils.PIN_VALIDATED_CODE)
                         .responseMessage(AccountUtils.PIN_VALIDATED_MESSAGE)
                 .build());
@@ -888,6 +917,7 @@ public class AuthService {
         boolean existsById = userCredentialRepository.existsById(userId);
         if (!existsById){
             return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .statusCode(HttpStatus.BAD_REQUEST.toString())
                             .responseCode(AccountUtils.USER_NOT_EXIST_CODE)
                             .responseMessage(AccountUtils.USER_NOT_EXIST_MESSAGE)
                     .build());
@@ -912,6 +942,7 @@ public class AuthService {
         }
 
         return ResponseEntity.ok(CustomResponse.builder()
+                        .statusCode(HttpStatus.OK.toString())
                         .responseCode(AccountUtils.SUCCESS_CODE)
                         .responseMessage(AccountUtils.SUCCESS_MESSAGE)
                         .responseBody(modelMapper.map(userCredential, UserCredentialResponse.class))
