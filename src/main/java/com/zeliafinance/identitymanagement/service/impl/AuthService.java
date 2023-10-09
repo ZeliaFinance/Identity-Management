@@ -148,9 +148,10 @@ public class AuthService {
 
 
 
-    public ResponseEntity<CustomResponse> updateUserProfile(Long userId, UserProfileRequest request){
-        boolean isUserExist = userCredentialRepository.existsById(userId);
-        UserCredential userCredential = userCredentialRepository.findById(userId).get();
+    public ResponseEntity<CustomResponse> updateUserProfile(UserProfileRequest request){
+        String email = getLoggedInUserEmail();
+        UserCredential userCredential = userCredentialRepository.findByEmail(email).get();
+        boolean isUserExist = userCredentialRepository.existsByEmail(email);
         LocalDate currentDate = LocalDate.now();
 
         if (request.getDateOfBirth() != null){
@@ -234,9 +235,10 @@ public class AuthService {
                 .build());
     }
 
-    public ResponseEntity<CustomResponse> updateUserBvn(Long userId, UserProfileRequest request){
-        boolean isUserExist = userCredentialRepository.existsById(userId);
-        UserCredential userCredential = userCredentialRepository.findById(userId).get();
+    public ResponseEntity<CustomResponse> updateUserBvn(UserProfileRequest request){
+        String email = getLoggedInUserEmail();
+        boolean isUserExist = userCredentialRepository.existsByEmail(email);
+        UserCredential userCredential = userCredentialRepository.findByEmail(email).get();
 
         if (userCredential.getEmailVerifyStatus().equalsIgnoreCase("UNVERIFIED")){
             return ResponseEntity.badRequest().body(CustomResponse.builder()
@@ -302,9 +304,10 @@ public class AuthService {
 
     }
 
-    public ResponseEntity<CustomResponse> updateUserNin(Long userId, UserProfileRequest request){
-        boolean isUserExist = userCredentialRepository.existsById(userId);
-        UserCredential userCredential = userCredentialRepository.findById(userId).get();
+    public ResponseEntity<CustomResponse> updateUserNin(UserProfileRequest request){
+        String email = getLoggedInUserEmail();
+        boolean isUserExist = userCredentialRepository.existsByEmail(email);
+        UserCredential userCredential = userCredentialRepository.findByEmail(email).get();
 
         if (userCredential.getEmailVerifyStatus().equalsIgnoreCase("UNVERIFIED")){
             return ResponseEntity.badRequest().body(CustomResponse.builder()
@@ -370,9 +373,10 @@ public class AuthService {
                 .build());
     }
 
-    public ResponseEntity<CustomResponse> updateUserSecurityQuestion(Long userId, UserProfileRequest request){
-        boolean isUserExist = userCredentialRepository.existsById(userId);
-        UserCredential userCredential = userCredentialRepository.findById(userId).get();
+    public ResponseEntity<CustomResponse> updateUserSecurityQuestion(UserProfileRequest request){
+        String email = getLoggedInUserEmail();
+        boolean isUserExist = userCredentialRepository.existsByEmail(email);
+        UserCredential userCredential = userCredentialRepository.findByEmail(email).get();
 
         if (userCredential.getEmailVerifyStatus().equalsIgnoreCase("UNVERIFIED")){
             return ResponseEntity.badRequest().body(CustomResponse.builder()
@@ -966,5 +970,9 @@ public class AuthService {
         final PutObjectRequest putObjectRequest = new PutObjectRequest(AccountUtils.BUCKET_NAME, uniqueFileName, file);
         amazonS3.putObject(putObjectRequest);
         return uniqueFileName;
+    }
+
+    private String getLoggedInUserEmail(){
+        return SecurityContextHolder.getContext().getAuthentication().getName();
     }
 }

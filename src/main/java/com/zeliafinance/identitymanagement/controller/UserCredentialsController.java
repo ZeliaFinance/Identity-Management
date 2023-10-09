@@ -28,24 +28,24 @@ public class UserCredentialsController {
         return service.signUp(request);
     }
 
-    @PutMapping("/updateUser/{userId}")
-    public ResponseEntity<CustomResponse> updateProfile(@RequestBody UserProfileRequest request, @PathVariable(name = "userId") Long userId){
-        return service.updateUserProfile(userId, request);
+    @PutMapping("/updateUser")
+    public ResponseEntity<CustomResponse> updateProfile(@RequestBody UserProfileRequest request){
+        return service.updateUserProfile(request);
     }
 
-    @PutMapping("/updateUserBvn/{userId}")
-    public ResponseEntity<CustomResponse> updateUserBvn(@RequestBody UserProfileRequest request, @PathVariable(name = "userId") Long userId){
-        return service.updateUserBvn(userId, request);
+    @PutMapping("/updateUserBvn")
+    public ResponseEntity<CustomResponse> updateUserBvn(@RequestBody UserProfileRequest request){
+        return service.updateUserBvn(request);
     }
 
-    @PutMapping("/updateUserNin/{userId}")
-    public ResponseEntity<CustomResponse> updateUserNin(@RequestBody UserProfileRequest userProfileRequest, @PathVariable(name = "userId") Long userId){
-        return service.updateUserNin(userId, userProfileRequest);
+    @PutMapping("/updateUserNin")
+    public ResponseEntity<CustomResponse> updateUserNin(@RequestBody UserProfileRequest userProfileRequest){
+        return service.updateUserNin(userProfileRequest);
     }
 
-    @PutMapping("/updateSecurityQuestion/{userId}")
-    public ResponseEntity<CustomResponse> updateUserSecurityQuestion(@RequestBody UserProfileRequest request, @PathVariable(name = "userId") Long userId){
-        return service.updateUserSecurityQuestion(userId, request);
+    @PutMapping("/updateSecurityQuestion")
+    public ResponseEntity<CustomResponse> updateUserSecurityQuestion(@RequestBody UserProfileRequest request){
+        return service.updateUserSecurityQuestion(request);
     }
 
     @PostMapping("/login")
@@ -64,6 +64,7 @@ public class UserCredentialsController {
     }
 
     @GetMapping("{userId}")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<CustomResponse> fetchUser(@PathVariable (value = "userId") Long userId){
         return service.fetchUser(userId);
     }
