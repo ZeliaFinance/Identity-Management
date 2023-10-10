@@ -2,13 +2,17 @@ package com.zeliafinance.identitymanagement.controller;
 
 import com.zeliafinance.identitymanagement.dto.*;
 import com.zeliafinance.identitymanagement.entity.UserCredential;
+import com.zeliafinance.identitymanagement.repository.UserCredentialRepository;
 import com.zeliafinance.identitymanagement.service.impl.AuthService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("api/v1/users")
@@ -17,6 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class UserCredentialsController {
 
     private final AuthService service;
+
 
 
     public UserCredentialsController(AuthService service){
@@ -140,5 +145,33 @@ public class UserCredentialsController {
         return service.uploadFile(multipartFile, userId);
 
     }
+
+    @GetMapping("/userByEmail")
+    public ResponseEntity<CustomResponse> fetchUserByEmail(@RequestParam String email){
+        return service.findUserByEmail(email);
+    }
+
+    /*@GetMapping("/userByFirstName")
+    public ResponseEntity<CustomResponse> fetchUserByFirstName(@RequestParam String firstName){
+        return service.findUserByFirstName(firstName);
+    }
+
+
+    @GetMapping("/userByLastName")
+    public ResponseEntity<CustomResponse> fetchUserByLastName(@RequestParam String lastName){
+        return service.findUserByLastName(lastName);
+    }*/
+
+    @GetMapping("/search")
+  public ResponseEntity<List<UserProfileRequest>> searchUsersByKey(@RequestParam(required = false) String key){
+      return service.searchUsersByKey(key);
+
+  }
+
+    @GetMapping("/userInfo")
+    public ResponseEntity<CustomResponse> getTotalUsers() {
+        return service.getTotalUsers();
+    }
+
 
 }

@@ -52,7 +52,7 @@ public class UserCredential implements UserDetails {
     private String emailVerifyStatus;
     private String deviceIp;
     private String liveLocation;
-    private String modifiedby;
+    private String modifiedBy;
     @Enumerated(EnumType.STRING)
     private Role role;
     private String referralCode;
