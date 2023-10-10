@@ -1,6 +1,5 @@
 package com.zeliafinance.identitymanagement.dto;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,8 +12,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 public class CustomResponse{
-    private String statusCode;
-    private String responseCode;
+    private int statusCode;
     private String responseMessage;
     private Object responseBody;
     private String token;

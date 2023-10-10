@@ -5,14 +5,16 @@ import com.zeliafinance.identitymanagement.loan.dto.LoanProductRequest;
 import com.zeliafinance.identitymanagement.loan.entity.LoanProduct;
 import com.zeliafinance.identitymanagement.loan.repository.LoanProductRepository;
 import com.zeliafinance.identitymanagement.loan.service.LoanProductService;
-import static com.zeliafinance.identitymanagement.utils.AccountUtils.*;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+
+import static com.zeliafinance.identitymanagement.utils.AccountUtils.SUCCESS_MESSAGE;
 
 @Service
 @Slf4j
@@ -38,7 +40,7 @@ public class LoanProductServiceImpl implements LoanProductService {
         LoanProduct savedProduct = loanProductRepository.save(loanProduct);
 
         return ResponseEntity.ok(CustomResponse.builder()
-                        .responseCode(SUCCESS_CODE)
+                        .statusCode(HttpStatus.OK.value())
                         .responseMessage(SUCCESS_MESSAGE)
                         .responseBody(savedProduct)
                 .build());
@@ -47,7 +49,7 @@ public class LoanProductServiceImpl implements LoanProductService {
     public ResponseEntity<CustomResponse> fetchAllLoanProducts(){
         List<LoanProduct> productList = loanProductRepository.findAll();
         return ResponseEntity.ok(CustomResponse.builder()
-                        .responseCode(SUCCESS_CODE)
+                        .statusCode(HttpStatus.OK.value())
                         .responseMessage(SUCCESS_MESSAGE)
                         .responseBody(productList)
                 .build());
@@ -57,7 +59,7 @@ public class LoanProductServiceImpl implements LoanProductService {
     public ResponseEntity<CustomResponse> fetchLoanProductByProductName(String loanProductName) throws Exception {
         List<LoanProduct> loanProducts = loanProductRepository.findAll().stream().filter(product -> product.getLoanProductName().equalsIgnoreCase(loanProductName)).toList();
         return ResponseEntity.ok(CustomResponse.builder()
-                        .responseCode(SUCCESS_CODE)
+                        .statusCode(HttpStatus.OK.value())
                         .responseMessage(SUCCESS_MESSAGE)
                         .responseBody(loanProducts)
                 .build());
@@ -67,7 +69,7 @@ public class LoanProductServiceImpl implements LoanProductService {
     public ResponseEntity<CustomResponse> fetchLoanProductById(Long productId) throws Exception {
         LoanProduct loanProduct = loanProductRepository.findById(productId).orElseThrow(Exception::new);
         return ResponseEntity.ok(CustomResponse.builder()
-                        .responseCode(SUCCESS_CODE)
+                        .statusCode(HttpStatus.OK.value())
                         .responseMessage(SUCCESS_MESSAGE)
                         .responseBody(loanProduct)
                 .build());
@@ -98,7 +100,7 @@ public class LoanProductServiceImpl implements LoanProductService {
 
         LoanProduct updatedProduct = loanProductRepository.save(loanProduct);
         return ResponseEntity.ok(CustomResponse.builder()
-                        .responseCode(SUCCESS_CODE)
+                        .statusCode(HttpStatus.OK.value())
                         .responseMessage(SUCCESS_MESSAGE)
                         .responseBody(updatedProduct)
                 .build());
@@ -111,7 +113,7 @@ public class LoanProductServiceImpl implements LoanProductService {
         loanProduct.setStatus("INACTIVE");
         loanProduct = loanProductRepository.save(loanProduct);
         return ResponseEntity.ok(CustomResponse.builder()
-                        .responseCode(SUCCESS_CODE)
+                        .statusCode(HttpStatus.OK.value())
                         .responseMessage(SUCCESS_MESSAGE)
                         .responseBody(loanProduct)
                 .build());
