@@ -411,7 +411,7 @@ public class AuthService {
 
         if (!authentication.isAuthenticated()){
             return ResponseEntity.badRequest().body(CustomResponse.builder()
-                            .statusCode(HttpStatus.OK.value())
+                            .statusCode(HttpStatus.BAD_REQUEST.value())
                             .responseMessage(AccountUtils.INVALID_CREDENTIALS_MESSAGE)
                     .build());
         }

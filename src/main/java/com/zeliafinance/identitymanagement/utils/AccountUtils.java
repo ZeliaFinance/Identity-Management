@@ -1,13 +1,9 @@
 package com.zeliafinance.identitymanagement.utils;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Random;
@@ -105,6 +101,8 @@ public class AccountUtils {
     public static final String NON_UNIQUE_PHONE_NUMBER_MESSAGE = "Phone Number must be unique";
     public static final String NON_UNIQUE_BVN_CODE = "037";
     public static final String NON_UNIQUE_BVN_MESSAGE = "Bvn must be unique";
+    public static final String PENDING_LOAN_MESSAGE = "You have a pending loan";
+    public static final String LOAN_APPLICATION_SUCCESS = "Loan Application has been submitted for processing";
     @Bean
     public String generateAccountNumber(){
         StringBuilder accountNumber = new StringBuilder();

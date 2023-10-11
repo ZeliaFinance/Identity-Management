@@ -21,4 +21,9 @@ public class LoanApplicationController {
     public ResponseEntity<CustomResponse> calculateLoan(@RequestBody LoanApplicationRequest request){
         return service.calculateLoan(request);
     }
+
+    @PostMapping
+    public ResponseEntity<CustomResponse> applyForLoan(@RequestBody LoanApplicationRequest request){
+        return service.applyForLoan(request);
+    }
 }
