@@ -5,17 +5,15 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
-
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 public class LoanProductRequest {
     private String loanProductName;
-    private BigDecimal minAmount;
-    private BigDecimal maxAmount;
-    private Integer minDuration;
-    private Integer maxDuration;
-    private Integer interestRate;
+    private double minAmount;
+    private double maxAmount;
+    private int minDuration;
+    private int maxDuration;
+    private double interestRate;
 }

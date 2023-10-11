@@ -43,4 +43,14 @@ public class LoanProductController {
     public ResponseEntity<CustomResponse> deleteProduct(@PathVariable Long productId) throws Exception {
         return service.deleteLoanProduct(productId);
     }
+
+    @GetMapping("loanProducts")
+    public ResponseEntity<CustomResponse> fetchDistinctLoanProducts(){
+        return service.fetchDistinctLoanProductNames();
+    }
+
+    @GetMapping("inactiveLoanProducts")
+    public ResponseEntity<CustomResponse> fetchInactiveLoanProducts(){
+        return service.fetchInactiveLoans();
+    }
 }

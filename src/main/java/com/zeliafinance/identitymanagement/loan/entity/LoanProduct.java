@@ -8,8 +8,6 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.math.BigDecimal;
-
 @Getter
 @Setter
 @AllArgsConstructor
@@ -19,12 +17,13 @@ import java.math.BigDecimal;
 public class LoanProduct {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;private String loanProductName;
-    private BigDecimal minAmount;
-    private BigDecimal maxAmount;
-    private Integer minDuration;
-    private Integer maxDuration;
-    private Integer interestRate;
+    private Long id;
+    private String loanProductName;
+    private double minAmount;
+    private double maxAmount;
+    private int minDuration;
+    private int maxDuration;
+    private double interestRate;
     private String status;
     private String createdBy;
     private String modifiedBy;

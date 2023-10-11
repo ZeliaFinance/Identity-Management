@@ -1,6 +1,7 @@
 package com.zeliafinance.identitymanagement.loan.service.impl;
 
 import com.zeliafinance.identitymanagement.dto.CustomResponse;
+import com.zeliafinance.identitymanagement.dto.Info;
 import com.zeliafinance.identitymanagement.loan.dto.LoanProductRequest;
 import com.zeliafinance.identitymanagement.loan.entity.LoanProduct;
 import com.zeliafinance.identitymanagement.loan.repository.LoanProductRepository;
@@ -12,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.util.Comparator;
 import java.util.List;
 
 import static com.zeliafinance.identitymanagement.utils.AccountUtils.SUCCESS_MESSAGE;
@@ -47,27 +49,38 @@ public class LoanProductServiceImpl implements LoanProductService {
     }
 
     public ResponseEntity<CustomResponse> fetchAllLoanProducts(){
-        List<LoanProduct> productList = loanProductRepository.findAll();
+        List<LoanProduct> productList = loanProductRepository.findAll().stream().filter(loanProduct -> loanProduct.getStatus().equalsIgnoreCase("ACTIVE")).toList();
         return ResponseEntity.ok(CustomResponse.builder()
                         .statusCode(HttpStatus.OK.value())
                         .responseMessage(SUCCESS_MESSAGE)
                         .responseBody(productList)
+                        .info(Info.builder()
+                                .totalElements((long) productList.size())
+                                .build())
                 .build());
     }
 
     @Override
     public ResponseEntity<CustomResponse> fetchLoanProductByProductName(String loanProductName) throws Exception {
-        List<LoanProduct> loanProducts = loanProductRepository.findAll().stream().filter(product -> product.getLoanProductName().equalsIgnoreCase(loanProductName)).toList();
+        List<LoanProduct> loanProducts = loanProductRepository.findAll()
+                .stream()
+                .filter(product -> product.getLoanProductName().equalsIgnoreCase(loanProductName)
+                        && product.getStatus().equalsIgnoreCase("ACTIVE"))
+                .sorted(Comparator.comparing(LoanProduct::getMinAmount))
+                .toList();
         return ResponseEntity.ok(CustomResponse.builder()
                         .statusCode(HttpStatus.OK.value())
                         .responseMessage(SUCCESS_MESSAGE)
                         .responseBody(loanProducts)
+                        .info(Info.builder()
+                                .totalElements((long)loanProducts.size())
+                                .build())
                 .build());
     }
 
     @Override
     public ResponseEntity<CustomResponse> fetchLoanProductById(Long productId) throws Exception {
-        LoanProduct loanProduct = loanProductRepository.findById(productId).orElseThrow(Exception::new);
+        LoanProduct loanProduct = loanProductRepository.findById(productId).get();
         return ResponseEntity.ok(CustomResponse.builder()
                         .statusCode(HttpStatus.OK.value())
                         .responseMessage(SUCCESS_MESSAGE)
@@ -75,25 +88,26 @@ public class LoanProductServiceImpl implements LoanProductService {
                 .build());
     }
 
+
     @Override
     public ResponseEntity<CustomResponse> updateLoanProduct(LoanProductRequest request, Long productId) throws Exception {
         LoanProduct loanProduct = loanProductRepository.findById(productId).orElseThrow(Exception::new);
         if (request.getLoanProductName() != null){
             loanProduct.setLoanProductName(request.getLoanProductName());
         }
-        if (request.getMinAmount() != null){
+        if (request.getMinAmount() != 0){
             loanProduct.setMinAmount(request.getMinAmount());
         }
-        if (request.getMaxAmount() != null){
+        if (request.getMaxAmount() != 0){
             loanProduct.setMaxAmount(request.getMaxAmount());
         }
-        if (request.getMinDuration() != null){
+        if (request.getMinDuration() != 0){
             loanProduct.setMinDuration(request.getMinDuration());
         }
-        if (request.getMaxDuration() != null){
+        if (request.getMaxDuration() != 0){
             loanProduct.setMaxDuration(request.getMaxDuration());
         }
-        if (request.getInterestRate() != 0){
+        if (request.getInterestRate() != 0.0){
             loanProduct.setInterestRate(request.getInterestRate());
         }
         loanProduct.setModifiedBy(SecurityContextHolder.getContext().getAuthentication().getName());
@@ -120,7 +134,27 @@ public class LoanProductServiceImpl implements LoanProductService {
 
     }
 
+    @Override
+    public ResponseEntity<CustomResponse> fetchDistinctLoanProductNames() {
+        List<String> loanProducts = loanProductRepository.findAll().stream().map(LoanProduct::getLoanProductName).distinct().toList();
+        return ResponseEntity.ok(CustomResponse.builder()
+                        .statusCode(HttpStatus.OK.value())
+                        .responseMessage(SUCCESS_MESSAGE)
+                        .responseBody(loanProducts)
+                .build());
+    }
 
+    @Override
+    public ResponseEntity<CustomResponse> fetchInactiveLoans() {
+        List<LoanProduct> loanProducts = loanProductRepository.findAll().stream()
+                .filter(loanProduct -> loanProduct.getStatus().equalsIgnoreCase("INACTIVE"))
+                .toList();
+        return ResponseEntity.ok(CustomResponse.builder()
+                        .statusCode(HttpStatus.OK.value())
+                        .responseMessage(SUCCESS_MESSAGE)
+                        .responseBody(loanProducts)
+                .build());
+    }
 
 
 }

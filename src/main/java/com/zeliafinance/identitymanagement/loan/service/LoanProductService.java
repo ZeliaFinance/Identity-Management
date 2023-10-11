@@ -12,4 +12,6 @@ public interface LoanProductService {
     ResponseEntity<CustomResponse> fetchLoanProductById(Long productId) throws Exception;
     ResponseEntity<CustomResponse> updateLoanProduct(LoanProductRequest request, Long productId) throws Exception;
     ResponseEntity<CustomResponse> deleteLoanProduct(Long productId) throws Exception;
+    ResponseEntity<CustomResponse> fetchDistinctLoanProductNames();
+    ResponseEntity<CustomResponse> fetchInactiveLoans();
 }

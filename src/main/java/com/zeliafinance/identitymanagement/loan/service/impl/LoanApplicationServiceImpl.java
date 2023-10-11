@@ -3,6 +3,7 @@ package com.zeliafinance.identitymanagement.loan.service.impl;
 import com.zeliafinance.identitymanagement.dto.CustomResponse;
 import com.zeliafinance.identitymanagement.entity.UserCredential;
 import com.zeliafinance.identitymanagement.loan.dto.LoanApplicationRequest;
+import com.zeliafinance.identitymanagement.loan.dto.LoanCalculatorRequest;
 import com.zeliafinance.identitymanagement.loan.entity.LoanApplication;
 import com.zeliafinance.identitymanagement.loan.entity.LoanProduct;
 import com.zeliafinance.identitymanagement.loan.repository.LoanApplicationRepository;
@@ -17,7 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
+import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -71,27 +72,46 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
     }
 
     @Override
-    public ResponseEntity<CustomResponse> calculateLoan(LoanApplicationRequest request) {
+    public ResponseEntity<CustomResponse> calculateLoan(LoanCalculatorRequest request) {
 
-        BigDecimal amountToPay = BigDecimal.ZERO;
+        double amountToPay = 0;
+        double monthlyRepayment = 0;
+        int numberOfMonths;
+
+        double interest = 0;
+        DecimalFormat decimalFormat = new DecimalFormat("#.00");
+
         List<LoanProduct> loanProducts = loanProductRepository.findAll().stream().filter(loanProduct -> loanProduct.getLoanProductName().equalsIgnoreCase(request.getLoanType())).toList();
         for (LoanProduct loanProduct : loanProducts){
-            if (request.getLoanAmount().doubleValue() >= loanProduct.getMinAmount().doubleValue() && request.getLoanAmount().doubleValue() <= loanProduct.getMaxAmount().doubleValue() && request.getLoanTenor() >= loanProduct.getMinDuration() && request.getLoanTenor() <= loanProduct.getMaxDuration()){
+            if (request.getLoanAmount() >= loanProduct.getMinAmount() && request.getLoanAmount() <= loanProduct.getMaxAmount() && request.getLoanTenor() >= loanProduct.getMinDuration() && request.getLoanTenor() <= loanProduct.getMaxDuration()){
                 log.info("Interest rate: {}", loanProduct.getInterestRate());
                 log.info("Id of loan product: {}", loanProduct.getId());
-                amountToPay = request.getLoanAmount().add(BigDecimal.valueOf((request.getLoanAmount().doubleValue() * ((double)loanProduct.getInterestRate() / 100))/100));
+                if (request.getLoanTenor() < 30){
+                    numberOfMonths = 1;
+                    interest = (request.getLoanAmount() * (loanProduct.getInterestRate()/100) * (1));
+                    amountToPay = request.getLoanAmount() + interest;
+                    monthlyRepayment = amountToPay/numberOfMonths;
+                } else {
+                    numberOfMonths = request.getLoanTenor()/30;
+                    interest = (request.getLoanAmount() * (loanProduct.getInterestRate()/100) * (request.getLoanTenor()/30));
+                    amountToPay = request.getLoanAmount() + interest;
+                    monthlyRepayment = amountToPay/numberOfMonths;
+
+                }
+
             }
 
         }
 
-        Map<String, BigDecimal> dataMap = new HashMap<>();
-        dataMap.put("amountToPayBack", amountToPay);
+        Map<String, String> dataMap = new HashMap<>();
+        dataMap.put("amountToPayBack", decimalFormat.format(amountToPay));
+        dataMap.put("monthlyRepayment", decimalFormat.format(monthlyRepayment));
+        dataMap.put("interest", decimalFormat.format(interest));
 
         return ResponseEntity.ok(CustomResponse.builder()
                         .statusCode(HttpStatus.OK.value())
                         .responseMessage(SUCCESS_MESSAGE)
                         .responseBody(dataMap)
                 .build());
-
     }
 }

@@ -9,15 +9,8 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class LoanApplicationRequest {
+public class LoanCalculatorRequest {
     private double loanAmount;
-    private String companyName;
-    private String companyAddress;
-    private String companyEmailAddress;
-    private String cacRegistration;
-    private String businessAccountNumber;
-    private String loanPurpose;
     private String loanType;
-    private String walletId;
     private int loanTenor;
 }

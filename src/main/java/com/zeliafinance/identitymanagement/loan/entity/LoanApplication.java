@@ -1,11 +1,13 @@
 package com.zeliafinance.identitymanagement.loan.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @AllArgsConstructor
@@ -19,7 +21,7 @@ public class LoanApplication {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
     private String walletId;
-    private BigDecimal loanAmount;
+    private double loanAmount;
     private int loanTenor;
     private String companyName;
     private String companyAddress;

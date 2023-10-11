@@ -1,6 +1,7 @@
 package com.zeliafinance.identitymanagement.exception;
 
 import com.zeliafinance.identitymanagement.dto.ErrorDetails;
+import io.jsonwebtoken.ExpiredJwtException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -22,6 +23,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorDetails> handleGlobalException(Exception
                                                                           exception, WebRequest webRequest){
         ErrorDetails errorDetails = new ErrorDetails(LocalDateTime.now().toString(), exception.getMessage(), webRequest.getDescription(false));
+        return ResponseEntity.internalServerError().body(errorDetails);
+    }
+
+    @ExceptionHandler(ExpiredJwtException.class)
+    public ResponseEntity<ErrorDetails> handleExpiredJwtException(ExpiredJwtException exception, WebRequest webRequest){
+        ErrorDetails errorDetails = new ErrorDetails(LocalDateTime.now().toString(), exception.getMessage(), webRequest.getDescription(true));
         return ResponseEntity.internalServerError().body(errorDetails);
     }
 
