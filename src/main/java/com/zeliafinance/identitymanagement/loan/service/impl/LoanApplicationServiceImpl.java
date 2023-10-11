@@ -81,7 +81,9 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
         double interest = 0;
         DecimalFormat decimalFormat = new DecimalFormat("#.00");
 
-        List<LoanProduct> loanProducts = loanProductRepository.findAll().stream().filter(loanProduct -> loanProduct.getLoanProductName().equalsIgnoreCase(request.getLoanType())).toList();
+        List<LoanProduct> loanProducts = loanProductRepository.findAll().stream()
+                .filter(loanProduct ->
+                        loanProduct.getLoanProductName().equalsIgnoreCase(request.getLoanType())).toList();
         for (LoanProduct loanProduct : loanProducts){
             if (request.getLoanAmount() >= loanProduct.getMinAmount() && request.getLoanAmount() <= loanProduct.getMaxAmount() && request.getLoanTenor() >= loanProduct.getMinDuration() && request.getLoanTenor() <= loanProduct.getMaxDuration()){
                 log.info("Interest rate: {}", loanProduct.getInterestRate());
