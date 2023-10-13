@@ -280,7 +280,7 @@ public class AuthService {
             //building response object
             Object response = modelMapper.map(updatedUser, UserCredentialResponse.class);
             return ResponseEntity.ok(CustomResponse.builder()
-                            .statusCode(HttpStatus.BAD_REQUEST.value())
+                            .statusCode(HttpStatus.OK.value())
                     .responseMessage(AccountUtils.ACCOUNT_CREATION_SUCCESS_MESSAGE)
                     .responseBody(response)
                     .build());
