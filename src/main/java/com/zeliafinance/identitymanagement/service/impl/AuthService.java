@@ -736,7 +736,7 @@ public class AuthService {
     public ResponseEntity<CustomResponse> sendOtp(OtpDto request){
         String otp = accountUtils.generateOtp();
         String referenceId = otp + UUID.randomUUID();
-        LocalDateTime expiryDate = LocalDateTime.now().plus(10, ChronoUnit.MINUTES);
+        LocalDateTime expiryDate = LocalDateTime.now().plusMinutes(10);
 
         boolean isEmailExist = userCredentialRepository.existsByEmail(request.getEmail());
         UserCredential userCredential = userCredentialRepository.findByEmail(request.getEmail()).get();

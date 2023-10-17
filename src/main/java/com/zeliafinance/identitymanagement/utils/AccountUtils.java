@@ -103,6 +103,7 @@ public class AccountUtils {
     public static final String NON_UNIQUE_BVN_MESSAGE = "Bvn must be unique";
     public static final String PENDING_LOAN_MESSAGE = "You have a pending loan";
     public static final String LOAN_APPLICATION_SUCCESS = "Loan Application has been submitted for processing";
+    public static final String PENDING_LOAN_EXISTS = "You have an unpaid loan still running";
     @Bean
     public String generateAccountNumber(){
         StringBuilder accountNumber = new StringBuilder();

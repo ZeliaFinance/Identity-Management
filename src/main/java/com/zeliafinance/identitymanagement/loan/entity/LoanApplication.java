@@ -32,6 +32,7 @@ public class LoanApplication {
     private String debitCardDetails;
     private int numberOfLoans;
     private String loanStatus;
+    private String loanType;
     @CreationTimestamp
     private LocalDateTime createdAt;
     private String createdBy;

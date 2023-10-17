@@ -8,7 +8,7 @@ import com.zeliafinance.identitymanagement.loan.entity.LoanApplication;
 import com.zeliafinance.identitymanagement.loan.entity.LoanProduct;
 import com.zeliafinance.identitymanagement.loan.repository.LoanApplicationRepository;
 import com.zeliafinance.identitymanagement.loan.repository.LoanProductRepository;
-import com.zeliafinance.identitymanagement.loan.service.LoanApplicationService;
+import com.zeliafinance.identitymanagement.loan.service.LoanCalculatorService;
 import com.zeliafinance.identitymanagement.repository.UserCredentialRepository;
 import com.zeliafinance.identitymanagement.service.impl.CustomUserDetailsService;
 import lombok.AllArgsConstructor;
@@ -27,7 +27,7 @@ import static com.zeliafinance.identitymanagement.utils.AccountUtils.*;
 @Service
 @AllArgsConstructor
 @Slf4j
-public class LoanApplicationServiceImpl implements LoanApplicationService {
+public class LoanCalculatorServiceImpl implements LoanCalculatorService {
 
     private LoanProductRepository loanProductRepository;
     private UserCredentialRepository userCredentialRepository;

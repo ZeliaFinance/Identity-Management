@@ -2,8 +2,7 @@ package com.zeliafinance.identitymanagement.loan.controller;
 
 import com.zeliafinance.identitymanagement.dto.CustomResponse;
 import com.zeliafinance.identitymanagement.loan.dto.LoanApplicationRequest;
-import com.zeliafinance.identitymanagement.loan.dto.LoanCalculatorRequest;
-import com.zeliafinance.identitymanagement.loan.service.LoanApplicationService;
+import com.zeliafinance.identitymanagement.loan.service.LoanRoutingService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -16,15 +15,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("api/v1/loanApplication")
 public class LoanApplicationController {
 
-    private LoanApplicationService service;
-
-    @PostMapping("loanCalculator")
-    public ResponseEntity<CustomResponse> calculateLoan(@RequestBody LoanCalculatorRequest request){
-        return service.calculateLoan(request);
-    }
+    private LoanRoutingService loanRoutingService;
 
     @PostMapping
-    public ResponseEntity<CustomResponse> applyForLoan(@RequestBody LoanApplicationRequest request){
-        return service.applyForLoan(request);
+    public ResponseEntity<CustomResponse> applyForLoan(@RequestBody LoanApplicationRequest request) throws Exception {
+        return loanRoutingService.processLoanApplication(request.getLoanType(), request);
     }
+
 }
