@@ -29,4 +29,26 @@ public class LoanApplicationController {
         return service.stageTwo(multipartFile, loanRefNo, request);
     }
 
+    @PostMapping("stageThree")
+    public ResponseEntity<CustomResponse> stageThree(@RequestPart(value = "file1") final Optional<MultipartFile> file1,
+                                                     @RequestPart(value = "file2") final Optional<MultipartFile> file2,
+                                                     @RequestParam(value = "loanRefNo") String loanRefNo,
+                                                     @RequestPart LoanApplicationRequest request) throws Exception {
+        return service.stageThree(file1, file2, loanRefNo, request);
+    }
+
+    @PostMapping("stageFour")
+    public ResponseEntity<CustomResponse> stageFour(@RequestPart(value = "file1") final Optional<MultipartFile> file1,
+                                                    @RequestPart(value = "file2") final Optional<MultipartFile> file2,
+                                                    @RequestParam(value = "loanRefNo") String loanRefNo,
+                                                    @RequestBody LoanApplicationRequest request) throws Exception {
+        return service.stageFour(file1, file2, loanRefNo, request);
+    }
+
+    @PostMapping("stageFive")
+    public ResponseEntity<CustomResponse> stageFive(@RequestParam(value = "loanRefNo") String loanRefNo,
+                                                    @RequestBody LoanApplicationRequest request) throws Exception {
+        return service.stageFive(loanRefNo, request);
+    }
+
 }

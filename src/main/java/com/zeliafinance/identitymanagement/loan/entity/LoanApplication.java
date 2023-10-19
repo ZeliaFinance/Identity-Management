@@ -33,10 +33,10 @@ public class LoanApplication {
     private int numberOfLoans;
     private String loanStatus;
     private String loanType;
-    private String applicantCategory;
     private String wardFirstName;
     private String wardLastName;
     private String wardInstitutionName;
+    private String applicantCategory;
     private String wardIdCard;
     private String employmentType;
     private double monthlySalary;
@@ -59,7 +59,15 @@ public class LoanApplication {
     private int loanApplicationLevel;
     private String salaryAccount;
     private String salaryAccountNumber;
-
-
-
+    private String salaryAccountName;
+    private String businessName;
+    private String businessAddress;
+    private String businessMonthlyEarnings;
+    private String businessAccountName;
+    private String coSignerFirstName;
+    private String coSignerLastName;
+    private String coSignerAddress;
+    private String coSignerPhoneNumber;
+    private String coSignerEmploymentType;
+    private String coSignerRelationship;
 }

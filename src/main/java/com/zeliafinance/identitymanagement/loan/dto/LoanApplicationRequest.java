@@ -38,4 +38,14 @@ public class LoanApplicationRequest {
     private String salaryAccountName;
     private String salaryAccountNumber;
     private String salaryBankName;
+    private String businessName;
+    private String businessAddress;
+    private String businessMonthlyEarnings;
+    private String businessAccountName;
+    private String coSignerFirstName;
+    private String coSignerLastName;
+    private String coSignerAddress;
+    private String coSignerPhoneNumber;
+    private String coSignerEmploymentType;
+    private String coSignerRelationship;
 }

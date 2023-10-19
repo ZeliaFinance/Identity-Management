@@ -186,6 +186,7 @@ public class AccountUtils {
         AccountUtils accountUtils = new AccountUtils();
 //        System.out.println(accountUtils.encode("FLWSECK_TEST687b91bbb9f5", 3));
         System.out.println(accountUtils.generateLoanRefNo());
+        System.out.println(accountUtils.decodePin("NTU2Ng=="));
     }
 
     public String encodePin(String pin){
