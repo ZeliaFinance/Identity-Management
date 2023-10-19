@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
 @Entity
 public class LoanApplication {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String walletId;
     private double loanAmount;
@@ -33,10 +33,33 @@ public class LoanApplication {
     private int numberOfLoans;
     private String loanStatus;
     private String loanType;
+    private String applicantCategory;
+    private String wardFirstName;
+    private String wardLastName;
+    private String wardInstitutionName;
+    private String wardIdCard;
+    private String employmentType;
+    private double monthlySalary;
+    private String companyIdCard;
+    private String companyOfferLetter;
+    private String businessBankName;
+    private String accountName;
+    private String transactionPin;
+    private double amountToPayBack;
+    private double interestRate;
+    private String loanRefNo;
+    private String facultyName;
+    private String departmentName;
     @CreationTimestamp
     private LocalDateTime createdAt;
     private String createdBy;
     @UpdateTimestamp
     private LocalDateTime modifiedAt;
     private String modifiedBy;
+    private int loanApplicationLevel;
+    private String salaryAccount;
+    private String salaryAccountNumber;
+
+
+
 }

@@ -20,4 +20,22 @@ public class LoanApplicationRequest {
     private String loanType;
     private String walletId;
     private int loanTenor;
+    private String applicantCategory;
+    private String wardFirstName;
+    private String wardLastName;
+    private String wardInstitutionName;
+    private String wardIdCard;
+    private String employmentType;
+    private double monthlySalary;
+    private String companyIdCard;
+    private String companyOfferLetter;
+    private String businessBankName;
+    private String accountName;
+    private String pin;
+    private String confirmPin;
+    private String facultyName;
+    private String departName;
+    private String salaryAccountName;
+    private String salaryAccountNumber;
+    private String salaryBankName;
 }

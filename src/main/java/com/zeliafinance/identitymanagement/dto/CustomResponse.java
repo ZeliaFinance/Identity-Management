@@ -1,14 +1,14 @@
 package com.zeliafinance.identitymanagement.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.zeliafinance.identitymanagement.loan.dto.LoanCalculatorResponse;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Data
+@Getter
+@Setter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
@@ -24,5 +24,6 @@ public class CustomResponse{
     private Boolean otpStatus;
     private String referenceId;
     private LocalDateTime expiry;
-
+    private LoanCalculatorResponse loanCalculatorResponse;
+    private Boolean pinVerificationStatus;
 }

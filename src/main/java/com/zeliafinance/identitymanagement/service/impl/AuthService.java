@@ -851,6 +851,7 @@ public class AuthService {
             return ResponseEntity.badRequest().body(CustomResponse.builder()
                             .statusCode(HttpStatus.BAD_REQUEST.value())
                             .responseMessage(AccountUtils.PIN_DISPARITY_MESSAGE)
+                            .pinVerificationStatus(false)
                     .build());
         }
 
@@ -858,12 +859,14 @@ public class AuthService {
             return ResponseEntity.badRequest().body(CustomResponse.builder()
                     .statusCode(HttpStatus.BAD_REQUEST.value())
                     .responseMessage(AccountUtils.INVALID_PIN_MESSAGE)
+                    .pinVerificationStatus(false)
                     .build());
         }
 
         return ResponseEntity.ok(CustomResponse.builder()
                         .statusCode(HttpStatus.OK.value())
                         .responseMessage(AccountUtils.PIN_VALIDATED_MESSAGE)
+                        .pinVerificationStatus(true)
                 .build());
     }
 
@@ -884,7 +887,7 @@ public class AuthService {
     }
 
 
-    public ResponseEntity<CustomResponse> uploadFile(final MultipartFile multipartFile, Long userId){
+    public ResponseEntity<CustomResponse> uploadFile(final Optional<MultipartFile> multipartFile, Long userId){
         UserCredential userCredential = userCredentialRepository.findById(userId).get();
         boolean existsById = userCredentialRepository.existsById(userId);
         if (!existsById){
@@ -919,18 +922,22 @@ public class AuthService {
                 .build());
     }
 
-    private File convertMultiPartFileToFile(final MultipartFile multipartFile){
-        final File file = new File(Objects.requireNonNull(multipartFile.getOriginalFilename()));
-        try (final FileOutputStream outputStream = new FileOutputStream(file)){
-             outputStream.write(multipartFile.getBytes());
-        } catch (IOException e) {
-            log.error("Error converting multipart file to file= {}", e.getMessage());
-            throw new RuntimeException(e);
+    public File convertMultiPartFileToFile(final Optional<MultipartFile> multipartFile){
+        if (multipartFile.isPresent()){
+            final File file = new File(Objects.requireNonNull(multipartFile.get().getOriginalFilename()));
+            try (final FileOutputStream outputStream = new FileOutputStream(file)){
+                outputStream.write(multipartFile.get().getBytes());
+            } catch (IOException e) {
+                log.error("Error converting multipart file to file= {}", e.getMessage());
+                throw new RuntimeException(e);
+            }
+            return file;
         }
-        return file;
+
+        return null;
     }
 
-    private String uploadFileToS3Bucket(final File file){
+    public String uploadFileToS3Bucket(final File file){
         final String uniqueFileName = LocalDateTime.now() + "_" + file.getName();
         log.info("Uploading file with name= " + uniqueFileName);
         final PutObjectRequest putObjectRequest = new PutObjectRequest(AccountUtils.BUCKET_NAME, uniqueFileName, file);

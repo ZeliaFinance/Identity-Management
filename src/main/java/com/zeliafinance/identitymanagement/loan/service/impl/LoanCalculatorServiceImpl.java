@@ -4,6 +4,7 @@ import com.zeliafinance.identitymanagement.dto.CustomResponse;
 import com.zeliafinance.identitymanagement.entity.UserCredential;
 import com.zeliafinance.identitymanagement.loan.dto.LoanApplicationRequest;
 import com.zeliafinance.identitymanagement.loan.dto.LoanCalculatorRequest;
+import com.zeliafinance.identitymanagement.loan.dto.LoanCalculatorResponse;
 import com.zeliafinance.identitymanagement.loan.entity.LoanApplication;
 import com.zeliafinance.identitymanagement.loan.entity.LoanProduct;
 import com.zeliafinance.identitymanagement.loan.repository.LoanApplicationRepository;
@@ -19,9 +20,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.text.DecimalFormat;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static com.zeliafinance.identitymanagement.utils.AccountUtils.*;
 @Service
@@ -104,16 +103,18 @@ public class LoanCalculatorServiceImpl implements LoanCalculatorService {
             }
 
         }
+        LoanCalculatorResponse response = LoanCalculatorResponse.builder()
+                .amountToPayBack(amountToPay)
+                .monthlyRepayment(monthlyRepayment)
+                .interestRate(Double.parseDouble(decimalFormat.format(interest)))
+                .build();
 
-        Map<String, String> dataMap = new HashMap<>();
-        dataMap.put("amountToPayBack", decimalFormat.format(amountToPay));
-        dataMap.put("monthlyRepayment", decimalFormat.format(monthlyRepayment));
-        dataMap.put("interest", decimalFormat.format(interest));
 
         return ResponseEntity.ok(CustomResponse.builder()
                         .statusCode(HttpStatus.OK.value())
                         .responseMessage(SUCCESS_MESSAGE)
-                        .responseBody(dataMap)
+                        .responseBody(response)
+                        .loanCalculatorResponse(response)
                 .build());
     }
 }

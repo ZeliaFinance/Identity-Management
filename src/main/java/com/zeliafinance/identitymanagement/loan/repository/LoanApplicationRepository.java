@@ -7,4 +7,6 @@ import java.util.Optional;
 
 public interface LoanApplicationRepository extends JpaRepository<LoanApplication, Long> {
     Optional<LoanApplication> findByWalletId(String walletId);
+    boolean existsByWalletId(String walletId);
+    Optional<LoanApplication> findByLoanRefNo(String loanRefNo);
 }

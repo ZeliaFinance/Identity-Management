@@ -104,6 +104,7 @@ public class AccountUtils {
     public static final String PENDING_LOAN_MESSAGE = "You have a pending loan";
     public static final String LOAN_APPLICATION_SUCCESS = "Loan Application has been submitted for processing";
     public static final String PENDING_LOAN_EXISTS = "You have an unpaid loan still running";
+    public static final String LOAN_NOT_FOUND = "Loan not found";
     @Bean
     public String generateAccountNumber(){
         StringBuilder accountNumber = new StringBuilder();
@@ -183,7 +184,8 @@ public class AccountUtils {
 
     public static void main(String[] args) {
         AccountUtils accountUtils = new AccountUtils();
-        System.out.println(accountUtils.encode("FLWSECK_TEST687b91bbb9f5", 3));
+//        System.out.println(accountUtils.encode("FLWSECK_TEST687b91bbb9f5", 3));
+        System.out.println(accountUtils.generateLoanRefNo());
     }
 
     public String encodePin(String pin){
@@ -201,6 +203,21 @@ public class AccountUtils {
 
     public boolean validateBvnAndNin(String govtId){
         return govtId.startsWith("1234") && govtId.endsWith("02");
+    }
+
+    public String generateLoanRefNo(){
+        String prefix = "ZLF";
+        StringBuilder stringBuilder = new StringBuilder();
+        int count = 0;
+        while(count < 12){
+            Random random = new Random();
+            stringBuilder.append(random.nextInt(10));
+            count++;
+            if (count % 4 == 0 && stringBuilder.length() < 14){
+                stringBuilder.append("-");
+            }
+        }
+        return prefix + "-" + stringBuilder;
     }
 
 }
