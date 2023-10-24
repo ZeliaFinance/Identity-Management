@@ -9,6 +9,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -142,5 +143,22 @@ public class UserCredentialsController {
         return service.uploadFile(multipartFile, userId);
 
     }
+
+    @GetMapping("/userByEmail")
+    public ResponseEntity<CustomResponse> fetchUserByEmail(@RequestParam String email){
+        return service.findUserByEmail(email);
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<UserProfileRequest>> searchUsersByKey(@RequestParam(required = false) String key){
+        return service.searchUsersByKey(key);
+
+    }
+
+    @GetMapping("/userInfo")
+    public ResponseEntity<CustomResponse> getTotalUsers() {
+        return service.getTotalUsers();
+    }
+
 
 }

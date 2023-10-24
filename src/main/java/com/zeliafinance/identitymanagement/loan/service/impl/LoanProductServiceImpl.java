@@ -62,12 +62,14 @@ public class LoanProductServiceImpl implements LoanProductService {
 
     @Override
     public ResponseEntity<CustomResponse> fetchLoanProductByProductName(String loanProductName) throws Exception {
+        double minInterestRate = loanProductRepository.findAll().stream().mapToDouble(LoanProduct::getInterestRate).min().orElse(0.0);
         List<LoanProduct> loanProducts = loanProductRepository.findAll()
                 .stream()
                 .filter(product -> product.getLoanProductName().equalsIgnoreCase(loanProductName)
                         && product.getStatus().equalsIgnoreCase("ACTIVE"))
-                .sorted(Comparator.comparing(LoanProduct::getMinAmount))
+                .sorted(Comparator.comparing(LoanProduct::getInterestRate))
                 .toList();
+
         return ResponseEntity.ok(CustomResponse.builder()
                         .statusCode(HttpStatus.OK.value())
                         .responseMessage(SUCCESS_MESSAGE)
@@ -76,6 +78,10 @@ public class LoanProductServiceImpl implements LoanProductService {
                                 .totalElements((long)loanProducts.size())
                                 .build())
                 .build());
+    }
+
+    private double minInterestRate (List<LoanProduct> productList){
+        return loanProductRepository.findAll().stream().mapToDouble(LoanProduct::getInterestRate).min().getAsDouble();
     }
 
     @Override

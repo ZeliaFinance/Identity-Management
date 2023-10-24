@@ -42,4 +42,5 @@ public class UserCredentialResponse {
     private Integer profileSetupLevel;
     private String imagePath;
     private String imageFileName;
+    private String nuban;
 }

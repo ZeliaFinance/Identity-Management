@@ -26,4 +26,5 @@ public class CustomResponse{
     private LocalDateTime expiry;
     private LoanCalculatorResponse loanCalculatorResponse;
     private Boolean pinVerificationStatus;
+    private boolean minInterestRate;
 }

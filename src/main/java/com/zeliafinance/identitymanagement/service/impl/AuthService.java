@@ -12,6 +12,9 @@ import com.zeliafinance.identitymanagement.service.EmailService;
 import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.dto.request.NinRequest;
 import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.dto.response.NinLookupResponse;
 import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.service.DojahSmsService;
+import com.zeliafinance.identitymanagement.thirdpartyapis.providus.dto.request.CreateReservedAccountRequest;
+import com.zeliafinance.identitymanagement.thirdpartyapis.providus.dto.response.CreateReservedAccountResponse;
+import com.zeliafinance.identitymanagement.thirdpartyapis.providus.service.ProvidusService;
 import com.zeliafinance.identitymanagement.utils.AccountUtils;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
@@ -57,6 +60,7 @@ public class AuthService {
     private JwtTokenProvider jwtTokenProvider;
     private DojahSmsService dojahSmsService;
     private AmazonS3 amazonS3;
+    private ProvidusService providusService;
     
 
 
@@ -203,6 +207,14 @@ public class AuthService {
                 level = 1;
                 userCredential.setProfileSetupLevel(level);
             }
+
+            CreateReservedAccountResponse providusResponse = providusService.createReservedAccount(CreateReservedAccountRequest.builder()
+                            .accountName(request.getFirstName() + " " + request.getLastName() + " " + request.getOtherName())
+                            .bvn("")
+                    .build());
+
+            log.info("providus account details: {}", providusResponse);
+            userCredential.setNuban(providusResponse.getAccountNumber());
 
             UserCredential updatedUser = userCredentialRepository.save(userCredential);
             //Sending email alert
@@ -948,4 +960,61 @@ public class AuthService {
     private String getLoggedInUserEmail(){
         return SecurityContextHolder.getContext().getAuthentication().getName();
     }
+
+    public ResponseEntity<CustomResponse> findUserByEmail(String email) {
+        //check if user with the email exists
+        //if not, return an error message
+        //return customer with user object
+
+        UserCredential userCredential = userCredentialRepository.findByEmail(email).get();
+        boolean isEmailExist = userCredentialRepository.existsByEmail(email);
+        if (!isEmailExist) {
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                    .statusCode(HttpStatus.NO_CONTENT.value())
+                    .responseMessage(AccountUtils.USER_NOT_EXIST_MESSAGE)
+                    .build());
+        }
+
+        return ResponseEntity.ok(CustomResponse.builder()
+                .statusCode(200)
+                .responseMessage(AccountUtils.SUCCESS_MESSAGE)
+                .responseBody(modelMapper.map(userCredential, UserProfileRequest.class))
+                .build());
+    }
+
+    public ResponseEntity<List<UserProfileRequest>> searchUsersByKey(String key) {
+        userCredentialRepository.findAll().size();
+
+        /*CustomResponse.builder()
+                .info(Info.builder()
+                        .totalPages(userCredentialRepository.findAll().size())
+                        .build())
+                .build();*/
+        List<UserCredential> userCredentials = userCredentialRepository.searchUsersByKey(key);
+        List<UserProfileRequest> profileRequestList = userCredentials.stream().map(userCredential -> modelMapper.map(userCredential, UserProfileRequest.class)).toList();
+
+        if ((userCredentials.isEmpty())) {
+            return ResponseEntity.noContent().build();
+        } else {
+            return ResponseEntity.ok(profileRequestList);
+        }
+
+
+    }
+
+    public ResponseEntity<CustomResponse> getTotalUsers() {
+        int totalUsers = userCredentialRepository.findAll().size();
+        int verifiedUsers = userCredentialRepository.findByEmailVerifyStatusEquals("VERIFIED").size();
+        int nonVerifiedUsers = userCredentialRepository.findByEmailVerifyStatusEquals("UNVERIFIED").size();
+        Map<String, Integer> dataMap = new HashMap<>();
+        dataMap.put("Total Users", totalUsers);
+        dataMap.put("Verified Users", verifiedUsers);
+        dataMap.put("Non Verified Users", nonVerifiedUsers);
+        return ResponseEntity.ok(CustomResponse.builder()
+                .statusCode(200)
+                .responseBody(dataMap)
+                .responseMessage(AccountUtils.SUCCESS_MESSAGE)
+                .build());
+    }
+
 }

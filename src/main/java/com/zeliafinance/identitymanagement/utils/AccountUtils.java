@@ -184,9 +184,10 @@ public class AccountUtils {
 
     public static void main(String[] args) {
         AccountUtils accountUtils = new AccountUtils();
-//        System.out.println(accountUtils.encode("FLWSECK_TEST687b91bbb9f5", 3));
-        System.out.println(accountUtils.generateLoanRefNo());
-        System.out.println(accountUtils.decodePin("NTU2Ng=="));
+        System.out.println(accountUtils.encode("BE09BEE831CF262226B426E39BD1092AF84DC63076D4174FAC78A2261F9A3D6E59744983B8326B69CDF2963FE314DFC89635CFA37A40596508DD6EAAB09402C7"
+                , 3));
+//        System.out.println(accountUtils.generateLoanRefNo());
+//        System.out.println(accountUtils.decodePin("NTU2Ng=="));
     }
 
     public String encodePin(String pin){

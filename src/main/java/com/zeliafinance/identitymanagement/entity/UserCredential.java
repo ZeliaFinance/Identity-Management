@@ -70,6 +70,7 @@ public class UserCredential implements UserDetails {
     private String securityAnswer;
     private String imagePath;
     private String imageFileName;
+    private String nuban;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

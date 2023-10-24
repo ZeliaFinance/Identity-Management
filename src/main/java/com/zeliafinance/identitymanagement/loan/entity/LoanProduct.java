@@ -31,4 +31,5 @@ public class LoanProduct {
     private String createdAt;
     @UpdateTimestamp
     private String modifiedAt;
+    private boolean minInterestRate;
 }
