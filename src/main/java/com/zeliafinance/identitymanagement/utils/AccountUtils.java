@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Random;
@@ -105,6 +106,7 @@ public class AccountUtils {
     public static final String LOAN_APPLICATION_SUCCESS = "Loan Application has been submitted for processing";
     public static final String PENDING_LOAN_EXISTS = "You have an unpaid loan still running";
     public static final String LOAN_NOT_FOUND = "Loan not found";
+    public static final String SUBMITTED_LOAN_UPDATE_ERROR = "This loan is already submitted for processing";
     @Bean
     public String generateAccountNumber(){
         StringBuilder accountNumber = new StringBuilder();
@@ -184,10 +186,11 @@ public class AccountUtils {
 
     public static void main(String[] args) {
         AccountUtils accountUtils = new AccountUtils();
-        System.out.println(accountUtils.encode("BE09BEE831CF262226B426E39BD1092AF84DC63076D4174FAC78A2261F9A3D6E59744983B8326B69CDF2963FE314DFC89635CFA37A40596508DD6EAAB09402C7"
-                , 3));
+//        System.out.println(accountUtils.encode("BE09BEE831CF262226B426E39BD1092AF84DC63076D4174FAC78A2261F9A3D6E59744983B8326B69CDF2963FE314DFC89635CFA37A40596508DD6EAAB09402C7"
+//                , 3));
 //        System.out.println(accountUtils.generateLoanRefNo());
 //        System.out.println(accountUtils.decodePin("NTU2Ng=="));
+        System.out.println(accountUtils.transactionRef());
     }
 
     public String encodePin(String pin){
@@ -220,6 +223,19 @@ public class AccountUtils {
             }
         }
         return prefix + "-" + stringBuilder;
+    }
+
+    public String transactionRef(){
+        String currentTime = LocalDateTime.now().toString();
+        StringBuilder transactionRef = new StringBuilder();
+        for (int i=0; i<currentTime.length(); i++){
+            if (currentTime.charAt(i) == 'T' || currentTime.charAt(i) == '-' || currentTime.charAt(i) == ':' || currentTime.charAt(i) == '.'){
+                continue;
+            }
+            transactionRef.append(currentTime.charAt(i));
+        }
+        System.out.println(transactionRef.length());
+        return transactionRef.toString();
     }
 
 }

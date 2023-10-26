@@ -5,6 +5,7 @@ import com.zeliafinance.identitymanagement.loan.dto.LoanApplicationRequest;
 import com.zeliafinance.identitymanagement.loan.service.LoanApplicationService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -49,6 +50,16 @@ public class LoanApplicationController {
     public ResponseEntity<CustomResponse> stageFive(@RequestParam(value = "loanRefNo") String loanRefNo,
                                                     @RequestBody LoanApplicationRequest request) throws Exception {
         return service.stageFive(loanRefNo, request);
+    }
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @GetMapping("loanApplicationList")
+    public ResponseEntity<CustomResponse> fetchAllLoans(){
+        return service.fetchAllLoanApplications();
+    }
+
+    @GetMapping("loanApplicationHistory")
+    public ResponseEntity<CustomResponse> loanHistory(){
+        return service.loanApplicationHistory();
     }
 
 }

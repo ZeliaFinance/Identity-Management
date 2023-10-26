@@ -4,6 +4,7 @@ import com.zeliafinance.identitymanagement.dto.CustomResponse;
 import com.zeliafinance.identitymanagement.dto.PinSetupDto;
 import com.zeliafinance.identitymanagement.entity.UserCredential;
 import com.zeliafinance.identitymanagement.loan.dto.LoanApplicationRequest;
+import com.zeliafinance.identitymanagement.loan.dto.LoanApplicationResponse;
 import com.zeliafinance.identitymanagement.loan.dto.LoanCalculatorRequest;
 import com.zeliafinance.identitymanagement.loan.entity.ApplicantCategory;
 import com.zeliafinance.identitymanagement.loan.entity.EmploymentType;
@@ -16,6 +17,7 @@ import com.zeliafinance.identitymanagement.service.impl.AuthService;
 import com.zeliafinance.identitymanagement.utils.AccountUtils;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -23,6 +25,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -35,6 +39,7 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
     private final LoanCalculatorService loanCalculatorService;
     private final AuthService authService;
     private final AccountUtils accountUtils;
+    private final ModelMapper modelMapper;
 
     @Override
     public ResponseEntity<CustomResponse> stageOne(LoanApplicationRequest request) {
@@ -43,12 +48,18 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
         UserCredential userCredential = userCredentialRepository.findByEmail(email).orElseThrow();
         String walletId = userCredential.getWalletId();
         boolean isLoanExists = loanApplicationRepository.existsByWalletId(walletId);
-        if (isLoanExists){
+        if (isLoanExists && loanApplication.getLoanApplicationStatus().equals("SUBMITTED")){
             return ResponseEntity.badRequest().body(CustomResponse.builder()
                     .statusCode(HttpStatus.BAD_REQUEST.value())
-                    .responseMessage(AccountUtils.PENDING_LOAN_MESSAGE)
+                    .responseMessage(AccountUtils.SUBMITTED_LOAN_UPDATE_ERROR)
                     .build());
         }
+//        if (if loanApplication.gloanApplication.getLoanApplicationStatus().equalsIgnoreCase("SUBMITTED")){
+//            return ResponseEntity.badRequest().body(CustomResponse.builder()
+//                            .statusCode(400)
+//                            .responseMessage(AccountUtils.SUBMITTED_LOAN_UPDATE_ERROR)
+//                    .build());
+//        }
         if (loanApplication.getLoanApplicationLevel() < 1){
             loanApplication.setWalletId(userCredential.getWalletId());
             loanApplication.setLoanAmount(request.getLoanAmount());
@@ -67,13 +78,14 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
             loanApplication.setCreatedBy(email);
             loanApplication.setModifiedBy(email);
             loanApplication.setLoanApplicationLevel(1);
+            loanApplication.setLoanApplicationStatus("DRAFTS");
             loanApplication = loanApplicationRepository.save(loanApplication);
 
         }
         return ResponseEntity.ok(CustomResponse.builder()
                         .statusCode(200)
                         .responseMessage(AccountUtils.SUCCESS_MESSAGE)
-                        .responseBody(loanApplication)
+                        .responseBody(modelMapper.map(loanApplication, LoanApplicationResponse.class))
                 .build());
     }
 
@@ -104,7 +116,7 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
             return ResponseEntity.ok(CustomResponse.builder()
                     .statusCode(200)
                     .responseMessage(AccountUtils.SUCCESS_MESSAGE)
-                    .responseBody(loanApplication)
+                    .responseBody(modelMapper.map(loanApplication, LoanApplicationResponse.class))
                     .build());
         }
         if (loanApplication.getLoanType().equalsIgnoreCase("Tuition Advance") && request.getApplicantCategory().equalsIgnoreCase(ApplicantCategory.PARENT.toString())){
@@ -121,7 +133,7 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
             return ResponseEntity.ok(CustomResponse.builder()
                     .statusCode(200)
                     .responseMessage(AccountUtils.SUCCESS_MESSAGE)
-                    .responseBody(loanApplication)
+                    .responseBody(modelMapper.map(loanApplication, LoanApplicationResponse.class))
                     .build());
         }
         if (loanApplication.getLoanType().equalsIgnoreCase("Tuition Advance") && request.getApplicantCategory().equalsIgnoreCase(ApplicantCategory.STUDENT.toString())){
@@ -139,7 +151,7 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
             return ResponseEntity.ok(CustomResponse.builder()
                     .statusCode(200)
                     .responseMessage(AccountUtils.SUCCESS_MESSAGE)
-                    .responseBody(loanApplication)
+                    .responseBody(modelMapper.map(loanApplication, LoanApplicationResponse.class))
                     .build());
         }
         if(loanApplication.getLoanType().equalsIgnoreCase("STUDENT_PERSONAL_LOAN")){
@@ -152,7 +164,7 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
             return ResponseEntity.ok(CustomResponse.builder()
                     .statusCode(200)
                     .responseMessage(AccountUtils.SUCCESS_MESSAGE)
-                    .responseBody(loanApplication)
+                    .responseBody(modelMapper.map(loanApplication, LoanApplicationResponse.class))
                     .build());
         }
 
@@ -193,11 +205,12 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
             if (customResponse.getPinVerificationStatus() && loanApplication.getLoanApplicationLevel() < 3){
                 loanApplication.setLoanApplicationLevel(3);
             }
+            loanApplication.setLoanApplicationStatus("SUBMITTED");
             loanApplicationRepository.save(loanApplication);
             return ResponseEntity.ok(CustomResponse.builder()
                             .statusCode(200)
                             .responseMessage(AccountUtils.SUCCESS_MESSAGE)
-                            .responseBody(loanApplication)
+                            .responseBody(modelMapper.map(loanApplication, LoanApplicationResponse.class))
                     .build());
         }
 
@@ -219,7 +232,7 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
                 return ResponseEntity.ok(CustomResponse.builder()
                                 .statusCode(200)
                                 .responseMessage(AccountUtils.SUCCESS_MESSAGE)
-                                .responseBody(loanApplication)
+                                .responseBody(modelMapper.map(loanApplication, LoanApplicationResponse.class))
                         .build());
             }
             if (loanApplication.getEmploymentType().equalsIgnoreCase(EmploymentType.SELF_EMPLOYED.toString())){
@@ -237,7 +250,7 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
                 return ResponseEntity.ok(CustomResponse.builder()
                                 .statusCode(200)
                                 .responseMessage(AccountUtils.SUCCESS_MESSAGE)
-                                .responseBody(loanApplication)
+                                .responseBody(modelMapper.map(loanApplication, LoanApplicationResponse.class))
                         .build());
 
             }
@@ -256,7 +269,7 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
             return ResponseEntity.ok(CustomResponse.builder()
                     .statusCode(200)
                     .responseMessage(AccountUtils.SUCCESS_MESSAGE)
-                    .responseBody(loanApplication)
+                    .responseBody(modelMapper.map(loanApplication, LoanApplicationResponse.class))
                     .build());
         }
         return ResponseEntity.badRequest().body(CustomResponse.builder()
@@ -299,7 +312,7 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
             return ResponseEntity.ok(CustomResponse.builder()
                             .statusCode(200)
                             .responseMessage(AccountUtils.SUCCESS_MESSAGE)
-                            .responseBody(loanApplication)
+                            .responseBody(modelMapper.map(loanApplication, LoanApplicationResponse.class))
                     .build());
         }
 
@@ -318,7 +331,7 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
             return ResponseEntity.ok(CustomResponse.builder()
                     .statusCode(200)
                     .responseMessage(AccountUtils.SUCCESS_MESSAGE)
-                    .responseBody(loanApplication)
+                    .responseBody(modelMapper.map(loanApplication, LoanApplicationResponse.class))
                     .build());
         }
 
@@ -340,9 +353,12 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
         if (loanApplication.getLoanType().equalsIgnoreCase("Tuition Advance")){
             if (loanApplication.getLoanApplicationLevel() < 5 && pinVerificationResponse.getPinVerificationStatus()){
                 loanApplication.setLoanApplicationLevel(5);
+                loanApplication.setLoanApplicationStatus("SUBMITTED");
                 loanApplicationRepository.save(loanApplication);
                 return ResponseEntity.ok(CustomResponse.builder()
                         .statusCode(200)
+                        .responseMessage(AccountUtils.SUCCESS_MESSAGE)
+                        .responseBody(modelMapper.map(loanApplication, LoanApplicationResponse.class))
                         .build());
             }
         }
@@ -353,4 +369,45 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
 
 
     }
+
+    @Override
+    public ResponseEntity<CustomResponse> fetchAllLoanApplications() {
+        List<LoanApplicationResponse> loanApplicationList = loanApplicationRepository.findAll()
+                .stream().map(loanApplication -> modelMapper.map(loanApplication, LoanApplicationResponse.class)).toList();
+        if (loanApplicationList.isEmpty()){
+            return ResponseEntity.ok(CustomResponse.builder()
+                            .statusCode(200)
+                            .responseMessage("You have no loan applications")
+                    .build());
+        }
+        return ResponseEntity.ok(CustomResponse.builder()
+                        .statusCode(200)
+                        .responseMessage(AccountUtils.SUCCESS_MESSAGE)
+                        .responseBody(loanApplicationList)
+                .build());
+    }
+
+    @Override
+    public ResponseEntity<CustomResponse> loanApplicationHistory() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        UserCredential userCredential = userCredentialRepository.findByEmail(email).get();
+        String walletId = userCredential.getWalletId();
+        List<LoanApplicationResponse> loanApplicationList = loanApplicationRepository.findAll().stream()
+                .filter(loanApplication -> loanApplication.getWalletId().equals(walletId))
+                .sorted(Comparator.comparing(LoanApplication::getCreatedAt).reversed())
+                .map(loanApplication -> modelMapper.map(loanApplication, LoanApplicationResponse.class))
+                .toList();
+        return ResponseEntity.ok(CustomResponse.builder()
+                        .statusCode(200)
+                        .responseMessage(AccountUtils.SUCCESS_MESSAGE)
+                        .responseBody(loanApplicationList)
+                .build());
+    }
+
+    @Override
+    public ResponseEntity<CustomResponse> viewLoanApplicationsByStatus(String loanApplicationStatus) {
+        return null;
+    }
+
+
 }

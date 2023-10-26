@@ -5,6 +5,7 @@ import com.zeliafinance.identitymanagement.loan.dto.LoanProductRequest;
 import com.zeliafinance.identitymanagement.loan.service.LoanProductService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -13,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 public class LoanProductController {
 
     LoanProductService service;
-
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @PostMapping
     public ResponseEntity<CustomResponse> addLoanProduct(@RequestBody LoanProductRequest request){
         return service.saveLoanProduct(request);
@@ -39,6 +40,7 @@ public class LoanProductController {
         return service.updateLoanProduct(request, productId);
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @DeleteMapping("{productId}")
     public ResponseEntity<CustomResponse> deleteProduct(@PathVariable Long productId) throws Exception {
         return service.deleteLoanProduct(productId);

@@ -43,4 +43,5 @@ public class UserCredentialResponse {
     private String imagePath;
     private String imageFileName;
     private String nuban;
+    private String walletId;
 }

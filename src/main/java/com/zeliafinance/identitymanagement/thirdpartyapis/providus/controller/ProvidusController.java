@@ -2,8 +2,12 @@ package com.zeliafinance.identitymanagement.thirdpartyapis.providus.controller;
 
 import com.zeliafinance.identitymanagement.thirdpartyapis.providus.dto.request.CreateDynamicAccountRequest;
 import com.zeliafinance.identitymanagement.thirdpartyapis.providus.dto.request.CreateReservedAccountRequest;
+import com.zeliafinance.identitymanagement.thirdpartyapis.providus.dto.request.FundTransferRequest;
+import com.zeliafinance.identitymanagement.thirdpartyapis.providus.dto.request.GetNipAccountRequest;
 import com.zeliafinance.identitymanagement.thirdpartyapis.providus.dto.response.CreateDynamicAccountResponse;
 import com.zeliafinance.identitymanagement.thirdpartyapis.providus.dto.response.CreateReservedAccountResponse;
+import com.zeliafinance.identitymanagement.thirdpartyapis.providus.dto.response.FundTransferResponse;
+import com.zeliafinance.identitymanagement.thirdpartyapis.providus.dto.response.GetNipAccountResponse;
 import com.zeliafinance.identitymanagement.thirdpartyapis.providus.service.ProvidusService;
 import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -26,5 +30,15 @@ public class ProvidusController {
     @PostMapping("createReservedAccount")
     public CreateReservedAccountResponse createReservedAccount(@RequestBody CreateReservedAccountRequest request){
         return service.createReservedAccount(request);
+    }
+
+    @PostMapping("getNipAccount")
+    public GetNipAccountResponse getNipAccountResponse(@RequestBody GetNipAccountRequest request){
+        return service.getNipAccount(request);
+    }
+
+    @PostMapping("fundTransfer")
+    public FundTransferResponse doFundTransfer(@RequestBody FundTransferRequest request){
+        return service.doFundTransfer(request);
     }
 }

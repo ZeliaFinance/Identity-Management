@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.zeliafinance.identitymanagement.utils.AccountUtils.SUCCESS_MESSAGE;
 
@@ -49,11 +50,13 @@ public class LoanProductServiceImpl implements LoanProductService {
     }
 
     public ResponseEntity<CustomResponse> fetchAllLoanProducts(){
-        List<LoanProduct> productList = loanProductRepository.findAll().stream().filter(loanProduct -> loanProduct.getStatus().equalsIgnoreCase("ACTIVE")).toList();
+        List<LoanProduct> productList = loanProductRepository.findAll().stream().filter(loanProduct -> loanProduct.getStatus().equalsIgnoreCase("ACTIVE"))
+                .toList();
+        productList.stream().collect(Collectors.groupingBy(LoanProduct::getLoanProductName));
         return ResponseEntity.ok(CustomResponse.builder()
                         .statusCode(HttpStatus.OK.value())
                         .responseMessage(SUCCESS_MESSAGE)
-                        .responseBody(productList)
+                        .responseBody(productList.stream().collect(Collectors.groupingBy(LoanProduct::getLoanProductName)))
                         .info(Info.builder()
                                 .totalElements((long) productList.size())
                                 .build())

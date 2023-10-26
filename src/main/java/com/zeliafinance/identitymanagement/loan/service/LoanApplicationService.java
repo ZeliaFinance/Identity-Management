@@ -13,4 +13,7 @@ public interface LoanApplicationService {
     ResponseEntity<CustomResponse> stageThree(Optional<MultipartFile> file1, Optional<MultipartFile> file2, String loanRefNo, LoanApplicationRequest loanApplicationRequest) throws Exception;
     ResponseEntity<CustomResponse> stageFour(Optional<MultipartFile> file1, Optional<MultipartFile> file2, String loanRefNo, LoanApplicationRequest request) throws Exception;
     ResponseEntity<CustomResponse> stageFive(String loanRefNo, LoanApplicationRequest request) throws Exception;
+    ResponseEntity<CustomResponse> fetchAllLoanApplications();
+    ResponseEntity<CustomResponse> loanApplicationHistory();
+    ResponseEntity<CustomResponse> viewLoanApplicationsByStatus(String loanApplicationStatus);
 }

@@ -14,7 +14,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -47,7 +50,12 @@ public class ResourcesServiceImpl implements ResourcesService {
     @Override
     public ResponseEntity<CustomResponse> fetchAllResources(int pageNo, int pageSize) {
         List<Resources> resourcesList = resourcesRepository.findAll();
-        List<ResourcesDto> resourcesDtos = resourcesList.stream().map(resource -> modelMapper.map(resource, ResourcesDto.class)).skip(pageNo-1).limit(pageSize).toList();
+        List<ResourcesDto> resourcesDtos = resourcesList.stream()
+                .map(resource -> modelMapper.map(resource, ResourcesDto.class))
+                .skip(pageNo-1).limit(pageSize)
+                .sorted(Comparator.comparing(ResourcesDto::getLookupCode))
+                .toList();
+        Map<String, List<ResourcesDto>> resourcesMap = resourcesDtos.stream().collect(Collectors.groupingBy(ResourcesDto::getLookupCode));
         int totalPages;
         if (resourcesList.size() <= 100){
             totalPages =1;
@@ -57,7 +65,7 @@ public class ResourcesServiceImpl implements ResourcesService {
         return ResponseEntity.ok(CustomResponse.builder()
                         .statusCode(HttpStatus.OK.value())
                         .responseMessage(AccountUtils.SUCCESS_MESSAGE)
-                        .responseBody(resourcesDtos)
+                        .responseBody(resourcesMap)
                         .info(Info.builder()
                                 .totalPages(totalPages)
                                 .pageSize(pageSize)
