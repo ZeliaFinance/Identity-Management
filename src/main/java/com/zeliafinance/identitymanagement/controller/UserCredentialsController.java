@@ -15,7 +15,7 @@ import java.util.Optional;
 @RestController
 @RequestMapping("api/v1/users")
 @Slf4j
-@CrossOrigin(origins = {"https://www.sandbox.zeliafinance.com", "http://www.sandbox.zeliafinance.com"}, maxAge = 3600)
+@CrossOrigin(origins = {"https://www.sandbox.zeliafinance.com", "http://www.sandbox.zeliafinance.com", "http://localhost:5173"}, maxAge = 3600)
 public class UserCredentialsController {
 
     private final AuthService service;
