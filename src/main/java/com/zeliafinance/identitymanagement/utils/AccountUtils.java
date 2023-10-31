@@ -1,13 +1,10 @@
 package com.zeliafinance.identitymanagement.utils;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Random;
@@ -101,6 +98,15 @@ public class AccountUtils {
     public static final String NIN_MISMATCH_MESSAGE = "Nin Mismatch";
     public static final String BUCKET_NAME = "zelia-file-storage";
     public static final int INTEREST_RATE = 8;
+    public static final String NON_UNIQUE_PHONE_NUMBER_CODE = "036";
+    public static final String NON_UNIQUE_PHONE_NUMBER_MESSAGE = "Phone Number must be unique";
+    public static final String NON_UNIQUE_BVN_CODE = "037";
+    public static final String NON_UNIQUE_BVN_MESSAGE = "Bvn must be unique";
+    public static final String PENDING_LOAN_MESSAGE = "You have a pending loan";
+    public static final String LOAN_APPLICATION_SUCCESS = "Loan Application has been submitted for processing";
+    public static final String PENDING_LOAN_EXISTS = "You have an unpaid loan still running";
+    public static final String LOAN_NOT_FOUND = "Loan not found";
+    public static final String SUBMITTED_LOAN_UPDATE_ERROR = "This loan is already submitted for processing";
     @Bean
     public String generateAccountNumber(){
         StringBuilder accountNumber = new StringBuilder();
@@ -152,7 +158,10 @@ public class AccountUtils {
     }
 
     public Boolean isPinValid(String pin, int yearOfBirth){
-        return pin.length() == 4 && !pin.equals("1234") && !pin.equals("0000") && !pin.equals(String.valueOf(yearOfBirth));
+        String regex = "^(.)\\1*$";
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(pin);
+        return pin.length() == 4 && !pin.equals("1234") && !matcher.matches() && !pin.equals(String.valueOf(yearOfBirth));
     }
 
     public String encode(String text, int shift) {
@@ -177,7 +186,11 @@ public class AccountUtils {
 
     public static void main(String[] args) {
         AccountUtils accountUtils = new AccountUtils();
-
+//        System.out.println(accountUtils.encode("BE09BEE831CF262226B426E39BD1092AF84DC63076D4174FAC78A2261F9A3D6E59744983B8326B69CDF2963FE314DFC89635CFA37A40596508DD6EAAB09402C7"
+//                , 3));
+//        System.out.println(accountUtils.generateLoanRefNo());
+//        System.out.println(accountUtils.decodePin("NTU2Ng=="));
+        System.out.println(accountUtils.transactionRef());
     }
 
     public String encodePin(String pin){
@@ -195,6 +208,34 @@ public class AccountUtils {
 
     public boolean validateBvnAndNin(String govtId){
         return govtId.startsWith("1234") && govtId.endsWith("02");
+    }
+
+    public String generateLoanRefNo(){
+        String prefix = "ZLF";
+        StringBuilder stringBuilder = new StringBuilder();
+        int count = 0;
+        while(count < 12){
+            Random random = new Random();
+            stringBuilder.append(random.nextInt(10));
+            count++;
+            if (count % 4 == 0 && stringBuilder.length() < 14){
+                stringBuilder.append("-");
+            }
+        }
+        return prefix + "-" + stringBuilder;
+    }
+
+    public String transactionRef(){
+        String currentTime = LocalDateTime.now().toString();
+        StringBuilder transactionRef = new StringBuilder();
+        for (int i=0; i<currentTime.length(); i++){
+            if (currentTime.charAt(i) == 'T' || currentTime.charAt(i) == '-' || currentTime.charAt(i) == ':' || currentTime.charAt(i) == '.'){
+                continue;
+            }
+            transactionRef.append(currentTime.charAt(i));
+        }
+        System.out.println(transactionRef.length());
+        return transactionRef.toString();
     }
 
 }

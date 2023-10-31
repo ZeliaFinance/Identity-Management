@@ -1,11 +1,8 @@
 package com.zeliafinance.identitymanagement.controller;
 
 import com.zeliafinance.identitymanagement.dto.*;
-import com.zeliafinance.identitymanagement.entity.UserCredential;
-import com.zeliafinance.identitymanagement.repository.UserCredentialRepository;
 import com.zeliafinance.identitymanagement.service.impl.AuthService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -13,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("api/v1/users")
@@ -21,7 +19,6 @@ import java.util.List;
 public class UserCredentialsController {
 
     private final AuthService service;
-
 
 
     public UserCredentialsController(AuthService service){
@@ -33,24 +30,24 @@ public class UserCredentialsController {
         return service.signUp(request);
     }
 
-    @PutMapping("/updateUser/{userId}")
-    public ResponseEntity<CustomResponse> updateProfile(@RequestBody UserProfileRequest request, @PathVariable(name = "userId") Long userId){
-        return service.updateUserProfile(userId, request);
+    @PutMapping("/updateUser")
+    public ResponseEntity<CustomResponse> updateProfile(@RequestBody UserProfileRequest request){
+        return service.updateUserProfile(request);
     }
 
-    @PutMapping("/updateUserBvn/{userId}")
-    public ResponseEntity<CustomResponse> updateUserBvn(@RequestBody UserProfileRequest request, @PathVariable(name = "userId") Long userId){
-        return service.updateUserBvn(userId, request);
+    @PutMapping("/updateUserBvn")
+    public ResponseEntity<CustomResponse> updateUserBvn(@RequestBody UserProfileRequest request){
+        return service.updateUserBvn(request);
     }
 
-    @PutMapping("/updateUserNin/{userId}")
-    public ResponseEntity<CustomResponse> updateUserNin(@RequestBody UserProfileRequest userProfileRequest, @PathVariable(name = "userId") Long userId){
-        return service.updateUserNin(userId, userProfileRequest);
+    @PutMapping("/updateUserNin")
+    public ResponseEntity<CustomResponse> updateUserNin(@RequestBody UserProfileRequest userProfileRequest){
+        return service.updateUserNin(userProfileRequest);
     }
 
-    @PutMapping("/updateSecurityQuestion/{userId}")
-    public ResponseEntity<CustomResponse> updateUserSecurityQuestion(@RequestBody UserProfileRequest request, @PathVariable(name = "userId") Long userId){
-        return service.updateUserSecurityQuestion(userId, request);
+    @PutMapping("/updateSecurityQuestion")
+    public ResponseEntity<CustomResponse> updateUserSecurityQuestion(@RequestBody UserProfileRequest request){
+        return service.updateUserSecurityQuestion(request);
     }
 
     @PostMapping("/login")
@@ -69,6 +66,7 @@ public class UserCredentialsController {
     }
 
     @GetMapping("{userId}")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<CustomResponse> fetchUser(@PathVariable (value = "userId") Long userId){
         return service.fetchUser(userId);
     }
@@ -141,7 +139,7 @@ public class UserCredentialsController {
     }
 
     @PostMapping("/{userId}/uploadFile")
-    public ResponseEntity<CustomResponse> uploadFile(@RequestPart(value = "file") final MultipartFile multipartFile, @PathVariable Long userId ){
+    public ResponseEntity<CustomResponse> uploadFile(@RequestPart(value = "file") final Optional<MultipartFile> multipartFile, @PathVariable Long userId ){
         return service.uploadFile(multipartFile, userId);
 
     }
@@ -151,22 +149,11 @@ public class UserCredentialsController {
         return service.findUserByEmail(email);
     }
 
-    /*@GetMapping("/userByFirstName")
-    public ResponseEntity<CustomResponse> fetchUserByFirstName(@RequestParam String firstName){
-        return service.findUserByFirstName(firstName);
-    }
-
-
-    @GetMapping("/userByLastName")
-    public ResponseEntity<CustomResponse> fetchUserByLastName(@RequestParam String lastName){
-        return service.findUserByLastName(lastName);
-    }*/
-
     @GetMapping("/search")
-  public ResponseEntity<List<UserProfileRequest>> searchUsersByKey(@RequestParam(required = false) String key){
-      return service.searchUsersByKey(key);
+    public ResponseEntity<List<UserProfileRequest>> searchUsersByKey(@RequestParam(required = false) String key){
+        return service.searchUsersByKey(key);
 
-  }
+    }
 
     @GetMapping("/userInfo")
     public ResponseEntity<CustomResponse> getTotalUsers() {

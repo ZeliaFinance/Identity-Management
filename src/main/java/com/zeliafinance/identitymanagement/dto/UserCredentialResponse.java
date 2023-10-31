@@ -1,5 +1,6 @@
 package com.zeliafinance.identitymanagement.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,6 +12,7 @@ import java.time.LocalDate;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class UserCredentialResponse {
     private Long id;
     private String firstName;
@@ -40,4 +42,6 @@ public class UserCredentialResponse {
     private Integer profileSetupLevel;
     private String imagePath;
     private String imageFileName;
+    private String nuban;
+    private String walletId;
 }

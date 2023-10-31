@@ -1,5 +1,6 @@
 package com.zeliafinance.identitymanagement.entity;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -20,6 +21,7 @@ import java.util.List;
 @NoArgsConstructor
 @Entity
 @Table(name = "users")
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class UserCredential implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -68,6 +70,7 @@ public class UserCredential implements UserDetails {
     private String securityAnswer;
     private String imagePath;
     private String imageFileName;
+    private String nuban;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

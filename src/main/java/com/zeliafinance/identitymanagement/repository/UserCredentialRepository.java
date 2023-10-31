@@ -14,7 +14,13 @@ public interface UserCredentialRepository extends JpaRepository<UserCredential, 
     boolean existsByBvn(String bvn);
     Optional<UserCredential> findByWalletId(String walletId);
     Optional<UserCredential> findByEmail(String email);
-    boolean existsByEmailAndEmailVerifyStatusContains(String email, String emailVerificationStatus);
+    boolean existsByPhoneNumber(String phoneNumber);
+    @Query("SELECT u FROM UserCredential u WHERE LOWER(u.firstName) LIKE %:key% OR LOWER(u.lastName) LIKE %:key% OR LOWER(u.email) LIKE %:key%")
+    List<UserCredential> searchUsersByKey(@Param("key") String key);
+
+    //long countByVerifiedTrue(); // Count verified users
+    // long countByVerifiedFalse(); // Count unverified users
+    List<UserCredential> findByEmailVerifyStatusEquals(String emailVerifyStatus);
 
     @Query("SELECT u FROM UserCredential u WHERE LOWER(u.firstName) LIKE %:key% OR LOWER(u.lastName) LIKE %:key% OR LOWER(u.email) LIKE %:key%")
     List<UserCredential> searchUsersByKey(@Param("key") String key);
