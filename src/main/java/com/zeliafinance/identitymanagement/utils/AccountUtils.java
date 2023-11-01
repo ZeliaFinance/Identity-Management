@@ -97,16 +97,20 @@ public class AccountUtils {
     public static final String NIN_MISMATCH_CODE = "035";
     public static final String NIN_MISMATCH_MESSAGE = "Nin Mismatch";
     public static final String BUCKET_NAME = "zelia-file-storage";
+    public static final String AWS_FILE_BASE_URL = "https://zelia-file-storage.s3.amazonaws.com";
+    public static final String INVALID_TOKEN_MESSAGE = "Invalid Token";
     public static final int INTEREST_RATE = 8;
     public static final String NON_UNIQUE_PHONE_NUMBER_CODE = "036";
     public static final String NON_UNIQUE_PHONE_NUMBER_MESSAGE = "Phone Number must be unique";
     public static final String NON_UNIQUE_BVN_CODE = "037";
+    public static final String PROFILE_UPDATE_SUCCESS = "Profile has been successfully updated";
     public static final String NON_UNIQUE_BVN_MESSAGE = "Bvn must be unique";
     public static final String PENDING_LOAN_MESSAGE = "You have a pending loan";
     public static final String LOAN_APPLICATION_SUCCESS = "Loan Application has been submitted for processing";
     public static final String PENDING_LOAN_EXISTS = "You have an unpaid loan still running";
     public static final String LOAN_NOT_FOUND = "Loan not found";
     public static final String SUBMITTED_LOAN_UPDATE_ERROR = "This loan is already submitted for processing";
+    public static final String NON_ADMIN_LOGIN = "No User Access";
     @Bean
     public String generateAccountNumber(){
         StringBuilder accountNumber = new StringBuilder();
@@ -190,7 +194,9 @@ public class AccountUtils {
 //                , 3));
 //        System.out.println(accountUtils.generateLoanRefNo());
 //        System.out.println(accountUtils.decodePin("NTU2Ng=="));
-        System.out.println(accountUtils.transactionRef());
+//        System.out.println(accountUtils.transactionRef());
+        String name = "Ajibade";
+        System.out.println(name.substring(name.indexOf("A"), name.indexOf("b")));
     }
 
     public String encodePin(String pin){

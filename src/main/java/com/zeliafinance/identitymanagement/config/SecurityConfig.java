@@ -65,7 +65,9 @@ public class SecurityConfig {
                                 .requestMatchers(HttpMethod.POST, "api/v1/users/changePassword").permitAll()
                                 .requestMatchers(HttpMethod.POST, "api/v1/users/validateOtp").permitAll()
                                 .requestMatchers(HttpMethod.POST, "api/v1/users/sendOtp").permitAll()
+                                .requestMatchers(HttpMethod.POST, "api/v1/users/adminLogin").permitAll()
                                 .requestMatchers(HttpMethod.GET, "/actuator/**").permitAll()
+                                .requestMatchers(HttpMethod.POST, "/api/v1/users/validateToken").permitAll()
                                 .requestMatchers("/").permitAll()
                                 .anyRequest().authenticated()
                 );
@@ -73,18 +75,26 @@ public class SecurityConfig {
         httpSecurity.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
         httpSecurity.authenticationProvider(authenticationProvider());
         httpSecurity.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-
+        httpSecurity.cors(httpSecurityCorsConfigurer -> httpSecurityCorsConfigurer.configurationSource(corsConfigurationSource()));
         return httpSecurity.build();
     }
 
     @Bean
     CorsConfigurationSource corsConfigurationSource(){
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://www.sandbox.zeliafinance.com/"));
-        configuration.setAllowedOrigins(List.of("https://www.sandbox.zeliafinance.com/"));
+        configuration.setAllowedOrigins(List.of("http://www.sandbox.zeliafinance.com"));
+        configuration.setAllowedOrigins(List.of("https://www.sandbox.zeliafinance.com"));
         configuration.setAllowedOrigins(List.of("http://localhost:5173"));
+        configuration.setAllowedOrigins(List.of("*"));
+        configuration.setAllowedOrigins(List.of("https://www.test-admin.zeliafinance.com"));
         configuration.setAllowedMethods(List.of("*"));
         configuration.setAllowedHeaders(List.of("*"));
+        configuration.addAllowedOrigin("http://localhost:5173");
+        configuration.addAllowedMethod(HttpMethod.POST);
+        configuration.addAllowedMethod(HttpMethod.GET);
+        configuration.addAllowedMethod(HttpMethod.HEAD);
+        configuration.addAllowedMethod(HttpMethod.DELETE);
+        configuration.addAllowedMethod(HttpMethod.PUT);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

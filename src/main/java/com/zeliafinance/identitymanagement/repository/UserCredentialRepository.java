@@ -21,6 +21,6 @@ public interface UserCredentialRepository extends JpaRepository<UserCredential, 
     //long countByVerifiedTrue(); // Count verified users
     // long countByVerifiedFalse(); // Count unverified users
     List<UserCredential> findByEmailVerifyStatusEquals(String emailVerifyStatus);
-
+    Optional<UserCredential> findByPhoneNumber(String phoneNumber);
 
 }

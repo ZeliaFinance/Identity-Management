@@ -9,11 +9,14 @@ import java.util.Optional;
 
 public interface LoanApplicationService {
     ResponseEntity<CustomResponse> stageOne(LoanApplicationRequest request);
-    ResponseEntity<CustomResponse> stageTwo(Optional<MultipartFile> multipartFile, String loanRefNo, LoanApplicationRequest request) throws Exception;
-    ResponseEntity<CustomResponse> stageThree(Optional<MultipartFile> file1, Optional<MultipartFile> file2, String loanRefNo, LoanApplicationRequest loanApplicationRequest) throws Exception;
+    ResponseEntity<CustomResponse> stageTwo(String loanRefNo, LoanApplicationRequest request) throws Exception;
+    ResponseEntity<CustomResponse> stageThree(String file1, String file2, String loanRefNo, LoanApplicationRequest loanApplicationRequest) throws Exception;
     ResponseEntity<CustomResponse> stageFour(Optional<MultipartFile> file1, Optional<MultipartFile> file2, String loanRefNo, LoanApplicationRequest request) throws Exception;
     ResponseEntity<CustomResponse> stageFive(String loanRefNo, LoanApplicationRequest request) throws Exception;
     ResponseEntity<CustomResponse> fetchAllLoanApplications();
     ResponseEntity<CustomResponse> loanApplicationHistory();
     ResponseEntity<CustomResponse> viewLoanApplicationsByStatus(String loanApplicationStatus);
+    ResponseEntity<CustomResponse> updateStageOne(String loanRefNo, LoanApplicationRequest request) throws Exception;
+    ResponseEntity<CustomResponse> searchByPhoneNumber(String phoneNumber);
+    ResponseEntity<CustomResponse> searchByLoanAppStatus(String loanApplicationStatus);
 }

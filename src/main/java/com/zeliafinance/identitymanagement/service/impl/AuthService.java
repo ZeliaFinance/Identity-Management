@@ -223,7 +223,7 @@ public class AuthService {
             Object response = modelMapper.map(updatedUser, UserCredentialResponse.class);
             return ResponseEntity.ok(CustomResponse.builder()
                             .statusCode(HttpStatus.OK.value())
-                    .responseMessage(AccountUtils.ACCOUNT_CREATION_SUCCESS_MESSAGE)
+                    .responseMessage(AccountUtils.PROFILE_UPDATE_SUCCESS)
                     .responseBody(response)
                     .build());
 
@@ -293,7 +293,7 @@ public class AuthService {
             Object response = modelMapper.map(updatedUser, UserCredentialResponse.class);
             return ResponseEntity.ok(CustomResponse.builder()
                             .statusCode(HttpStatus.OK.value())
-                    .responseMessage(AccountUtils.ACCOUNT_CREATION_SUCCESS_MESSAGE)
+                    .responseMessage(AccountUtils.SUCCESS_MESSAGE)
                     .responseBody(response)
                     .build());
 
@@ -350,7 +350,7 @@ public class AuthService {
             Object response = modelMapper.map(updatedUser, UserCredentialResponse.class);
             return ResponseEntity.ok(CustomResponse.builder()
                             .statusCode(HttpStatus.OK.value())
-                    .responseMessage(AccountUtils.ACCOUNT_CREATION_SUCCESS_MESSAGE)
+                    .responseMessage(AccountUtils.SUCCESS_MESSAGE)
                     .responseBody(response)
                     .build());
 
@@ -391,7 +391,7 @@ public class AuthService {
             Object response = modelMapper.map(updatedUser, UserCredentialResponse.class);
             return ResponseEntity.ok(CustomResponse.builder()
                             .statusCode(HttpStatus.OK.value())
-                    .responseMessage(AccountUtils.ACCOUNT_CREATION_SUCCESS_MESSAGE)
+                    .responseMessage(AccountUtils.SUCCESS_MESSAGE)
                     .responseBody(response)
                     .build());
 
@@ -450,6 +450,45 @@ public class AuthService {
                 .responseBody(modelMapper.map(userCredential, UserCredentialResponse.class))
                 .build());
     }
+
+    public ResponseEntity<CustomResponse> adminLogin(LoginDto loginDto){
+        Authentication authentication=null;
+        UserCredential userCredential = userCredentialRepository.findByEmail(loginDto.getEmail()).get();
+        if (!userCredential.getRole().equals(Role.ROLE_ADMIN)){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .statusCode(400)
+                            .responseMessage(AccountUtils.NON_ADMIN_LOGIN)
+                    .build());
+        }
+        authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(loginDto.getEmail(),
+                        loginDto.getPassword()));
+
+        if (!authentication.isAuthenticated()){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                    .statusCode(HttpStatus.BAD_REQUEST.value())
+                    .responseMessage(AccountUtils.INVALID_CREDENTIALS_MESSAGE)
+                    .build());
+        }
+
+        EmailDetails loginAlert = EmailDetails.builder()
+                .subject("YOU'RE LOGGED IN!")
+                .recipient(loginDto.getEmail())
+                .messageBody("You logged into your account!!!")
+                .build();
+
+        emailService.sendEmailAlert(loginAlert);
+
+
+
+        return ResponseEntity.ok(CustomResponse.builder()
+                .statusCode(HttpStatus.OK.value())
+                .responseMessage(AccountUtils.LOGIN_SUCCESS_MESSAGE)
+                .token(jwtTokenProvider.generateToken(authentication))
+                .responseBody(modelMapper.map(userCredential, UserCredentialResponse.class))
+                .build());
+    }
+
 
     public ResponseEntity<CustomResponse> fetchAllUsers(int pageNo, int pageSize){
 
@@ -649,7 +688,7 @@ public class AuthService {
 
             if ((!bvnVerificationDto.getBvn().startsWith("1234") && !bvnVerificationDto.getBvn().endsWith("02"))){
                 return ResponseEntity.badRequest().body(CustomResponse.builder()
-                        .statusCode(HttpStatus.OK.value())
+                        .statusCode(400)
                         .responseMessage(AccountUtils.BVN_INVALID_MESSAGE)
                         .build());
             }
@@ -659,7 +698,7 @@ public class AuthService {
         userCredential = userCredentialRepository.save(userCredential);
         return ResponseEntity.badRequest().body(CustomResponse.builder()
                 .statusCode(HttpStatus.OK.value())
-                .responseMessage(AccountUtils.BVN_INVALID_MESSAGE)
+                .responseMessage(AccountUtils.SUCCESS_MESSAGE)
                 .responseBody(modelMapper.map(userCredential, UserCredentialResponse.class))
                 .build());
     }
@@ -670,27 +709,28 @@ public class AuthService {
         if (existsByEmail){
             if (ninVerificationDto.getNin().length() != AccountUtils.BVN_LENGTH){
                 userCredential.setNinStatus("UNVERIFIED");
+                userCredentialRepository.save(userCredential);
                 return ResponseEntity.badRequest().body(CustomResponse.builder()
                         .statusCode(HttpStatus.BAD_REQUEST.value())
                         .responseMessage(AccountUtils.NIN_INVALID_MESSAGE)
                         .build());
             }
 
-            if (!ninVerificationDto.getNin().equals("70123456789")){
-                userCredential.setNinStatus("UNVERIFIED");
-                return ResponseEntity.badRequest().body(CustomResponse.builder()
-                        .statusCode(HttpStatus.BAD_REQUEST.value())
-                        .responseMessage(AccountUtils.NIN_MISMATCH_MESSAGE)
-                        .build());
-            }
+//            if (!ninVerificationDto.getNin().equals("70123456789")){
+//                userCredential.setNinStatus("UNVERIFIED");
+//                userCredentialRepository.save(userCredential);
+//                return ResponseEntity.badRequest().body(CustomResponse.builder()
+//                        .statusCode(HttpStatus.BAD_REQUEST.value())
+//                        .responseMessage(AccountUtils.NIN_MISMATCH_MESSAGE)
+//                        .build());
+//            }
 
             userCredential.setNinStatus("VERIFIED");
         }
-        userCredential.setNinStatus("UNVERIFIED");
         userCredential = userCredentialRepository.save(userCredential);
-        return ResponseEntity.badRequest().body(CustomResponse.builder()
-                .statusCode(HttpStatus.BAD_REQUEST.value())
-                .responseMessage(AccountUtils.BVN_INVALID_MESSAGE)
+        return ResponseEntity.ok().body(CustomResponse.builder()
+                .statusCode(200)
+                .responseMessage(AccountUtils.SUCCESS_MESSAGE)
                 .responseBody(modelMapper.map(userCredential, UserCredentialResponse.class))
                 .build());
     }
@@ -1014,6 +1054,22 @@ public class AuthService {
                 .statusCode(200)
                 .responseBody(dataMap)
                 .responseMessage(AccountUtils.SUCCESS_MESSAGE)
+                .build());
+    }
+
+    public ResponseEntity<CustomResponse> validateToken(ValidateTokenRequest request){
+        boolean isTokenValid = jwtTokenProvider.validateToken(request.getToken());
+        if (!isTokenValid){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .statusCode(400)
+                            .responseMessage(AccountUtils.INVALID_TOKEN_MESSAGE)
+                    .build());
+        }
+        return ResponseEntity.ok(CustomResponse.builder()
+                        .statusCode(200)
+                        .responseMessage(AccountUtils.SUCCESS_MESSAGE)
+                        .token(request.getToken())
+                        .responseBody(true)
                 .build());
     }
 

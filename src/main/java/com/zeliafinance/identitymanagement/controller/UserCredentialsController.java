@@ -15,7 +15,7 @@ import java.util.Optional;
 @RestController
 @RequestMapping("api/v1/users")
 @Slf4j
-@CrossOrigin(origins = {"https://www.sandbox.zeliafinance.com", "http://www.sandbox.zeliafinance.com", "http://localhost:5173"}, maxAge = 3600)
+@CrossOrigin(origins = {"https://www.sandbox.zeliafinance.com", "http://www.sandbox.zeliafinance.com", "http://localhost:5173", "https://test-admin.zeliafinance.com"}, maxAge = 3600)
 public class UserCredentialsController {
 
     private final AuthService service;
@@ -53,6 +53,11 @@ public class UserCredentialsController {
     @PostMapping("/login")
     public ResponseEntity<CustomResponse> login(@RequestBody LoginDto loginDto){
         return service.login(loginDto);
+    }
+
+    @PostMapping("adminLogin")
+    public ResponseEntity<CustomResponse> adminLogin(@RequestBody LoginDto loginDto){
+        return service.adminLogin(loginDto);
     }
 
     @GetMapping
@@ -158,6 +163,11 @@ public class UserCredentialsController {
     @GetMapping("/userInfo")
     public ResponseEntity<CustomResponse> getTotalUsers() {
         return service.getTotalUsers();
+    }
+
+    @PostMapping("/validateToken")
+    public ResponseEntity<CustomResponse> validateToken(@RequestBody ValidateTokenRequest request){
+        return service.validateToken(request);
     }
 
 

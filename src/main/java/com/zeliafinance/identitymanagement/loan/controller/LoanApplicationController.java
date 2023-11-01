@@ -23,18 +23,18 @@ public class LoanApplicationController {
         return service.stageOne(request);
     }
 
-    @PostMapping("stageTwo")
-    public ResponseEntity<CustomResponse> stageTwo(@RequestPart(value = "file") final Optional<MultipartFile> multipartFile,
+    @PostMapping(value = "stageTwo")
+    public ResponseEntity<CustomResponse> stageTwo(
                                                    @RequestParam(value = "loanRefNo") String loanRefNo,
-                                                   @RequestPart LoanApplicationRequest request) throws Exception {
-        return service.stageTwo(multipartFile, loanRefNo, request);
+                                                   @RequestBody LoanApplicationRequest request) throws Exception {
+        return service.stageTwo(loanRefNo, request);
     }
 
     @PostMapping("stageThree")
-    public ResponseEntity<CustomResponse> stageThree(@RequestPart(value = "file1") final Optional<MultipartFile> file1,
-                                                     @RequestPart(value = "file2") final Optional<MultipartFile> file2,
+    public ResponseEntity<CustomResponse> stageThree(@RequestParam(value = "file1", required = false) String file1,
+                                                     @RequestParam(value = "file2", required = false) String file2,
                                                      @RequestParam(value = "loanRefNo") String loanRefNo,
-                                                     @RequestPart LoanApplicationRequest request) throws Exception {
+                                                     @RequestBody LoanApplicationRequest request) throws Exception {
         return service.stageThree(file1, file2, loanRefNo, request);
     }
 
@@ -62,4 +62,18 @@ public class LoanApplicationController {
         return service.loanApplicationHistory();
     }
 
+    @PostMapping("updateStageOne")
+    public ResponseEntity<CustomResponse> updateStageOne(@RequestParam String loanRefNo, @RequestBody LoanApplicationRequest request) throws Exception {
+        return service.updateStageOne(loanRefNo, request);
+    }
+
+    @GetMapping("searchByPhoneNumber")
+    public ResponseEntity<CustomResponse> searchByPhoneNumber(@RequestParam String phoneNumber){
+        return service.searchByPhoneNumber(phoneNumber);
+    }
+
+    @GetMapping("searchByLoanApplicationStatus")
+    public ResponseEntity<CustomResponse> searchByLoanAppStatus(@RequestParam String loanApplicationStatus){
+        return service.searchByLoanAppStatus(loanApplicationStatus);
+    }
 }

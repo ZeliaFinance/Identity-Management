@@ -1,5 +1,8 @@
 package com.zeliafinance.identitymanagement.loan.service.impl;
 
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.zeliafinance.identitymanagement.dto.CustomResponse;
 import com.zeliafinance.identitymanagement.dto.PinSetupDto;
 import com.zeliafinance.identitymanagement.entity.UserCredential;
@@ -24,10 +27,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
+import java.io.IOException;
+import java.util.*;
 
 @Service
 @AllArgsConstructor
@@ -40,6 +43,7 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
     private final AuthService authService;
     private final AccountUtils accountUtils;
     private final ModelMapper modelMapper;
+    private final AmazonS3 amazonS3;
 
     @Override
     public ResponseEntity<CustomResponse> stageOne(LoanApplicationRequest request) {
@@ -90,14 +94,16 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
     }
 
     @Override
-    public ResponseEntity<CustomResponse> stageTwo(Optional<MultipartFile> multipartFile, String loanRefNo, LoanApplicationRequest request) throws Exception {
+    public ResponseEntity<CustomResponse> stageTwo(String loanRefNo, LoanApplicationRequest request) throws Exception {
         LoanApplication loanApplication = loanApplicationRepository.findByLoanRefNo(loanRefNo).orElseThrow(Exception::new);
-        File file;
-        String fileName = "";
-        if (multipartFile.isPresent()){
-            file = authService.convertMultiPartFileToFile(multipartFile);
-            fileName = authService.uploadFileToS3Bucket(file);
-        }
+
+        String fileName;
+
+        String ext =  "." + request.getStudentIdCard().substring(request.getStudentIdCard().indexOf("/")+1, request.getStudentIdCard().indexOf(";"));
+        fileName = uploadFile(AccountUtils.BUCKET_NAME, request.getStudentIdCard().substring(request.getStudentIdCard().indexOf(",")+1)) + ext;
+
+        log.info("file being processed... {}",  fileName);
+
         if (loanApplication.getLoanType().equalsIgnoreCase("SME Loan")){
             loanApplication.setCompanyName(request.getCompanyName());
             loanApplication.setCompanyAddress(request.getCompanyAddress());
@@ -160,6 +166,9 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
             loanApplication.setDepartmentName(request.getDepartName());
             log.info("File upload is completed");
             loanApplication.setWardIdCard(fileName);
+            if (loanApplication.getLoanApplicationLevel() < 2){
+                loanApplication.setLoanApplicationLevel(2);
+            }
             loanApplicationRepository.save(loanApplication);
             return ResponseEntity.ok(CustomResponse.builder()
                     .statusCode(200)
@@ -176,7 +185,7 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
     }
 
     @Override
-    public ResponseEntity<CustomResponse> stageThree(Optional<MultipartFile> file1, Optional<MultipartFile> file2,
+    public ResponseEntity<CustomResponse> stageThree(String file1, String file2,
                                                      String loanRefNo, LoanApplicationRequest loanApplicationRequest) throws Exception {
         LoanApplication loanApplication = loanApplicationRepository.findByLoanRefNo(loanRefNo).orElseThrow(Exception::new);
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -185,14 +194,14 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
         File companyOfferLetter;
         String companyIdCardName = "";
         String companyOfferLetterName = "";
-        if (file1.isPresent()){
-            companyIdCard = authService.convertMultiPartFileToFile(file1);
-            companyIdCardName = authService.uploadFileToS3Bucket(companyIdCard);
-        }
-        if (file2.isPresent()){
-            companyOfferLetter = authService.convertMultiPartFileToFile(file2);
-            companyOfferLetterName = authService.uploadFileToS3Bucket(companyOfferLetter);
-        }
+//        if (file1.isPresent()){
+//            companyIdCard = authService.convertMultiPartFileToFile(file1);
+//            companyIdCardName = authService.uploadFileToS3Bucket(companyIdCard);
+//        }
+//        if (file2.isPresent()){
+//            companyOfferLetter = authService.convertMultiPartFileToFile(file2);
+//            companyOfferLetterName = authService.uploadFileToS3Bucket(companyOfferLetter);
+//        }
 
         if (loanApplication.getLoanType().equalsIgnoreCase("SME Loan") || loanApplication.getLoanType().equalsIgnoreCase("STUDENT_PERSONAL_LOAN")){
             CustomResponse customResponse = authService.verifyPin(PinSetupDto.builder()
@@ -202,7 +211,13 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
                     .build()).getBody();
 
             assert customResponse != null;
-            if (customResponse.getPinVerificationStatus() && loanApplication.getLoanApplicationLevel() < 3){
+            if (customResponse.getPinVerificationStatus()) {
+                return ResponseEntity.internalServerError().body(CustomResponse.builder()
+                                .statusCode(500)
+                                .responseMessage("Pin Error")
+                        .build());
+            }
+            if (loanApplication.getLoanApplicationLevel() < 3){
                 loanApplication.setLoanApplicationLevel(3);
             }
             loanApplication.setLoanApplicationStatus("SUBMITTED");
@@ -407,6 +422,92 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
     @Override
     public ResponseEntity<CustomResponse> viewLoanApplicationsByStatus(String loanApplicationStatus) {
         return null;
+    }
+
+    @Override
+    public ResponseEntity<CustomResponse> updateStageOne(String loanRefNo, LoanApplicationRequest request) throws Exception {
+        LoanApplication loanApplication = loanApplicationRepository.findByLoanRefNo(loanRefNo).orElseThrow(Exception::new);
+        if (loanApplication == null){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .statusCode(404)
+                            .responseMessage(AccountUtils.LOAN_NOT_FOUND)
+                    .build());
+        }
+        loanApplication.setLoanAmount(request.getLoanAmount());
+        loanApplication.setLoanTenor(request.getLoanTenor());
+        loanApplication.setLoanRefNo(accountUtils.generateLoanRefNo());
+        loanApplication.setLoanType(request.getLoanType());
+        CustomResponse loanCalculatorResponse = loanCalculatorService.calculateLoan(LoanCalculatorRequest.builder()
+                .loanType(request.getLoanType())
+                .loanTenor(request.getLoanTenor())
+                .loanAmount(request.getLoanAmount())
+                .build()).getBody();
+        if (loanCalculatorResponse != null){
+            loanApplication.setAmountToPayBack(loanCalculatorResponse.getLoanCalculatorResponse().getAmountToPayBack());
+            loanApplication.setInterestRate(loanCalculatorResponse.getLoanCalculatorResponse().getInterestRate());
+        }
+
+        loanApplication.setModifiedBy(SecurityContextHolder.getContext().getAuthentication().getName());
+        loanApplication = loanApplicationRepository.save(loanApplication);
+        return ResponseEntity.ok(CustomResponse.builder()
+                        .statusCode(200)
+                        .responseMessage(AccountUtils.SUCCESS_MESSAGE)
+                        .responseBody(modelMapper.map(loanApplication, LoanApplicationResponse.class))
+                .build());
+
+    }
+
+    @Override
+    public ResponseEntity<CustomResponse> searchByPhoneNumber(String phoneNumber) {
+        //get wallet id of the user who owns the phone
+        UserCredential userCredential = userCredentialRepository.findByPhoneNumber(phoneNumber).get();
+        String walletId = userCredential.getWalletId();
+        List<LoanApplication> loanApplications = loanApplicationRepository.findByWalletId(walletId).get();
+        if (loanApplications.isEmpty()){
+            return ResponseEntity.ok(CustomResponse.builder()
+                            .statusCode(200)
+                            .responseMessage("User currently has no loan applications")
+                    .build());
+        }
+        List<LoanApplicationResponse> applicationResponseList = loanApplications.stream()
+                .map(loanApplication -> modelMapper.map(loanApplication, LoanApplicationResponse.class))
+                .toList();
+        return ResponseEntity.ok(CustomResponse.builder()
+                        .statusCode(200)
+                        .responseMessage(AccountUtils.SUCCESS_MESSAGE)
+                        .responseBody(applicationResponseList)
+                .build());
+
+    }
+
+    @Override
+    public ResponseEntity<CustomResponse> searchByLoanAppStatus(String loanApplicationStatus) {
+        List<LoanApplication> loanApplications = loanApplicationRepository.findByLoanApplicationStatus(loanApplicationStatus).get();
+        List<LoanApplicationResponse> loanApplicationResponses = loanApplications.stream().map(loanApplication -> modelMapper.map(loanApplication, LoanApplicationResponse.class)).toList();
+        if (loanApplications.isEmpty()){
+            return ResponseEntity.ok(CustomResponse.builder()
+                    .statusCode(200)
+                    .responseMessage("There are no " + loanApplicationStatus + " loans presently")
+                    .build());
+        }
+        return ResponseEntity.ok(CustomResponse.builder()
+                .statusCode(200)
+                .responseMessage(AccountUtils.SUCCESS_MESSAGE)
+                .responseBody(loanApplicationResponses)
+                .build());
+    }
+
+    public String uploadFile(String bucketName, String multipartFile) throws IOException {
+        String objectKey = UUID.randomUUID().toString();
+            byte[] fileData = Base64.getDecoder().decode(multipartFile);
+            ObjectMetadata objectMetadata = new ObjectMetadata();
+            objectMetadata.setContentLength(fileData.length);
+
+            PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, objectKey, new ByteArrayInputStream(fileData), objectMetadata);
+            amazonS3.putObject(putObjectRequest);
+
+
+        return AccountUtils.AWS_FILE_BASE_URL + "/" + objectKey;
     }
 
 
