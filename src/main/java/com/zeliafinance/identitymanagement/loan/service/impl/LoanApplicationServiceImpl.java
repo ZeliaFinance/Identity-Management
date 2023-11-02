@@ -25,12 +25,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.Base64;
+import java.util.Comparator;
+import java.util.List;
+import java.util.UUID;
 
 @Service
 @AllArgsConstructor
@@ -51,11 +52,16 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         UserCredential userCredential = userCredentialRepository.findByEmail(email).orElseThrow();
         String walletId = userCredential.getWalletId();
+        List<LoanApplication> loanApplications = loanApplicationRepository.findByWalletId(walletId).get();
+        //check for the last loan collected
+        loanApplications = loanApplications.stream().sorted(Comparator.comparing(LoanApplication::getCreatedAt)).toList();
+        boolean isLastLoanRepaid = loanApplications.get(loanApplications.size()-1).getLoanApplicationStatus().equalsIgnoreCase("REPAID");
+
         boolean isLoanExists = loanApplicationRepository.existsByWalletId(walletId);
-        if (isLoanExists && loanApplication.getLoanApplicationStatus().equals("SUBMITTED")){
+        if (isLoanExists && !isLastLoanRepaid){
             return ResponseEntity.badRequest().body(CustomResponse.builder()
                     .statusCode(HttpStatus.BAD_REQUEST.value())
-                    .responseMessage(AccountUtils.SUBMITTED_LOAN_UPDATE_ERROR)
+                    .responseMessage("You have an unrepaid loan still running")
                     .build());
         }
 //        if (if loanApplication.gloanApplication.getLoanApplicationStatus().equalsIgnoreCase("SUBMITTED")){
@@ -96,104 +102,122 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
     @Override
     public ResponseEntity<CustomResponse> stageTwo(String loanRefNo, LoanApplicationRequest request) throws Exception {
         LoanApplication loanApplication = loanApplicationRepository.findByLoanRefNo(loanRefNo).orElseThrow(Exception::new);
+        if (loanApplication.getLoanApplicationStatus().equalsIgnoreCase("SUBMITTED")){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .statusCode(400)
+                            .responseMessage("Loan has been submitted and already under processing")
+                    .build());
+        } else {
+            String ext;
+            String fileName = "";
+            if (request.getStudentIdCard() != null){
+                ext =  "." + request.getStudentIdCard().substring(request.getStudentIdCard().indexOf("/")+1, request.getStudentIdCard().indexOf(";"));
+                fileName = uploadFile(AccountUtils.BUCKET_NAME, request.getStudentIdCard().substring(request.getStudentIdCard().indexOf(",")+1)) + ext;
 
-        String fileName;
+                log.info("file being processed... {}",  fileName);
 
-        String ext =  "." + request.getStudentIdCard().substring(request.getStudentIdCard().indexOf("/")+1, request.getStudentIdCard().indexOf(";"));
-        fileName = uploadFile(AccountUtils.BUCKET_NAME, request.getStudentIdCard().substring(request.getStudentIdCard().indexOf(",")+1)) + ext;
-
-        log.info("file being processed... {}",  fileName);
-
-        if (loanApplication.getLoanType().equalsIgnoreCase("SME Loan")){
-            loanApplication.setCompanyName(request.getCompanyName());
-            loanApplication.setCompanyAddress(request.getCompanyAddress());
-            loanApplication.setCompanyEmailAddress(request.getCompanyEmailAddress());
-            loanApplication.setCacRegistration(request.getCacRegistration());
-            loanApplication.setBusinessBankName(request.getBusinessBankName());
-            loanApplication.setBusinessAccount(request.getBusinessAccountNumber());
-            //insert integration for account name enquiry
-            loanApplication.setLoanPurpose(request.getLoanPurpose());
-            if (loanApplication.getLoanApplicationLevel() < 2){
-                loanApplication.setLoanApplicationLevel(2);
             }
 
-            loanApplicationRepository.save(loanApplication);
+            if (loanApplication.getLoanType().equalsIgnoreCase("SME Loan")){
+                loanApplication.setCompanyName(request.getCompanyName());
+                loanApplication.setCompanyAddress(request.getCompanyAddress());
+                loanApplication.setCompanyEmailAddress(request.getCompanyEmailAddress());
+                loanApplication.setCacRegistration(request.getCacRegistration());
+                loanApplication.setBusinessBankName(request.getBusinessBankName());
+                loanApplication.setBusinessAccount(request.getBusinessAccountNumber());
+                //insert integration for account name enquiry
+                loanApplication.setLoanPurpose(request.getLoanPurpose());
+                if (loanApplication.getLoanApplicationLevel() < 2){
+                    loanApplication.setLoanApplicationLevel(2);
+                }
 
-            return ResponseEntity.ok(CustomResponse.builder()
-                    .statusCode(200)
-                    .responseMessage(AccountUtils.SUCCESS_MESSAGE)
-                    .responseBody(modelMapper.map(loanApplication, LoanApplicationResponse.class))
-                    .build());
-        }
-        if (loanApplication.getLoanType().equalsIgnoreCase("Tuition Advance") && request.getApplicantCategory().equalsIgnoreCase(ApplicantCategory.PARENT.toString())){
-            loanApplication.setWardLastName(request.getWardLastName());
-            loanApplication.setWardFirstName(request.getWardFirstName());
-            loanApplication.setWardInstitutionName(request.getWardInstitutionName());
-            loanApplication.setApplicantCategory(ApplicantCategory.PARENT.toString());
-            loanApplication.setWardIdCard(fileName);
+                loanApplicationRepository.save(loanApplication);
 
-            if (loanApplication.getLoanApplicationLevel() < 2){
-                loanApplication.setLoanApplicationLevel(2);
+                return ResponseEntity.ok(CustomResponse.builder()
+                        .statusCode(200)
+                        .responseMessage(AccountUtils.SUCCESS_MESSAGE)
+                        .responseBody(modelMapper.map(loanApplication, LoanApplicationResponse.class))
+                        .build());
             }
-            loanApplicationRepository.save(loanApplication);
-            return ResponseEntity.ok(CustomResponse.builder()
-                    .statusCode(200)
-                    .responseMessage(AccountUtils.SUCCESS_MESSAGE)
-                    .responseBody(modelMapper.map(loanApplication, LoanApplicationResponse.class))
-                    .build());
-        }
-        if (loanApplication.getLoanType().equalsIgnoreCase("Tuition Advance") && request.getApplicantCategory().equalsIgnoreCase(ApplicantCategory.STUDENT.toString())){
-            loanApplication.setWardInstitutionName(request.getWardInstitutionName());
-            loanApplication.setFacultyName(request.getFacultyName());
-            loanApplication.setDepartmentName(request.getDepartName());
+            if (loanApplication.getLoanType().equalsIgnoreCase("Tuition Advance") && request.getApplicantCategory().equalsIgnoreCase(ApplicantCategory.PARENT.toString())){
+                loanApplication.setWardLastName(request.getWardLastName());
+                loanApplication.setWardFirstName(request.getWardFirstName());
+                loanApplication.setWardInstitutionName(request.getWardInstitutionName());
+                loanApplication.setApplicantCategory(ApplicantCategory.PARENT.toString());
+                loanApplication.setWardIdCard(fileName);
 
-            log.info("File upload is completed");
-            loanApplication.setWardIdCard(fileName);
-
-            if (loanApplication.getLoanApplicationLevel() < 2){
-                loanApplication.setLoanApplicationLevel(2);
+                if (loanApplication.getLoanApplicationLevel() < 2){
+                    loanApplication.setLoanApplicationLevel(2);
+                }
+                loanApplicationRepository.save(loanApplication);
+                return ResponseEntity.ok(CustomResponse.builder()
+                        .statusCode(200)
+                        .responseMessage(AccountUtils.SUCCESS_MESSAGE)
+                        .responseBody(modelMapper.map(loanApplication, LoanApplicationResponse.class))
+                        .build());
             }
-            loanApplicationRepository.save(loanApplication);
-            return ResponseEntity.ok(CustomResponse.builder()
-                    .statusCode(200)
-                    .responseMessage(AccountUtils.SUCCESS_MESSAGE)
-                    .responseBody(modelMapper.map(loanApplication, LoanApplicationResponse.class))
-                    .build());
-        }
-        if(loanApplication.getLoanType().equalsIgnoreCase("STUDENT_PERSONAL_LOAN")){
-            loanApplication.setWardInstitutionName(request.getWardInstitutionName());
-            loanApplication.setFacultyName(request.getFacultyName());
-            loanApplication.setDepartmentName(request.getDepartName());
-            log.info("File upload is completed");
-            loanApplication.setWardIdCard(fileName);
-            if (loanApplication.getLoanApplicationLevel() < 2){
-                loanApplication.setLoanApplicationLevel(2);
-            }
-            loanApplicationRepository.save(loanApplication);
-            return ResponseEntity.ok(CustomResponse.builder()
-                    .statusCode(200)
-                    .responseMessage(AccountUtils.SUCCESS_MESSAGE)
-                    .responseBody(modelMapper.map(loanApplication, LoanApplicationResponse.class))
-                    .build());
-        }
+            if (loanApplication.getLoanType().equalsIgnoreCase("Tuition Advance") && request.getApplicantCategory().equalsIgnoreCase(ApplicantCategory.STUDENT.toString())){
+                loanApplication.setWardInstitutionName(request.getWardInstitutionName());
+                loanApplication.setFacultyName(request.getFacultyName());
+                loanApplication.setDepartmentName(request.getDepartName());
 
-        return ResponseEntity.badRequest().body(CustomResponse.builder()
-                .statusCode(400)
-                .responseMessage(AccountUtils.LOAN_NOT_FOUND)
-                .build());
+                log.info("File upload is completed");
+                loanApplication.setWardIdCard(fileName);
+
+                if (loanApplication.getLoanApplicationLevel() < 2){
+                    loanApplication.setLoanApplicationLevel(2);
+                }
+                loanApplicationRepository.save(loanApplication);
+                return ResponseEntity.ok(CustomResponse.builder()
+                        .statusCode(200)
+                        .responseMessage(AccountUtils.SUCCESS_MESSAGE)
+                        .responseBody(modelMapper.map(loanApplication, LoanApplicationResponse.class))
+                        .build());
+            }
+            if(loanApplication.getLoanType().equalsIgnoreCase("STUDENT_PERSONAL_LOAN")){
+                loanApplication.setWardInstitutionName(request.getWardInstitutionName());
+                loanApplication.setFacultyName(request.getFacultyName());
+                loanApplication.setDepartmentName(request.getDepartName());
+                log.info("File upload is completed");
+                loanApplication.setWardIdCard(fileName);
+                if (loanApplication.getLoanApplicationLevel() < 2){
+                    loanApplication.setLoanApplicationLevel(2);
+                }
+                loanApplicationRepository.save(loanApplication);
+                return ResponseEntity.ok(CustomResponse.builder()
+                        .statusCode(200)
+                        .responseMessage(AccountUtils.SUCCESS_MESSAGE)
+                        .responseBody(modelMapper.map(loanApplication, LoanApplicationResponse.class))
+                        .build());
+            }
+
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                    .statusCode(400)
+                    .responseMessage(AccountUtils.LOAN_NOT_FOUND)
+                    .build());
+
+        }
 
     }
 
     @Override
-    public ResponseEntity<CustomResponse> stageThree(String file1, String file2,
-                                                     String loanRefNo, LoanApplicationRequest loanApplicationRequest) throws Exception {
+    public ResponseEntity<CustomResponse> stageThree(String loanRefNo, LoanApplicationRequest loanApplicationRequest) throws Exception {
         LoanApplication loanApplication = loanApplicationRepository.findByLoanRefNo(loanRefNo).orElseThrow(Exception::new);
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
 
-        File companyIdCard;
-        File companyOfferLetter;
-        String companyIdCardName = "";
-        String companyOfferLetterName = "";
+
+        String companyIdCardExt;
+        String companyIdCard = "";
+        String companyOfferLetterExt;
+        String companyOfferLetter = "";
+        String studentIdCard = "";
+        String studentIdCardExt;
+        if (loanApplicationRequest.getCompanyIdCard() != null && loanApplicationRequest.getCompanyOfferLetter() != null){
+            companyIdCardExt =  "." + loanApplicationRequest.getCompanyIdCard().substring(loanApplicationRequest.getStudentIdCard().indexOf("/")+1, loanApplicationRequest.getStudentIdCard().indexOf(";"));
+            companyIdCard = uploadFile(AccountUtils.BUCKET_NAME, loanApplicationRequest.getCompanyIdCard().substring(loanApplicationRequest.getCompanyIdCard().indexOf(",")+1)) + companyIdCardExt;
+            companyOfferLetterExt = "." + loanApplicationRequest.getCompanyOfferLetter().substring(loanApplicationRequest.getCompanyOfferLetter().indexOf("/")+1, loanApplicationRequest.getCompanyOfferLetter().indexOf(";"));
+            companyOfferLetter = uploadFile(AccountUtils.BUCKET_NAME, loanApplicationRequest.getCompanyOfferLetter().substring(loanApplicationRequest.getCompanyOfferLetter().indexOf(",")+1)) + companyOfferLetterExt;
+        }
 //        if (file1.isPresent()){
 //            companyIdCard = authService.convertMultiPartFileToFile(file1);
 //            companyIdCardName = authService.uploadFileToS3Bucket(companyIdCard);
@@ -203,158 +227,163 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
 //            companyOfferLetterName = authService.uploadFileToS3Bucket(companyOfferLetter);
 //        }
 
-        if (loanApplication.getLoanType().equalsIgnoreCase("SME Loan") || loanApplication.getLoanType().equalsIgnoreCase("STUDENT_PERSONAL_LOAN")){
-            CustomResponse customResponse = authService.verifyPin(PinSetupDto.builder()
-                            .email(email)
-                            .pin(loanApplicationRequest.getPin())
-                            .confirmPin(loanApplicationRequest.getConfirmPin())
-                    .build()).getBody();
+        if (loanApplication.getLoanApplicationStatus().equalsIgnoreCase("SUBMITTED")){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                    .statusCode(400)
+                    .responseMessage("Loan has been submitted and already under processing")
+                    .build());
+        } else {
+            if (loanApplication.getLoanType().equalsIgnoreCase("SME Loan") || loanApplication.getLoanType().equalsIgnoreCase("STUDENT_PERSONAL_LOAN")){
+                CustomResponse customResponse = authService.verifyPin(PinSetupDto.builder()
+                        .email(email)
+                        .pin(loanApplicationRequest.getPin())
+                        .confirmPin(loanApplicationRequest.getConfirmPin())
+                        .build()).getBody();
 
-            assert customResponse != null;
-            if (customResponse.getPinVerificationStatus()) {
-                return ResponseEntity.internalServerError().body(CustomResponse.builder()
-                                .statusCode(500)
-                                .responseMessage("Pin Error")
+                assert customResponse != null;
+                if (customResponse.getPinVerificationStatus()) {
+                    return ResponseEntity.internalServerError().body(CustomResponse.builder()
+                            .statusCode(500)
+                            .responseMessage("Pin Error")
+                            .build());
+                }
+                if (loanApplication.getLoanApplicationLevel() < 3){
+                    loanApplication.setLoanApplicationLevel(3);
+                }
+                loanApplication.setLoanApplicationStatus("SUBMITTED");
+                loanApplicationRepository.save(loanApplication);
+                return ResponseEntity.ok(CustomResponse.builder()
+                        .statusCode(200)
+                        .responseMessage(AccountUtils.SUCCESS_MESSAGE)
+                        .responseBody(modelMapper.map(loanApplication, LoanApplicationResponse.class))
                         .build());
             }
-            if (loanApplication.getLoanApplicationLevel() < 3){
-                loanApplication.setLoanApplicationLevel(3);
-            }
-            loanApplication.setLoanApplicationStatus("SUBMITTED");
-            loanApplicationRepository.save(loanApplication);
-            return ResponseEntity.ok(CustomResponse.builder()
+
+            if (loanApplication.getLoanType().equalsIgnoreCase("Tuition Advance") && loanApplication.getApplicantCategory().equals(ApplicantCategory.PARENT.toString())){
+                if(loanApplicationRequest.getEmploymentType().equalsIgnoreCase("EMPLOYED")){
+                    loanApplication.setEmploymentType(EmploymentType.EMPLOYED.toString());
+                    loanApplication.setCompanyName(loanApplicationRequest.getCompanyName());
+                    loanApplication.setCompanyAddress(loanApplicationRequest.getCompanyAddress());
+                    loanApplication.setMonthlySalary(loanApplicationRequest.getMonthlySalary());
+                    loanApplication.setCompanyIdCard(companyIdCard);
+                    loanApplication.setCompanyOfferLetter(companyOfferLetter);
+                    loanApplication.setSalaryAccount(loanApplicationRequest.getSalaryBankName());
+                    loanApplication.setSalaryAccountNumber(loanApplicationRequest.getSalaryAccountNumber());
+                    loanApplication.setSalaryAccountName(loanApplicationRequest.getSalaryAccountName());
+                    if (loanApplication.getLoanApplicationLevel() < 3){
+                        loanApplication.setLoanApplicationLevel(3);
+                    }
+                    loanApplicationRepository.save(loanApplication);
+                    return ResponseEntity.ok(CustomResponse.builder()
                             .statusCode(200)
                             .responseMessage(AccountUtils.SUCCESS_MESSAGE)
                             .responseBody(modelMapper.map(loanApplication, LoanApplicationResponse.class))
-                    .build());
-        }
+                            .build());
+                }
+                if (loanApplication.getEmploymentType().equalsIgnoreCase(EmploymentType.SELF_EMPLOYED.toString())){
+                    loanApplication.setBusinessName(loanApplicationRequest.getBusinessName());
+                    loanApplication.setBusinessAddress(loanApplicationRequest.getBusinessAddress());
+                    loanApplication.setBusinessMonthlyEarnings(loanApplicationRequest.getBusinessMonthlyEarnings());
+                    loanApplication.setCacRegistration(loanApplicationRequest.getCacRegistration());
+                    loanApplication.setBusinessBankName(loanApplicationRequest.getBusinessBankName());
+                    loanApplication.setBusinessAccount(loanApplicationRequest.getBusinessAccountNumber());
+                    loanApplication.setBusinessAccountName(loanApplicationRequest.getBusinessAccountName());
+                    if (loanApplication.getLoanApplicationLevel() < 3){
+                        loanApplication.setLoanApplicationLevel(3);
+                    }
+                    loanApplicationRepository.save(loanApplication);
+                    return ResponseEntity.ok(CustomResponse.builder()
+                            .statusCode(200)
+                            .responseMessage(AccountUtils.SUCCESS_MESSAGE)
+                            .responseBody(modelMapper.map(loanApplication, LoanApplicationResponse.class))
+                            .build());
 
-        if (loanApplication.getLoanType().equalsIgnoreCase("Tuition Advance") && loanApplication.getApplicantCategory().equals(ApplicantCategory.PARENT.toString())){
-            if(loanApplicationRequest.getEmploymentType().equalsIgnoreCase("EMPLOYED")){
-                loanApplication.setEmploymentType(EmploymentType.EMPLOYED.toString());
-                loanApplication.setCompanyName(loanApplicationRequest.getCompanyName());
-                loanApplication.setCompanyAddress(loanApplicationRequest.getCompanyAddress());
-                loanApplication.setMonthlySalary(loanApplicationRequest.getMonthlySalary());
-                loanApplication.setCompanyIdCard(companyIdCardName);
-                loanApplication.setCompanyOfferLetter(companyOfferLetterName);
-                loanApplication.setSalaryAccount(loanApplicationRequest.getSalaryBankName());
-                loanApplication.setSalaryAccountNumber(loanApplicationRequest.getSalaryAccountNumber());
-                loanApplication.setSalaryAccountName(loanApplicationRequest.getSalaryAccountName());
+                }
+            }
+            if (loanApplication.getLoanStatus().equalsIgnoreCase("Tuition Advance") && loanApplication.getApplicantCategory().equals(ApplicantCategory.STUDENT.toString())){
+                loanApplication.setCoSignerFirstName(loanApplicationRequest.getCoSignerFirstName());
+                loanApplication.setCoSignerLastName(loanApplicationRequest.getCoSignerLastName());
+                loanApplication.setCoSignerAddress(loanApplicationRequest.getCoSignerAddress());
+                loanApplication.setCoSignerRelationship(loanApplicationRequest.getCoSignerRelationship());
+                loanApplication.setCoSignerPhoneNumber(loanApplicationRequest.getCoSignerPhoneNumber());
+                loanApplication.setCoSignerEmploymentType(loanApplicationRequest.getCoSignerEmploymentType());
                 if (loanApplication.getLoanApplicationLevel() < 3){
                     loanApplication.setLoanApplicationLevel(3);
                 }
                 loanApplicationRepository.save(loanApplication);
                 return ResponseEntity.ok(CustomResponse.builder()
-                                .statusCode(200)
-                                .responseMessage(AccountUtils.SUCCESS_MESSAGE)
-                                .responseBody(modelMapper.map(loanApplication, LoanApplicationResponse.class))
+                        .statusCode(200)
+                        .responseMessage(AccountUtils.SUCCESS_MESSAGE)
+                        .responseBody(modelMapper.map(loanApplication, LoanApplicationResponse.class))
                         .build());
             }
-            if (loanApplication.getEmploymentType().equalsIgnoreCase(EmploymentType.SELF_EMPLOYED.toString())){
-                loanApplication.setBusinessName(loanApplicationRequest.getBusinessName());
-                loanApplication.setBusinessAddress(loanApplicationRequest.getBusinessAddress());
-                loanApplication.setBusinessMonthlyEarnings(loanApplicationRequest.getBusinessMonthlyEarnings());
-                loanApplication.setCacRegistration(loanApplicationRequest.getCacRegistration());
-                loanApplication.setBusinessBankName(loanApplicationRequest.getBusinessBankName());
-                loanApplication.setBusinessAccount(loanApplicationRequest.getBusinessAccountNumber());
-                loanApplication.setBusinessAccountName(loanApplicationRequest.getBusinessAccountName());
-                if (loanApplication.getLoanApplicationLevel() < 3){
-                    loanApplication.setLoanApplicationLevel(3);
-                }
-                loanApplicationRepository.save(loanApplication);
-                return ResponseEntity.ok(CustomResponse.builder()
-                                .statusCode(200)
-                                .responseMessage(AccountUtils.SUCCESS_MESSAGE)
-                                .responseBody(modelMapper.map(loanApplication, LoanApplicationResponse.class))
-                        .build());
-
-            }
-        }
-        if (loanApplication.getLoanStatus().equalsIgnoreCase("Tuition Advance") && loanApplication.getApplicantCategory().equals(ApplicantCategory.STUDENT.toString())){
-            loanApplication.setCoSignerFirstName(loanApplicationRequest.getCoSignerFirstName());
-            loanApplication.setCoSignerLastName(loanApplicationRequest.getCoSignerLastName());
-            loanApplication.setCoSignerAddress(loanApplicationRequest.getCoSignerAddress());
-            loanApplication.setCoSignerRelationship(loanApplicationRequest.getCoSignerRelationship());
-            loanApplication.setCoSignerPhoneNumber(loanApplicationRequest.getCoSignerPhoneNumber());
-            loanApplication.setCoSignerEmploymentType(loanApplicationRequest.getCoSignerEmploymentType());
-            if (loanApplication.getLoanApplicationLevel() < 3){
-                loanApplication.setLoanApplicationLevel(3);
-            }
-            loanApplicationRepository.save(loanApplication);
-            return ResponseEntity.ok(CustomResponse.builder()
-                    .statusCode(200)
-                    .responseMessage(AccountUtils.SUCCESS_MESSAGE)
-                    .responseBody(modelMapper.map(loanApplication, LoanApplicationResponse.class))
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                    .statusCode(400)
+                    .responseMessage(AccountUtils.LOAN_NOT_FOUND)
                     .build());
         }
-        return ResponseEntity.badRequest().body(CustomResponse.builder()
-                .statusCode(400)
-                .responseMessage(AccountUtils.LOAN_NOT_FOUND)
-                .build());
-
     }
 
     @Override
-    public ResponseEntity<CustomResponse> stageFour(Optional<MultipartFile> file1, Optional<MultipartFile> file2, String loanRefNo, LoanApplicationRequest request) throws Exception {
+    public ResponseEntity<CustomResponse> stageFour(String loanRefNo, LoanApplicationRequest request) throws Exception {
         LoanApplication loanApplication = loanApplicationRepository.findByLoanRefNo(loanRefNo).orElseThrow(Exception::new);
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        File companyIdCard;
-        File companyOfferLetter;
-        String companyIdCardName = "";
-        String companyOfferLetterName = "";
-        if (file1.isPresent()){
-            companyIdCard = authService.convertMultiPartFileToFile(file1);
-            companyIdCardName = authService.uploadFileToS3Bucket(companyIdCard);
-        }
-        if (file2.isPresent()){
-            companyOfferLetter = authService.convertMultiPartFileToFile(file2);
-            companyOfferLetterName = authService.uploadFileToS3Bucket(companyOfferLetter);
-        }
 
-        if(loanApplication.getLoanType().equalsIgnoreCase("Tuition Advance") && loanApplication.getCoSignerEmploymentType().equalsIgnoreCase("EMPLOYED")){
-            loanApplication.setCompanyName(request.getCompanyName());
-            loanApplication.setCompanyAddress(request.getCompanyAddress());
-            loanApplication.setMonthlySalary(request.getMonthlySalary());
-            loanApplication.setCompanyIdCard(companyIdCardName);
-            loanApplication.setCompanyOfferLetter(companyOfferLetterName);
-            loanApplication.setSalaryAccount(request.getSalaryBankName());
-            loanApplication.setSalaryAccountNumber(request.getSalaryAccountNumber());
-            loanApplication.setSalaryAccountName(request.getSalaryAccountName());
-            if (loanApplication.getLoanApplicationLevel() < 4){
-                loanApplication.setLoanApplicationLevel(4);
+        String companyIdCardExt =  "." + request.getCompanyIdCard().substring(request.getStudentIdCard().indexOf("/")+1, request.getStudentIdCard().indexOf(";"));
+        String companyIdCard = uploadFile(AccountUtils.BUCKET_NAME, request.getStudentIdCard().substring(request.getStudentIdCard().indexOf(",")+1)) + companyIdCardExt;
+        String companyOfferLetterExt = "." + request.getCompanyOfferLetter().substring(request.getCompanyOfferLetter().indexOf("/")+1, request.getCompanyOfferLetter().indexOf(";"));
+        String companyOfferLetter = uploadFile(AccountUtils.BUCKET_NAME, request.getCompanyOfferLetter().substring(request.getCompanyOfferLetter().indexOf(",")+1)) + companyOfferLetterExt;
+
+        if (loanApplication.getLoanApplicationStatus().equalsIgnoreCase("SUBMITTED")){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                    .statusCode(400)
+                    .responseMessage("Loan has been submitted and already under processing")
+                    .build());
+        } else {
+            if(loanApplication.getLoanType().equalsIgnoreCase("Tuition Advance") && loanApplication.getCoSignerEmploymentType().equalsIgnoreCase("EMPLOYED")){
+                loanApplication.setCompanyName(request.getCompanyName());
+                loanApplication.setCompanyAddress(request.getCompanyAddress());
+                loanApplication.setMonthlySalary(request.getMonthlySalary());
+                loanApplication.setCompanyIdCard(companyIdCard);
+                loanApplication.setCompanyOfferLetter(companyOfferLetter);
+                loanApplication.setSalaryAccount(request.getSalaryBankName());
+                loanApplication.setSalaryAccountNumber(request.getSalaryAccountNumber());
+                loanApplication.setSalaryAccountName(request.getSalaryAccountName());
+                if (loanApplication.getLoanApplicationLevel() < 4){
+                    loanApplication.setLoanApplicationLevel(4);
+                }
+                loanApplicationRepository.save(loanApplication);
+                return ResponseEntity.ok(CustomResponse.builder()
+                        .statusCode(200)
+                        .responseMessage(AccountUtils.SUCCESS_MESSAGE)
+                        .responseBody(modelMapper.map(loanApplication, LoanApplicationResponse.class))
+                        .build());
             }
-            loanApplicationRepository.save(loanApplication);
-            return ResponseEntity.ok(CustomResponse.builder()
-                            .statusCode(200)
-                            .responseMessage(AccountUtils.SUCCESS_MESSAGE)
-                            .responseBody(modelMapper.map(loanApplication, LoanApplicationResponse.class))
+
+            if (loanApplication.getLoanType().equalsIgnoreCase("Tuition Advance") && loanApplication.getCoSignerEmploymentType().equalsIgnoreCase(EmploymentType.SELF_EMPLOYED.toString())){
+                loanApplication.setBusinessName(request.getBusinessName());
+                loanApplication.setBusinessAddress(request.getBusinessAddress());
+                loanApplication.setBusinessMonthlyEarnings(request.getBusinessMonthlyEarnings());
+                loanApplication.setCacRegistration(request.getCacRegistration());
+                loanApplication.setBusinessBankName(request.getBusinessBankName());
+                loanApplication.setBusinessAccount(request.getBusinessAccountNumber());
+                loanApplication.setBusinessAccountName(request.getBusinessAccountName());
+                if (loanApplication.getLoanApplicationLevel() < 4){
+                    loanApplication.setLoanApplicationLevel(4);
+                }
+                loanApplicationRepository.save(loanApplication);
+                return ResponseEntity.ok(CustomResponse.builder()
+                        .statusCode(200)
+                        .responseMessage(AccountUtils.SUCCESS_MESSAGE)
+                        .responseBody(modelMapper.map(loanApplication, LoanApplicationResponse.class))
+                        .build());
+            }
+
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                    .statusCode(400)
+                    .responseMessage(AccountUtils.LOAN_NOT_FOUND)
                     .build());
         }
-
-        if (loanApplication.getLoanType().equalsIgnoreCase("Tuition Advance") && loanApplication.getCoSignerEmploymentType().equalsIgnoreCase(EmploymentType.SELF_EMPLOYED.toString())){
-            loanApplication.setBusinessName(request.getBusinessName());
-            loanApplication.setBusinessAddress(request.getBusinessAddress());
-            loanApplication.setBusinessMonthlyEarnings(request.getBusinessMonthlyEarnings());
-            loanApplication.setCacRegistration(request.getCacRegistration());
-            loanApplication.setBusinessBankName(request.getBusinessBankName());
-            loanApplication.setBusinessAccount(request.getBusinessAccountNumber());
-            loanApplication.setBusinessAccountName(request.getBusinessAccountName());
-            if (loanApplication.getLoanApplicationLevel() < 4){
-                loanApplication.setLoanApplicationLevel(4);
-            }
-            loanApplicationRepository.save(loanApplication);
-            return ResponseEntity.ok(CustomResponse.builder()
-                    .statusCode(200)
-                    .responseMessage(AccountUtils.SUCCESS_MESSAGE)
-                    .responseBody(modelMapper.map(loanApplication, LoanApplicationResponse.class))
-                    .build());
-        }
-
-        return ResponseEntity.badRequest().body(CustomResponse.builder()
-                .statusCode(400)
-                .responseMessage(AccountUtils.LOAN_NOT_FOUND)
-                .build());
-
     }
 
     @Override
@@ -365,24 +394,30 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
                         .pin(request.getPin())
                         .confirmPin(request.getConfirmPin())
                 .build()).getBody();
-        if (loanApplication.getLoanType().equalsIgnoreCase("Tuition Advance")){
-            if (loanApplication.getLoanApplicationLevel() < 5 && pinVerificationResponse.getPinVerificationStatus()){
-                loanApplication.setLoanApplicationLevel(5);
-                loanApplication.setLoanApplicationStatus("SUBMITTED");
-                loanApplicationRepository.save(loanApplication);
-                return ResponseEntity.ok(CustomResponse.builder()
-                        .statusCode(200)
-                        .responseMessage(AccountUtils.SUCCESS_MESSAGE)
-                        .responseBody(modelMapper.map(loanApplication, LoanApplicationResponse.class))
-                        .build());
+
+        if (loanApplication.getLoanApplicationStatus().equalsIgnoreCase("SUBMITTED")){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                    .statusCode(400)
+                    .responseMessage("Loan has been submitted and already under processing")
+                    .build());
+        } else {
+            if (loanApplication.getLoanType().equalsIgnoreCase("Tuition Advance")){
+                if (loanApplication.getLoanApplicationLevel() < 5 && pinVerificationResponse.getPinVerificationStatus()){
+                    loanApplication.setLoanApplicationLevel(5);
+                    loanApplication.setLoanApplicationStatus("SUBMITTED");
+                    loanApplicationRepository.save(loanApplication);
+                    return ResponseEntity.ok(CustomResponse.builder()
+                            .statusCode(200)
+                            .responseMessage(AccountUtils.SUCCESS_MESSAGE)
+                            .responseBody(modelMapper.map(loanApplication, LoanApplicationResponse.class))
+                            .build());
+                }
             }
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                    .statusCode(400)
+                    .responseMessage(AccountUtils.LOAN_NOT_FOUND)
+                    .build());
         }
-        return ResponseEntity.badRequest().body(CustomResponse.builder()
-                .statusCode(400)
-                .responseMessage(AccountUtils.LOAN_NOT_FOUND)
-                .build());
-
-
     }
 
     @Override
@@ -433,28 +468,38 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
                             .responseMessage(AccountUtils.LOAN_NOT_FOUND)
                     .build());
         }
-        loanApplication.setLoanAmount(request.getLoanAmount());
-        loanApplication.setLoanTenor(request.getLoanTenor());
-        loanApplication.setLoanRefNo(accountUtils.generateLoanRefNo());
-        loanApplication.setLoanType(request.getLoanType());
-        CustomResponse loanCalculatorResponse = loanCalculatorService.calculateLoan(LoanCalculatorRequest.builder()
-                .loanType(request.getLoanType())
-                .loanTenor(request.getLoanTenor())
-                .loanAmount(request.getLoanAmount())
-                .build()).getBody();
-        if (loanCalculatorResponse != null){
-            loanApplication.setAmountToPayBack(loanCalculatorResponse.getLoanCalculatorResponse().getAmountToPayBack());
-            loanApplication.setInterestRate(loanCalculatorResponse.getLoanCalculatorResponse().getInterestRate());
-        }
-
-        loanApplication.setModifiedBy(SecurityContextHolder.getContext().getAuthentication().getName());
-        loanApplication = loanApplicationRepository.save(loanApplication);
-        return ResponseEntity.ok(CustomResponse.builder()
+        if (loanApplication.getLoanApplicationStatus().equalsIgnoreCase("SUBMITTED")){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                    .statusCode(400)
+                    .responseMessage("Loan has been submitted and already under processing")
+                    .build());
+        } else {
+            if (!loanApplication.getLoanApplicationStatus().equalsIgnoreCase("SUMITTED")){
+                loanApplication.setLoanAmount(request.getLoanAmount());
+                loanApplication.setLoanTenor(request.getLoanTenor());
+                loanApplication.setLoanType(request.getLoanType());
+                CustomResponse loanCalculatorResponse = loanCalculatorService.calculateLoan(LoanCalculatorRequest.builder()
+                        .loanType(request.getLoanType())
+                        .loanTenor(request.getLoanTenor())
+                        .loanAmount(request.getLoanAmount())
+                        .build()).getBody();
+                if (loanCalculatorResponse != null){
+                    loanApplication.setAmountToPayBack(loanCalculatorResponse.getLoanCalculatorResponse().getAmountToPayBack());
+                    loanApplication.setInterestRate(loanCalculatorResponse.getLoanCalculatorResponse().getInterestRate());
+                }
+                loanApplication.setModifiedBy(SecurityContextHolder.getContext().getAuthentication().getName());
+                loanApplication = loanApplicationRepository.save(loanApplication);
+                return ResponseEntity.ok(CustomResponse.builder()
                         .statusCode(200)
                         .responseMessage(AccountUtils.SUCCESS_MESSAGE)
                         .responseBody(modelMapper.map(loanApplication, LoanApplicationResponse.class))
-                .build());
-
+                        .build());
+            }
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                    .statusCode(400)
+                    .responseMessage("You cannot update a submitted loan.")
+                    .build());
+        }
     }
 
     @Override
@@ -477,7 +522,6 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
                         .responseMessage(AccountUtils.SUCCESS_MESSAGE)
                         .responseBody(applicationResponseList)
                 .build());
-
     }
 
     @Override
@@ -509,6 +553,4 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
 
         return AccountUtils.AWS_FILE_BASE_URL + "/" + objectKey;
     }
-
-
 }

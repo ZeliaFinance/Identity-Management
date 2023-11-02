@@ -7,9 +7,6 @@ import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.util.Optional;
 
 @RestController
 @AllArgsConstructor
@@ -24,26 +21,21 @@ public class LoanApplicationController {
     }
 
     @PostMapping(value = "stageTwo")
-    public ResponseEntity<CustomResponse> stageTwo(
-                                                   @RequestParam(value = "loanRefNo") String loanRefNo,
+    public ResponseEntity<CustomResponse> stageTwo(@RequestParam(value = "loanRefNo") String loanRefNo,
                                                    @RequestBody LoanApplicationRequest request) throws Exception {
         return service.stageTwo(loanRefNo, request);
     }
 
     @PostMapping("stageThree")
-    public ResponseEntity<CustomResponse> stageThree(@RequestParam(value = "file1", required = false) String file1,
-                                                     @RequestParam(value = "file2", required = false) String file2,
-                                                     @RequestParam(value = "loanRefNo") String loanRefNo,
+    public ResponseEntity<CustomResponse> stageThree(@RequestParam(value = "loanRefNo") String loanRefNo,
                                                      @RequestBody LoanApplicationRequest request) throws Exception {
-        return service.stageThree(file1, file2, loanRefNo, request);
+        return service.stageThree(loanRefNo, request);
     }
 
     @PostMapping("stageFour")
-    public ResponseEntity<CustomResponse> stageFour(@RequestPart(value = "file1") final Optional<MultipartFile> file1,
-                                                    @RequestPart(value = "file2") final Optional<MultipartFile> file2,
-                                                    @RequestParam(value = "loanRefNo") String loanRefNo,
+    public ResponseEntity<CustomResponse> stageFour(@RequestParam(value = "loanRefNo") String loanRefNo,
                                                     @RequestBody LoanApplicationRequest request) throws Exception {
-        return service.stageFour(file1, file2, loanRefNo, request);
+        return service.stageFour(loanRefNo, request);
     }
 
     @PostMapping("stageFive")
