@@ -17,6 +17,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.logout.HttpStatusReturningLogoutSuccessHandler;
+import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -61,6 +63,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize ->
                         authorize.requestMatchers(HttpMethod.POST, "/api/v1/users/registerUser").permitAll()
                                 .requestMatchers(HttpMethod.POST, "/api/v1/users/login").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/login").permitAll()
                                 .requestMatchers(HttpMethod.POST, "api/v1/users/resetPassword").permitAll()
                                 .requestMatchers(HttpMethod.POST, "api/v1/users/changePassword").permitAll()
                                 .requestMatchers(HttpMethod.POST, "api/v1/users/validateOtp").permitAll()
@@ -71,12 +74,17 @@ public class SecurityConfig {
                                 .requestMatchers("/").permitAll()
                                 .anyRequest().authenticated()
                 );
-
-        httpSecurity.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+        httpSecurity.logout(logout -> logout.logoutUrl("/api/v1/users/logout").logoutSuccessHandler(logoutSuccessHandler()).invalidateHttpSession(true));
+        httpSecurity.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED).invalidSessionUrl("/api/v1/users/login?expired").maximumSessions(1).expiredUrl("/api/v1/users/login?expired"));
         httpSecurity.authenticationProvider(authenticationProvider());
         httpSecurity.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         httpSecurity.cors(httpSecurityCorsConfigurer -> httpSecurityCorsConfigurer.configurationSource(corsConfigurationSource()));
         return httpSecurity.build();
+    }
+
+    @Bean
+    public LogoutSuccessHandler logoutSuccessHandler(){
+        return new HttpStatusReturningLogoutSuccessHandler();
     }
 
     @Bean

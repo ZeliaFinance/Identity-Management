@@ -1,14 +1,12 @@
 package com.zeliafinance.identitymanagement.loan.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -71,4 +69,11 @@ public class LoanApplication {
     private String coSignerEmploymentType;
     private String coSignerRelationship;
     private String loanApplicationStatus;
+    private String repaymentStatus;
+    private double amountRepaid;
+    private LocalDateTime nextRepaymentDate;
+    private String nextRepaymentStatus;
+    @ManyToMany
+    @JoinColumn(name = "loanType", referencedColumnName = "loanProductName", insertable = false, updatable = false)
+    private List<LoanProduct> loanProduct;
 }

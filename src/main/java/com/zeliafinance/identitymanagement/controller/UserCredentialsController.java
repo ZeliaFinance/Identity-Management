@@ -2,6 +2,8 @@ package com.zeliafinance.identitymanagement.controller;
 
 import com.zeliafinance.identitymanagement.dto.*;
 import com.zeliafinance.identitymanagement.service.impl.AuthService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -168,6 +170,11 @@ public class UserCredentialsController {
     @PostMapping("/validateToken")
     public ResponseEntity<CustomResponse> validateToken(@RequestBody ValidateTokenRequest request){
         return service.validateToken(request);
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<CustomResponse> logout(HttpServletRequest request, HttpServletResponse response){
+        return service.logout(request, response);
     }
 
 
