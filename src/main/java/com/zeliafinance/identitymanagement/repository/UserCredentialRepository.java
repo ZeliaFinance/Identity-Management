@@ -32,4 +32,6 @@ public interface UserCredentialRepository extends JpaRepository<UserCredential, 
 
 
 
+
+
 }
