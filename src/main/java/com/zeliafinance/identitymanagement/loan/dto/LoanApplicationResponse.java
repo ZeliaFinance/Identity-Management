@@ -1,6 +1,7 @@
 package com.zeliafinance.identitymanagement.loan.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.zeliafinance.identitymanagement.loan.entity.LoanProduct;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -9,6 +10,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -68,4 +70,5 @@ public class LoanApplicationResponse {
     private String coSignerEmploymentType;
     private String coSignerRelationship;
     private String loanApplicationStatus;
+    private List<LoanProduct> loanProduct;
 }

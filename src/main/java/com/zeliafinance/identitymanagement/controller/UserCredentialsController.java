@@ -2,6 +2,8 @@ package com.zeliafinance.identitymanagement.controller;
 
 import com.zeliafinance.identitymanagement.dto.*;
 import com.zeliafinance.identitymanagement.service.impl.AuthService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -15,7 +17,7 @@ import java.util.Optional;
 @RestController
 @RequestMapping("api/v1/users")
 @Slf4j
-@CrossOrigin(origins = {"https://www.sandbox.zeliafinance.com", "http://www.sandbox.zeliafinance.com"}, maxAge = 3600)
+@CrossOrigin(origins = {"https://www.sandbox.zeliafinance.com", "http://www.sandbox.zeliafinance.com", "http://localhost:5173", "https://test-admin.zeliafinance.com"}, maxAge = 3600)
 public class UserCredentialsController {
 
     private final AuthService service;
@@ -53,6 +55,11 @@ public class UserCredentialsController {
     @PostMapping("/login")
     public ResponseEntity<CustomResponse> login(@RequestBody LoginDto loginDto){
         return service.login(loginDto);
+    }
+
+    @PostMapping("adminLogin")
+    public ResponseEntity<CustomResponse> adminLogin(@RequestBody LoginDto loginDto){
+        return service.adminLogin(loginDto);
     }
 
     @GetMapping
@@ -158,6 +165,16 @@ public class UserCredentialsController {
     @GetMapping("/userInfo")
     public ResponseEntity<CustomResponse> getTotalUsers() {
         return service.getTotalUsers();
+    }
+
+    @PostMapping("/validateToken")
+    public ResponseEntity<CustomResponse> validateToken(@RequestBody ValidateTokenRequest request){
+        return service.validateToken(request);
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<CustomResponse> logout(HttpServletRequest request, HttpServletResponse response){
+        return service.logout(request, response);
     }
 
 

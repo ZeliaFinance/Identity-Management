@@ -48,4 +48,5 @@ public class LoanApplicationRequest {
     private String coSignerPhoneNumber;
     private String coSignerEmploymentType;
     private String coSignerRelationship;
+    private String studentIdCard;
 }

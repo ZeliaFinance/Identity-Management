@@ -7,9 +7,6 @@ import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.util.Optional;
 
 @RestController
 @AllArgsConstructor
@@ -23,27 +20,22 @@ public class LoanApplicationController {
         return service.stageOne(request);
     }
 
-    @PostMapping("stageTwo")
-    public ResponseEntity<CustomResponse> stageTwo(@RequestPart(value = "file") final Optional<MultipartFile> multipartFile,
-                                                   @RequestParam(value = "loanRefNo") String loanRefNo,
-                                                   @RequestPart LoanApplicationRequest request) throws Exception {
-        return service.stageTwo(multipartFile, loanRefNo, request);
+    @PostMapping(value = "stageTwo")
+    public ResponseEntity<CustomResponse> stageTwo(@RequestParam(value = "loanRefNo") String loanRefNo,
+                                                   @RequestBody LoanApplicationRequest request) throws Exception {
+        return service.stageTwo(loanRefNo, request);
     }
 
     @PostMapping("stageThree")
-    public ResponseEntity<CustomResponse> stageThree(@RequestPart(value = "file1") final Optional<MultipartFile> file1,
-                                                     @RequestPart(value = "file2") final Optional<MultipartFile> file2,
-                                                     @RequestParam(value = "loanRefNo") String loanRefNo,
-                                                     @RequestPart LoanApplicationRequest request) throws Exception {
-        return service.stageThree(file1, file2, loanRefNo, request);
+    public ResponseEntity<CustomResponse> stageThree(@RequestParam(value = "loanRefNo") String loanRefNo,
+                                                     @RequestBody LoanApplicationRequest request) throws Exception {
+        return service.stageThree(loanRefNo, request);
     }
 
     @PostMapping("stageFour")
-    public ResponseEntity<CustomResponse> stageFour(@RequestPart(value = "file1") final Optional<MultipartFile> file1,
-                                                    @RequestPart(value = "file2") final Optional<MultipartFile> file2,
-                                                    @RequestParam(value = "loanRefNo") String loanRefNo,
+    public ResponseEntity<CustomResponse> stageFour(@RequestParam(value = "loanRefNo") String loanRefNo,
                                                     @RequestBody LoanApplicationRequest request) throws Exception {
-        return service.stageFour(file1, file2, loanRefNo, request);
+        return service.stageFour(loanRefNo, request);
     }
 
     @PostMapping("stageFive")
@@ -62,4 +54,18 @@ public class LoanApplicationController {
         return service.loanApplicationHistory();
     }
 
+    @PostMapping("updateStageOne")
+    public ResponseEntity<CustomResponse> updateStageOne(@RequestParam String loanRefNo, @RequestBody LoanApplicationRequest request) throws Exception {
+        return service.updateStageOne(loanRefNo, request);
+    }
+
+    @GetMapping("searchByPhoneNumber")
+    public ResponseEntity<CustomResponse> searchByPhoneNumber(@RequestParam String phoneNumber){
+        return service.searchByPhoneNumber(phoneNumber);
+    }
+
+    @GetMapping("searchByLoanApplicationStatus")
+    public ResponseEntity<CustomResponse> searchByLoanAppStatus(@RequestParam String loanApplicationStatus){
+        return service.searchByLoanAppStatus(loanApplicationStatus);
+    }
 }
