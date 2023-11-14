@@ -1,7 +1,9 @@
 package com.zeliafinance.identitymanagement.loan.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.zeliafinance.identitymanagement.dto.UserCredentialResponse;
 import com.zeliafinance.identitymanagement.loan.entity.LoanProduct;
+import com.zeliafinance.identitymanagement.loan.entity.Repayments;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -45,6 +47,7 @@ public class LoanApplicationResponse {
     private String accountName;
     private String transactionPin;
     private double amountToPayBack;
+    private double interest;
     private double interestRate;
     private String loanRefNo;
     private String facultyName;
@@ -71,4 +74,6 @@ public class LoanApplicationResponse {
     private String coSignerRelationship;
     private String loanApplicationStatus;
     private List<LoanProduct> loanProduct;
+    private UserCredentialResponse userDetails;
+    private List<Repayments> repaymentsList;
 }

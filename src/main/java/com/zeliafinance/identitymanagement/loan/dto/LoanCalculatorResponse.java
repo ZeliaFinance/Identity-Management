@@ -13,4 +13,5 @@ public class LoanCalculatorResponse {
     private double amountToPayBack;
     private double monthlyRepayment;
     private double interestRate;
+    private double interest;
 }

@@ -17,7 +17,7 @@ import java.util.Optional;
 @RestController
 @RequestMapping("api/v1/users")
 @Slf4j
-@CrossOrigin(origins = {"https://www.sandbox.zeliafinance.com", "http://www.sandbox.zeliafinance.com", "http://localhost:5173", "https://test-admin.zeliafinance.com"}, maxAge = 3600)
+@CrossOrigin(origins = {"https://www.sandbox.zeliafinance.com", "http://www.sandbox.zeliafinance.com", "http://localhost:5173", "https://test-admin.zeliafinance.com", "https://zelia-admin-app-git-staging-zeliafinance.vercel.app", "https://zelia-admin-app.vercel.app"}, maxAge = 3600)
 public class UserCredentialsController {
 
     private final AuthService service;
@@ -73,12 +73,12 @@ public class UserCredentialsController {
     }
 
     @GetMapping("{userId}")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+//    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<CustomResponse> fetchUser(@PathVariable (value = "userId") Long userId){
         return service.fetchUser(userId);
     }
 
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ROLE_SUPER_ADMIN')")
     @PutMapping("/updateRole/{userId}")
     public ResponseEntity<CustomResponse> updateUserRole(@PathVariable (value = "userId") Long userId){
         return service.updateUserRole(userId);

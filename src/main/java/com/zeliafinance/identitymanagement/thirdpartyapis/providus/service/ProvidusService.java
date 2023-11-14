@@ -1,13 +1,7 @@
 package com.zeliafinance.identitymanagement.thirdpartyapis.providus.service;
 
-import com.zeliafinance.identitymanagement.thirdpartyapis.providus.dto.request.CreateDynamicAccountRequest;
-import com.zeliafinance.identitymanagement.thirdpartyapis.providus.dto.request.CreateReservedAccountRequest;
-import com.zeliafinance.identitymanagement.thirdpartyapis.providus.dto.request.FundTransferRequest;
-import com.zeliafinance.identitymanagement.thirdpartyapis.providus.dto.request.GetNipAccountRequest;
-import com.zeliafinance.identitymanagement.thirdpartyapis.providus.dto.response.CreateDynamicAccountResponse;
-import com.zeliafinance.identitymanagement.thirdpartyapis.providus.dto.response.CreateReservedAccountResponse;
-import com.zeliafinance.identitymanagement.thirdpartyapis.providus.dto.response.FundTransferResponse;
-import com.zeliafinance.identitymanagement.thirdpartyapis.providus.dto.response.GetNipAccountResponse;
+import com.zeliafinance.identitymanagement.thirdpartyapis.providus.dto.request.*;
+import com.zeliafinance.identitymanagement.thirdpartyapis.providus.dto.response.*;
 import com.zeliafinance.identitymanagement.utils.AccountUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -73,6 +67,15 @@ public class ProvidusService {
         log.info("full url: {}", url);
         HttpEntity<FundTransferRequest> entity = new HttpEntity<>(request, contentHeader());
         ResponseEntity<FundTransferResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, entity, FundTransferResponse.class);
+        return responseEntity.getBody();
+    }
+
+    public BalanceEnquiryResponse doBalanceEnquiry(BalanceEnquiryRequest request){
+        RestTemplate restTemplate = new RestTemplate();
+        String url = transactionBaseUrl + "/GetProvidusAccount";
+        log.info("full url: {}", url);
+        HttpEntity<BalanceEnquiryRequest> entity = new HttpEntity<>(request, contentHeader());
+        ResponseEntity<BalanceEnquiryResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, entity, BalanceEnquiryResponse.class);
         return responseEntity.getBody();
     }
 

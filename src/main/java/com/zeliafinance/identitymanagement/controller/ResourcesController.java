@@ -36,4 +36,10 @@ public class ResourcesController {
 
         return service.fetchResourcesByLookupCode(pageNo, pageSize, lookupCode);
     }
+
+    @GetMapping("/distinctLookupCodes")
+    public ResponseEntity<CustomResponse> fetchDistinctLookupCodes(@RequestParam(value = "pageNo", defaultValue = "1") int pageNo,
+                                                                   @RequestParam(value = "pageSize", defaultValue = "100") int pageSize){
+        return service.fetchDistinctLookupCodes(pageNo, pageSize);
+    }
 }

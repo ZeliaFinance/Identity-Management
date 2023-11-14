@@ -68,4 +68,9 @@ public class LoanApplicationController {
     public ResponseEntity<CustomResponse> searchByLoanAppStatus(@RequestParam String loanApplicationStatus){
         return service.searchByLoanAppStatus(loanApplicationStatus);
     }
+
+    @DeleteMapping("deleteLoan/{loanId}")
+    public ResponseEntity<CustomResponse> deleteLoan(@PathVariable long loanId){
+        return service.deleteLoan(loanId);
+    }
 }

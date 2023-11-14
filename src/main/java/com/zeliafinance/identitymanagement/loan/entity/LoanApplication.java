@@ -1,5 +1,6 @@
 package com.zeliafinance.identitymanagement.loan.entity;
 
+import com.zeliafinance.identitymanagement.entity.UserCredential;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -45,6 +46,7 @@ public class LoanApplication {
     private String transactionPin;
     private double amountToPayBack;
     private double interestRate;
+    private double interest;
     private String loanRefNo;
     private String facultyName;
     private String departmentName;
@@ -73,7 +75,12 @@ public class LoanApplication {
     private double amountRepaid;
     private LocalDateTime nextRepaymentDate;
     private String nextRepaymentStatus;
+    @OneToOne
+    private LoanProduct loanProduct;
     @ManyToMany
-    @JoinColumn(name = "loanType", referencedColumnName = "loanProductName", insertable = false, updatable = false)
-    private List<LoanProduct> loanProduct;
+    private List<Repayments> repayments;
+    @ManyToOne
+    private UserCredential loanApplicant;
+    private LocalDateTime dateDisbursed;
+    private double amountDisbursed;
 }

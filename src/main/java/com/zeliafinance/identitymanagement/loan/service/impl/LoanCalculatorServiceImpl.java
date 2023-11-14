@@ -79,12 +79,13 @@ public class LoanCalculatorServiceImpl implements LoanCalculatorService {
 
         double interest = 0;
         DecimalFormat decimalFormat = new DecimalFormat("#.00");
-
+        double interestRate = 0;
         List<LoanProduct> loanProducts = loanProductRepository.findAll().stream()
                 .filter(loanProduct ->
                         loanProduct.getLoanProductName().equalsIgnoreCase(request.getLoanType())).toList();
         for (LoanProduct loanProduct : loanProducts){
             if (request.getLoanAmount() >= loanProduct.getMinAmount() && request.getLoanAmount() <= loanProduct.getMaxAmount() && request.getLoanTenor() >= loanProduct.getMinDuration() && request.getLoanTenor() <= loanProduct.getMaxDuration()){
+                interestRate = loanProduct.getInterestRate();
                 log.info("Interest rate: {}", loanProduct.getInterestRate());
                 log.info("Id of loan product: {}", loanProduct.getId());
                 if (request.getLoanTenor() < 30){
@@ -106,7 +107,8 @@ public class LoanCalculatorServiceImpl implements LoanCalculatorService {
         LoanCalculatorResponse response = LoanCalculatorResponse.builder()
                 .amountToPayBack(amountToPay)
                 .monthlyRepayment(monthlyRepayment)
-                .interestRate(Double.parseDouble(decimalFormat.format(interest)))
+                .interest(Double.parseDouble(decimalFormat.format(interest)))
+                .interestRate(interestRate)
                 .build();
 
 
