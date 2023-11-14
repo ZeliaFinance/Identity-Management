@@ -104,6 +104,22 @@ public class ResourcesServiceImpl implements ResourcesService {
                                 .totalPages(totalPages)
                                 .build())
                 .build());
+    }
+
+    @Override
+    public ResponseEntity<CustomResponse> fetchDistinctLookupCodes(int pageNo, int pageSize) {
+        //list findBy lookupValues, list of Strings, distinct
+        List<String> lookupCodes = resourcesRepository.findAll()
+                .stream().map(Resources::getLookupCode)
+                .distinct()
+                .skip(pageNo - 1)
+                .limit(pageSize)
+                .toList();
+        return ResponseEntity.ok(CustomResponse.builder()
+                        .statusCode(200)
+                        .responseMessage(AccountUtils.SUCCESS_MESSAGE)
+                        .responseBody(lookupCodes)
+                .build());
 
     }
 }

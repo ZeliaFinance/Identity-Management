@@ -5,16 +5,15 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.zeliafinance.identitymanagement.dto.CustomResponse;
 import com.zeliafinance.identitymanagement.dto.PinSetupDto;
+import com.zeliafinance.identitymanagement.dto.UserCredentialResponse;
 import com.zeliafinance.identitymanagement.entity.UserCredential;
 import com.zeliafinance.identitymanagement.loan.dto.LoanApplicationRequest;
 import com.zeliafinance.identitymanagement.loan.dto.LoanApplicationResponse;
 import com.zeliafinance.identitymanagement.loan.dto.LoanCalculatorRequest;
-import com.zeliafinance.identitymanagement.loan.entity.ApplicantCategory;
-import com.zeliafinance.identitymanagement.loan.entity.EmploymentType;
-import com.zeliafinance.identitymanagement.loan.entity.LoanApplication;
-import com.zeliafinance.identitymanagement.loan.entity.LoanProduct;
+import com.zeliafinance.identitymanagement.loan.entity.*;
 import com.zeliafinance.identitymanagement.loan.repository.LoanApplicationRepository;
 import com.zeliafinance.identitymanagement.loan.repository.LoanProductRepository;
+import com.zeliafinance.identitymanagement.loan.repository.RepaymentsRepository;
 import com.zeliafinance.identitymanagement.loan.service.LoanApplicationService;
 import com.zeliafinance.identitymanagement.loan.service.LoanCalculatorService;
 import com.zeliafinance.identitymanagement.repository.UserCredentialRepository;
@@ -48,6 +47,7 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
     private final ModelMapper modelMapper;
     private final AmazonS3 amazonS3;
     private final LoanProductRepository loanProductRepository;
+    private final RepaymentsRepository repaymentsRepository;
 
     @Override
     public ResponseEntity<CustomResponse> stageOne(LoanApplicationRequest request) {
@@ -93,6 +93,7 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
             if (loanCalculatorResponse != null){
                 loanApplication.setAmountToPayBack(loanCalculatorResponse.getLoanCalculatorResponse().getAmountToPayBack());
                 loanApplication.setInterestRate(loanCalculatorResponse.getLoanCalculatorResponse().getInterestRate());
+                loanApplication.setInterest(loanCalculatorResponse.getLoanCalculatorResponse().getInterest());
             }
             loanApplication.setCreatedBy(email);
             loanApplication.setModifiedBy(email);
@@ -480,7 +481,16 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
     @Override
     public ResponseEntity<CustomResponse> fetchAllLoanApplications() {
         List<LoanApplicationResponse> loanApplicationList = loanApplicationRepository.findAll()
-                .stream().map(loanApplication -> modelMapper.map(loanApplication, LoanApplicationResponse.class)).toList();
+                .stream().map(loanApplication -> {
+                    LoanApplicationResponse loanApplicationResponse = modelMapper.map(loanApplication, LoanApplicationResponse.class);
+                    UserCredential userCredential = userCredentialRepository.findByWalletId(loanApplication.getWalletId()).get();
+                    loanApplicationResponse.setUserDetails(modelMapper.map(userCredential, UserCredentialResponse.class));
+                    List<Repayments> repayments = repaymentsRepository.findByLoanRefNo(loanApplication.getLoanRefNo());
+                    loanApplicationResponse.setRepaymentsList(repayments);
+                    return loanApplicationResponse;
+
+                })
+                .toList();
         if (loanApplicationList.isEmpty()){
             return ResponseEntity.ok(CustomResponse.builder()
                             .statusCode(200)
@@ -503,12 +513,20 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
                 .filter(loanApplication -> loanApplication.getWalletId().equals(walletId))
                 .sorted(Comparator.comparing(LoanApplication::getCreatedAt).reversed())
                 .map(loanApplication -> {
-                    List<LoanProduct> loanProduct = loanProductRepository.findAll().stream().filter(loanProduct1 -> loanProduct1.getLoanProductName().equalsIgnoreCase(loanApplication.getLoanType())).toList();
+
+                    List<LoanProduct> loanProduct = loanProductRepository.findAll().stream().filter(loanProduct1 -> loanProduct1.getLoanProductName().equalsIgnoreCase(loanApplication.getLoanType())
+                    && loanProduct1.getMaxAmount() >= loanApplication.getLoanAmount() && loanProduct1.getMinAmount() <= loanApplication.getLoanAmount() && loanProduct1.getMinDuration() <= loanApplication.getLoanTenor()
+                            && loanProduct1.getMaxDuration() >= loanApplication.getLoanTenor() && loanProduct1.getInterestRate() == (loanApplication.getInterestRate())
+                    ).toList();
+
+                    log.info("Interest Rate: {}", loanApplication.getInterestRate());
                     LoanApplicationResponse response = modelMapper.map(loanApplication, LoanApplicationResponse.class);
                     response.setLoanProduct(loanProduct);
+                    response.setUserDetails(modelMapper.map(userCredential, UserCredentialResponse.class));
                     return response;
                 })
                 .toList();
+
 
 
         return ResponseEntity.ok(CustomResponse.builder()
@@ -602,6 +620,15 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
                 .statusCode(200)
                 .responseMessage(AccountUtils.SUCCESS_MESSAGE)
                 .responseBody(loanApplicationResponses)
+                .build());
+    }
+
+    @Override
+    public ResponseEntity<CustomResponse> deleteLoan(Long loanId) {
+        loanApplicationRepository.deleteById(loanId);
+        return ResponseEntity.ok(CustomResponse.builder()
+                        .statusCode(200)
+                        .responseMessage(AccountUtils.SUCCESS_MESSAGE)
                 .build());
     }
 

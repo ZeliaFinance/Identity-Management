@@ -64,6 +64,8 @@ public class SecurityConfig {
                         authorize.requestMatchers(HttpMethod.POST, "/api/v1/users/registerUser").permitAll()
                                 .requestMatchers(HttpMethod.POST, "/api/v1/users/login").permitAll()
                                 .requestMatchers(HttpMethod.GET, "/login").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/api/users/{userId}").hasRole("ADMIN")
+                                .requestMatchers(HttpMethod.GET, "/api/users/{userId}").hasRole("SUPER_ADMIN")
                                 .requestMatchers(HttpMethod.POST, "api/v1/users/resetPassword").permitAll()
                                 .requestMatchers(HttpMethod.POST, "api/v1/users/changePassword").permitAll()
                                 .requestMatchers(HttpMethod.POST, "api/v1/users/validateOtp").permitAll()
@@ -94,6 +96,8 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(List.of("https://www.sandbox.zeliafinance.com"));
         configuration.setAllowedOrigins(List.of("http://localhost:5173"));
         configuration.setAllowedOrigins(List.of("*"));
+        configuration.setAllowedOrigins(List.of("https://zelia-admin-app.vercel.app"));
+        configuration.setAllowedOrigins(List.of("https://zelia-admin-app-git-staging-zeliafinance.vercel.app"));
         configuration.setAllowedOrigins(List.of("https://www.test-admin.zeliafinance.com"));
         configuration.setAllowedMethods(List.of("*"));
         configuration.setAllowedHeaders(List.of("*"));

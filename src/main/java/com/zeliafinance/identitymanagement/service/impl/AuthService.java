@@ -12,7 +12,9 @@ import com.zeliafinance.identitymanagement.service.EmailService;
 import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.dto.request.NinRequest;
 import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.dto.response.NinLookupResponse;
 import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.service.DojahSmsService;
+import com.zeliafinance.identitymanagement.thirdpartyapis.providus.dto.request.BalanceEnquiryRequest;
 import com.zeliafinance.identitymanagement.thirdpartyapis.providus.dto.request.CreateReservedAccountRequest;
+import com.zeliafinance.identitymanagement.thirdpartyapis.providus.dto.response.BalanceEnquiryResponse;
 import com.zeliafinance.identitymanagement.thirdpartyapis.providus.dto.response.CreateReservedAccountResponse;
 import com.zeliafinance.identitymanagement.thirdpartyapis.providus.service.ProvidusService;
 import com.zeliafinance.identitymanagement.utils.AccountUtils;
@@ -64,13 +66,6 @@ public class AuthService {
     private DojahSmsService dojahSmsService;
     private AmazonS3 amazonS3;
     private ProvidusService providusService;
-    
-
-
-
-
-
-
 
     public ResponseEntity<CustomResponse> signUp(SignUpRequest request){
         boolean isEmailExist = userCredentialRepository.existsByEmail(request.getEmail());
@@ -218,7 +213,12 @@ public class AuthService {
 
             log.info("providus account details: {}", providusResponse);
             userCredential.setNuban(providusResponse.getAccountNumber());
-
+            BalanceEnquiryResponse balanceEnquiryResponse = providusService.doBalanceEnquiry(BalanceEnquiryRequest.builder()
+                            .accountNumber(userCredential.getNuban())
+                            .userName("test")
+                            .password("test")
+                    .build());
+            userCredential.setAccountBalance(Double.parseDouble(balanceEnquiryResponse.getAvailableBalance()));
             UserCredential updatedUser = userCredentialRepository.save(userCredential);
             //Sending email alert
 
@@ -424,6 +424,7 @@ public class AuthService {
             );
         }
 
+        assert authentication != null;
         if (!authentication.isAuthenticated()){
             return ResponseEntity.badRequest().body(CustomResponse.builder()
                             .statusCode(HttpStatus.BAD_REQUEST.value())
@@ -455,9 +456,9 @@ public class AuthService {
     }
 
     public ResponseEntity<CustomResponse> adminLogin(LoginDto loginDto){
-        Authentication authentication=null;
+        Authentication authentication;
         UserCredential userCredential = userCredentialRepository.findByEmail(loginDto.getEmail()).get();
-        if (!userCredential.getRole().equals(Role.ROLE_ADMIN)){
+        if (!(userCredential.getRole().equals(Role.ROLE_ADMIN) || userCredential.getRole().equals(Role.ROLE_SUPER_ADMIN))){
             return ResponseEntity.badRequest().body(CustomResponse.builder()
                             .statusCode(400)
                             .responseMessage(AccountUtils.NON_ADMIN_LOGIN)
@@ -493,9 +494,9 @@ public class AuthService {
     }
 
 
-    public ResponseEntity<CustomResponse> fetchAllUsers(int pageNo, int pageSize){
+    public ResponseEntity<CustomResponse> fetchAllUsers(int pageNo, int pageSize) {
 
-        Pageable pageable = PageRequest.of(pageNo-1, pageSize);
+        Pageable pageable = PageRequest.of(pageNo - 1, pageSize);
         Page<UserCredential> userCredentials = userCredentialRepository.findAll(pageable);
         List<UserCredential> list = userCredentials.getContent();
 
@@ -516,14 +517,13 @@ public class AuthService {
 
     }
 
-
     public ResponseEntity<CustomResponse> fetchUser(Long userId){
         boolean isUserExists = userCredentialRepository.existsById(userId);
         if (!isUserExists){
             nonExistentUserById();
         }
         UserCredential userCredential = userCredentialRepository.findById(userId).orElseThrow();
-        Object response = modelMapper.map(userCredential, UserCredentialResponse.class);
+        UserCredentialResponse response = modelMapper.map(userCredential, UserCredentialResponse.class);
         return ResponseEntity.ok(CustomResponse.builder()
                         .statusCode(HttpStatus.OK.value())
                 .responseMessage(AccountUtils.SUCCESS_MESSAGE)
@@ -564,6 +564,7 @@ public class AuthService {
                 .email(email)
                 .build()).getBody();
 
+        assert otpResponse != null;
         String otp = otpResponse.getReferenceId().substring(0, 6);
         String referenceId = otpResponse.getReferenceId().substring(6);
         LocalDateTime expiryDate = otpResponse.getExpiry();
@@ -604,6 +605,7 @@ public class AuthService {
                 .otp(passwordResetDto.getOtp())
                 .build()).getBody();
 
+        assert validationResponse != null;
         if (!validationResponse.getOtpStatus()){
             return ResponseEntity.badRequest().body(CustomResponse.builder()
                             .statusCode(HttpStatus.BAD_REQUEST.value())
@@ -902,6 +904,13 @@ public class AuthService {
         UserCredential userCredential = userCredentialRepository.findByEmail(pinSetupDto.getEmail()).orElseThrow();
         String savedPin = accountUtils.decodePin(userCredential.getPin());
         log.info(savedPin);
+        if (userCredential.getAccountStatus().equalsIgnoreCase("LOCKED")){
+            return ResponseEntity.status(HttpStatus.LOCKED).body(CustomResponse.builder()
+                            .statusCode(HttpStatus.LOCKED.value())
+                            .responseMessage("Your account is locked. Please try again in 5 minutes")
+                            .pinVerificationStatus(false)
+                    .build());
+        }
         if (!pinSetupDto.getPin().equals(pinSetupDto.getConfirmPin())){
             return ResponseEntity.badRequest().body(CustomResponse.builder()
                             .statusCode(HttpStatus.BAD_REQUEST.value())
@@ -911,6 +920,7 @@ public class AuthService {
         }
 
         if (!savedPin.equals(pinSetupDto.getPin())){
+            handleIncorrectPinAttempt(userCredential);
             return ResponseEntity.badRequest().body(CustomResponse.builder()
                     .statusCode(HttpStatus.BAD_REQUEST.value())
                     .responseMessage(AccountUtils.INVALID_PIN_MESSAGE)
@@ -918,11 +928,28 @@ public class AuthService {
                     .build());
         }
 
+        resetIncorrectPinAttempts(userCredential);
+
         return ResponseEntity.ok(CustomResponse.builder()
                         .statusCode(HttpStatus.OK.value())
                         .responseMessage(AccountUtils.PIN_VALIDATED_MESSAGE)
                         .pinVerificationStatus(true)
                 .build());
+    }
+
+    private void handleIncorrectPinAttempt(UserCredential userCredential){
+        int maximumAttempts = 3;
+        int lockoutDurationInMinutes = 5;
+        userCredential.setFailedPinAttempts(userCredential.getFailedPinAttempts() + 1);
+        if (userCredential.getFailedPinAttempts() >= maximumAttempts){
+            userCredential.setAccountStatus("LOCKED");
+            userCredential.setLockoutTimeStamp(LocalDateTime.now().plusMinutes(lockoutDurationInMinutes));
+        }
+    }
+
+    private void resetIncorrectPinAttempts(UserCredential userCredential){
+        userCredential.setFailedPinAttempts(0);
+        userCredential.setAccountStatus(null);
     }
 
     private String generateToken(String subject){
@@ -1026,13 +1053,6 @@ public class AuthService {
     }
 
     public ResponseEntity<List<UserProfileRequest>> searchUsersByKey(String key) {
-        userCredentialRepository.findAll().size();
-
-        /*CustomResponse.builder()
-                .info(Info.builder()
-                        .totalPages(userCredentialRepository.findAll().size())
-                        .build())
-                .build();*/
         List<UserCredential> userCredentials = userCredentialRepository.searchUsersByKey(key);
         List<UserProfileRequest> profileRequestList = userCredentials.stream().map(userCredential -> modelMapper.map(userCredential, UserProfileRequest.class)).toList();
 
@@ -1041,8 +1061,6 @@ public class AuthService {
         } else {
             return ResponseEntity.ok(profileRequestList);
         }
-
-
     }
 
     public ResponseEntity<CustomResponse> getTotalUsers() {

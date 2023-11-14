@@ -46,6 +46,7 @@ public class LoanApplication {
     private String transactionPin;
     private double amountToPayBack;
     private double interestRate;
+    private double interest;
     private String loanRefNo;
     private String facultyName;
     private String departmentName;
@@ -74,12 +75,12 @@ public class LoanApplication {
     private double amountRepaid;
     private LocalDateTime nextRepaymentDate;
     private String nextRepaymentStatus;
+    @OneToOne
+    private LoanProduct loanProduct;
     @ManyToMany
-    @JoinColumn(name = "loanType", referencedColumnName = "loanProductName", insertable = false, updatable = false)
-    private List<LoanProduct> loanProduct;
-
-    // Tie the user ID to the loan application
+    private List<Repayments> repayments;
     @ManyToOne
-    @JoinColumn(name = "user_id", referencedColumnName = "id" )
-    private UserCredential userCredentials;
+    private UserCredential loanApplicant;
+    private LocalDateTime dateDisbursed;
+    private double amountDisbursed;
 }

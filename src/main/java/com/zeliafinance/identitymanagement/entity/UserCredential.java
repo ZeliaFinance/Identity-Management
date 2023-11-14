@@ -71,6 +71,8 @@ public class UserCredential implements UserDetails {
     private String imagePath;
     private String imageFileName;
     private String nuban;
+    private int failedPinAttempts;
+    private LocalDateTime lockoutTimeStamp;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

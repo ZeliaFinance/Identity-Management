@@ -1,12 +1,14 @@
 package com.zeliafinance.identitymanagement.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.zeliafinance.identitymanagement.loan.dto.LoanApplicationResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 @Builder
@@ -44,4 +46,5 @@ public class UserCredentialResponse {
     private String imageFileName;
     private String nuban;
     private String walletId;
+    private List<LoanApplicationResponse> loanApplications;
 }
