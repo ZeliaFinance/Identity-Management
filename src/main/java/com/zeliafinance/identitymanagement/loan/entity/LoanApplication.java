@@ -1,5 +1,6 @@
 package com.zeliafinance.identitymanagement.loan.entity;
 
+import com.zeliafinance.identitymanagement.entity.UserCredential;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -76,4 +77,9 @@ public class LoanApplication {
     @ManyToMany
     @JoinColumn(name = "loanType", referencedColumnName = "loanProductName", insertable = false, updatable = false)
     private List<LoanProduct> loanProduct;
+
+    // Tie the user ID to the loan application
+    @ManyToOne
+    @JoinColumn(name = "user_id", referencedColumnName = "id" )
+    private UserCredential userCredentials;
 }
