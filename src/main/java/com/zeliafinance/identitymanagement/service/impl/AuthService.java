@@ -100,6 +100,7 @@ public class AuthService {
                 .hashedPassword(accountUtils.encode(request.getPassword(), 3))
                 .accountStatus("PENDING")
                 .accountBalance(0)
+                .inviteAccepted(false)
                 .build();
 
         userCredential.setRole(Role.ROLE_USER);
@@ -1104,5 +1105,4 @@ public class AuthService {
                         .responseMessage(AccountUtils.SUCCESS_MESSAGE)
                 .build());
     }
-
 }

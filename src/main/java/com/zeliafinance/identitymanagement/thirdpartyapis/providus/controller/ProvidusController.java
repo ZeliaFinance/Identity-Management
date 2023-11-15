@@ -4,10 +4,7 @@ import com.zeliafinance.identitymanagement.thirdpartyapis.providus.dto.request.*
 import com.zeliafinance.identitymanagement.thirdpartyapis.providus.dto.response.*;
 import com.zeliafinance.identitymanagement.thirdpartyapis.providus.service.ProvidusService;
 import lombok.AllArgsConstructor;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping(value = "/api/v1/providus")
@@ -39,5 +36,10 @@ public class ProvidusController {
     @PostMapping("balanceEnquiry")
     public BalanceEnquiryResponse doBalanceEnquiry(@RequestBody BalanceEnquiryRequest request){
         return service.doBalanceEnquiry(request);
+    }
+
+    @GetMapping("getBanks")
+    public GetBanksResponse getBanks(){
+        return service.getBanks();
     }
 }

@@ -190,13 +190,10 @@ public class AccountUtils {
 
     public static void main(String[] args) {
         AccountUtils accountUtils = new AccountUtils();
-//        System.out.println(accountUtils.encode("BE09BEE831CF262226B426E39BD1092AF84DC63076D4174FAC78A2261F9A3D6E59744983B8326B69CDF2963FE314DFC89635CFA37A40596508DD6EAAB09402C7"
+//        System.out.println(accountUtils.decode("IOZSXEN_WHVW-8056gd94h6500ehg368dh7d98iie428f-A"
 //                , 3));
-//        System.out.println(accountUtils.generateLoanRefNo());
-        System.out.println(accountUtils.decodePin("NTU2Ng=="));
-//        System.out.println(accountUtils.transactionRef());
-        String name = "Ajibade";
-        System.out.println(name.substring(name.indexOf("A"), name.indexOf("b")));
+        System.out.println(accountUtils.encode("musa.ajibade@zeliafinance.com", 5));
+
     }
 
     public String encodePin(String pin){

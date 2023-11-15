@@ -79,6 +79,15 @@ public class ProvidusService {
         return responseEntity.getBody();
     }
 
+    public GetBanksResponse getBanks(){
+        RestTemplate restTemplate = new RestTemplate();
+        String url = transactionBaseUrl + "/GetNIPBanks";
+        log.info("full url: {}", url);
+        HttpEntity entity = new HttpEntity<>(contentHeader());
+        ResponseEntity<GetBanksResponse> responseEntity = restTemplate.exchange(url, HttpMethod.GET, entity, GetBanksResponse.class);
+        return responseEntity.getBody();
+    }
+
     private HttpHeaders headers(){
         HttpHeaders headers = new HttpHeaders();
         headers.set("Content-Type", "application/json");

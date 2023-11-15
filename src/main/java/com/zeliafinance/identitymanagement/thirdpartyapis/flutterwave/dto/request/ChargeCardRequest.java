@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @Builder
 public class ChargeCardRequest {
     private int amount;
-    private int cardNumber;
+    private long cardNumber;
     private int cvv;
     private int expiryMonth;
     private int expiryYear;

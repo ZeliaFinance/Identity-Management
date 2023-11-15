@@ -2,6 +2,7 @@ package com.zeliafinance.identitymanagement.thirdpartyapis.flutterwave.service;
 
 import com.zeliafinance.identitymanagement.thirdpartyapis.flutterwave.dto.request.ChargeCardRequest;
 import com.zeliafinance.identitymanagement.thirdpartyapis.flutterwave.dto.response.ChargeCardResponse;
+import com.zeliafinance.identitymanagement.thirdpartyapis.flutterwave.util.PayloadEncryptor;
 import com.zeliafinance.identitymanagement.utils.AccountUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +22,8 @@ public class FlutterwaveService {
 
     @Autowired
     AccountUtils accountUtils;
+    @Autowired
+    PayloadEncryptor payloadEncryptor;
 
     @Value("${flutterwave.publicKey}")
     private String publicKey;
@@ -35,8 +38,12 @@ public class FlutterwaveService {
         RestTemplate restTemplate = new RestTemplate();
         String url = baseUrl + "/v3/charges?type=card";
         log.info("full url: {}", url);
-        HttpEntity<ChargeCardRequest> entity = new HttpEntity<>(request, headers());
+        String payload = payloadEncryptor.TripleDESEncrypt(request.toString(), "FLWSECK_TEST687b91bbb9f5");
+        log.info("encrypted payload: {}", payload);
+        HttpEntity<String> entity = new HttpEntity<>(payload, headers());
+
         ResponseEntity<ChargeCardResponse> response = restTemplate.exchange(url, HttpMethod.POST, entity, ChargeCardResponse.class);
+        log.info("response: {}", response);
         return response.getBody();
 
     }
