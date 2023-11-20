@@ -29,8 +29,4 @@ public class LoanProduct {
     @UpdateTimestamp
     private String modifiedAt;
     private boolean minInterestRate;
-//    @OneToOne
-//    @MapsId
-//    @JoinColumn(name = "loan_application")
-//    private LoanApplication loanApplication;
 }

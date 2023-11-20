@@ -22,4 +22,5 @@ public class Repayments {
     private String repaymentStatus;
     private String loanType;
     private String loanStatus;
+    private double amountPaid;
 }

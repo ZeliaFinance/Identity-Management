@@ -26,9 +26,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -48,7 +45,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.stream.Collectors;
 
 
 @Service
@@ -445,7 +441,8 @@ public class AuthService {
                 .build();
 
         emailService.sendEmailAlert(loginAlert);
-
+        userCredential.setLastLoggedIn(LocalDateTime.now());
+        userCredentialRepository.save(userCredential);
 
 
         return ResponseEntity.ok(CustomResponse.builder()
@@ -497,23 +494,23 @@ public class AuthService {
 
     public ResponseEntity<CustomResponse> fetchAllUsers(int pageNo, int pageSize) {
 
-        Pageable pageable = PageRequest.of(pageNo - 1, pageSize);
-        Page<UserCredential> userCredentials = userCredentialRepository.findAll(pageable);
-        List<UserCredential> list = userCredentials.getContent();
-
-        Object response = list.stream().map(user -> modelMapper.map(user, UserCredentialResponse.class)).collect(Collectors.toList());
+        List<UserCredentialResponse> usersList = userCredentialRepository.findAll()
+                .stream()
+                .skip(pageNo-1)
+                .limit(pageSize).sorted(Comparator.comparing(UserCredential::getCreatedAt).reversed())
+                .map(userCredential -> modelMapper.map(userCredential, UserCredentialResponse.class))
+                .toList();
 
 
         return ResponseEntity.ok(CustomResponse.builder()
                 .statusCode(HttpStatus.OK.value())
                 .responseMessage("SUCCESS")
-                .responseBody(response)
+                .responseBody(usersList)
                 .info(Info.builder()
-                        .totalPages(userCredentials.getTotalPages())
-                        .totalElements(userCredentials.getTotalElements())
-                        .pageSize(userCredentials.getSize())
+                        .totalPages((usersList.size()/pageSize)+1)
+                        .totalElements((long)usersList.size())
+                        .pageSize(pageSize)
                         .build())
-
                 .build());
 
     }
@@ -561,6 +558,13 @@ public class AuthService {
                     .build());
         }
 
+        if(userCredential.getRole().equals(Role.ROLE_SUPER_ADMIN)){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .statusCode(HttpStatus.FORBIDDEN.value())
+                            .responseMessage("Super Admin Cannot Reset Password. Contact the Engineering team for help")
+                    .build());
+        }
+
         CustomResponse otpResponse = sendOtp(OtpDto.builder()
                 .email(email)
                 .build()).getBody();
@@ -601,6 +605,14 @@ public class AuthService {
                     .build());
         }
         UserCredential userCredential = userCredentialRepository.findByEmail(email).get();
+        if(userCredential.getRole().equals(Role.ROLE_SUPER_ADMIN)){
+            String message = "Super Admin Cannot Reset Password. Contact the Engineering team for help";
+            log.info("Error message: {}", message);
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                    .statusCode(HttpStatus.FORBIDDEN.value())
+                    .responseMessage(message)
+                    .build());
+        }
         CustomResponse validationResponse = validateOtp(ValidateOtpDto.builder()
                 .email(email)
                 .otp(passwordResetDto.getOtp())

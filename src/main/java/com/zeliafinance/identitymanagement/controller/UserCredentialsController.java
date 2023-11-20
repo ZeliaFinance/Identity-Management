@@ -63,7 +63,6 @@ public class UserCredentialsController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<CustomResponse> fetchAllUsers(
             @RequestParam(value = "pageNo", defaultValue = "1") int pageNo,
             @RequestParam(value = "pageSize", defaultValue = "50") int pageSize

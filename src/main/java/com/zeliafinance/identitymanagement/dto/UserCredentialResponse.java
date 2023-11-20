@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -47,4 +48,6 @@ public class UserCredentialResponse {
     private String nuban;
     private String walletId;
     private List<LoanApplicationResponse> loanApplications;
+    private LocalDateTime createdAt;
+    private LocalDateTime lastLoggedIn;
 }

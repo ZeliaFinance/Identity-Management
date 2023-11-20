@@ -28,7 +28,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.util.Base64;
 import java.util.Comparator;
 import java.util.List;
@@ -70,15 +69,9 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
         if (isLoanExists  && !isLastLoanRepaid){
             return ResponseEntity.badRequest().body(CustomResponse.builder()
                     .statusCode(HttpStatus.BAD_REQUEST.value())
-                    .responseMessage("You have an unrepaid loan still running")
+                    .responseMessage("You have an unpaid loan still running")
                     .build());
         }
-//        if (if loanApplication.gloanApplication.getLoanApplicationStatus().equalsIgnoreCase("SUBMITTED")){
-//            return ResponseEntity.badRequest().body(CustomResponse.builder()
-//                            .statusCode(400)
-//                            .responseMessage(AccountUtils.SUBMITTED_LOAN_UPDATE_ERROR)
-//                    .build());
-//        }
         if (loanApplication.getLoanApplicationLevel() < 1){
             loanApplication.setWalletId(userCredential.getWalletId());
             loanApplication.setLoanAmount(request.getLoanAmount());
@@ -109,6 +102,10 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
                 .build());
     }
 
+    private boolean checkCanceledLoan(String loanRefNo){
+        return loanApplicationRepository.findByLoanRefNo(loanRefNo).get().getLoanApplicationStatus().equalsIgnoreCase("CANCELED");
+    }
+
     @Override
     public ResponseEntity<CustomResponse> stageTwo(String loanRefNo, LoanApplicationRequest request) throws Exception {
         LoanApplication loanApplication = loanApplicationRepository.findByLoanRefNo(loanRefNo).orElseThrow(Exception::new);
@@ -118,6 +115,13 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
                             .responseMessage("Loan Not Found")
                     .build());
         }
+        if (checkCanceledLoan(loanRefNo)){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                    .statusCode(400)
+                    .responseMessage("Loan with reference No " + loanRefNo + "has been canceled")
+                    .build());
+        }
+
         if (loanApplication.getLoanApplicationStatus().equalsIgnoreCase("SUBMITTED")){
             return ResponseEntity.badRequest().body(CustomResponse.builder()
                             .statusCode(400)
@@ -228,6 +232,12 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
         }
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
 
+        if (checkCanceledLoan(loanRefNo)){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                    .statusCode(400)
+                    .responseMessage("Loan with reference No " + loanRefNo + "has been canceled")
+                    .build());
+        }
 
         String companyIdCardExt;
         String companyIdCard = "";
@@ -253,7 +263,7 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
                         .build()).getBody();
 
                 assert customResponse != null;
-                if (customResponse.getPinVerificationStatus()) {
+                if (!customResponse.getPinVerificationStatus()) {
                     return ResponseEntity.internalServerError().body(CustomResponse.builder()
                             .statusCode(500)
                             .responseMessage("Pin Error")
@@ -352,6 +362,12 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
                     .responseMessage("Loan Not Found")
                     .build());
         }
+        if (checkCanceledLoan(loanRefNo)){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                    .statusCode(400)
+                    .responseMessage("Loan with reference No " + loanRefNo + "has been canceled")
+                    .build());
+        }
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         String companyIdCardExt;
         String companyIdCard = "";
@@ -443,6 +459,12 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
     @Override
     public ResponseEntity<CustomResponse> stageFive(String loanRefNo, LoanApplicationRequest request) throws Exception {
         LoanApplication loanApplication = loanApplicationRepository.findByLoanRefNo(loanRefNo).orElseThrow(Exception::new);
+        if (checkCanceledLoan(loanRefNo)){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                    .statusCode(400)
+                    .responseMessage("Loan with reference No " + loanRefNo + "has been canceled")
+                    .build());
+        }
         log.info("loan ref no: {}", loanRefNo);
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         CustomResponse pinVerificationResponse = authService.verifyPin(PinSetupDto.builder()
@@ -550,13 +572,19 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
                             .responseMessage(AccountUtils.LOAN_NOT_FOUND)
                     .build());
         }
+        if (checkCanceledLoan(loanRefNo)){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                    .statusCode(400)
+                    .responseMessage("Loan with reference No " + loanRefNo + "has been canceled")
+                    .build());
+        }
         if (loanApplication.getLoanApplicationStatus().equalsIgnoreCase("SUBMITTED")){
             return ResponseEntity.badRequest().body(CustomResponse.builder()
                     .statusCode(400)
                     .responseMessage("Loan has been submitted and already under processing")
                     .build());
         } else {
-            if (!loanApplication.getLoanApplicationStatus().equalsIgnoreCase("SUMITTED")){
+            if (!loanApplication.getLoanApplicationStatus().equalsIgnoreCase("SUBMITTED")){
                 loanApplication.setLoanAmount(request.getLoanAmount());
                 loanApplication.setLoanTenor(request.getLoanTenor());
                 loanApplication.setLoanType(request.getLoanType());
@@ -597,7 +625,12 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
                     .build());
         }
         List<LoanApplicationResponse> applicationResponseList = loanApplications.stream()
-                .map(loanApplication -> modelMapper.map(loanApplication, LoanApplicationResponse.class))
+                .map(loanApplication -> {
+                    UserCredentialResponse userCredentialResponse = modelMapper.map(userCredentialRepository.findByWalletId(walletId).get(), UserCredentialResponse.class);
+                    LoanApplicationResponse response = modelMapper.map(loanApplication, LoanApplicationResponse.class);
+                    response.setUserDetails(userCredentialResponse);
+                    return response;
+                })
                 .toList();
         return ResponseEntity.ok(CustomResponse.builder()
                         .statusCode(200)
@@ -608,8 +641,13 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
 
     @Override
     public ResponseEntity<CustomResponse> searchByLoanAppStatus(String loanApplicationStatus) {
-        List<LoanApplication> loanApplications = loanApplicationRepository.findByLoanApplicationStatus(loanApplicationStatus).get();
-        List<LoanApplicationResponse> loanApplicationResponses = loanApplications.stream().map(loanApplication -> modelMapper.map(loanApplication, LoanApplicationResponse.class)).toList();
+        List<LoanApplicationResponse> loanApplications = loanApplicationRepository.findByLoanApplicationStatus(loanApplicationStatus).get().stream()
+                .map(loanApplication -> {
+                    UserCredentialResponse userCredentialResponse = modelMapper.map(userCredentialRepository.findByWalletId(loanApplication.getWalletId()).get(), UserCredentialResponse.class);
+                    LoanApplicationResponse loanApplicationResponse = modelMapper.map(loanApplication, LoanApplicationResponse.class);
+                    loanApplicationResponse.setUserDetails(userCredentialResponse);
+                    return loanApplicationResponse;
+                }).toList();
         if (loanApplications.isEmpty()){
             return ResponseEntity.ok(CustomResponse.builder()
                     .statusCode(200)
@@ -619,7 +657,7 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
         return ResponseEntity.ok(CustomResponse.builder()
                 .statusCode(200)
                 .responseMessage(AccountUtils.SUCCESS_MESSAGE)
-                .responseBody(loanApplicationResponses)
+                .responseBody(loanApplications)
                 .build());
     }
 
@@ -632,7 +670,21 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
                 .build());
     }
 
-    public String uploadFile(String bucketName, String multipartFile) throws IOException {
+    @Override
+    public ResponseEntity<CustomResponse> cancelLoan(String loanRefNo) {
+        LoanApplication loanApplication = loanApplicationRepository.findByLoanRefNo(loanRefNo).get();
+        loanApplication.setLoanApplicationStatus("CANCELED");
+        loanApplicationRepository.save(loanApplication);
+
+        return ResponseEntity.ok(CustomResponse.builder()
+                        .statusCode(200)
+                        .responseMessage(AccountUtils.SUCCESS_MESSAGE)
+                        .responseBody(modelMapper.map(loanApplication, LoanApplicationResponse.class))
+                .build());
+    }
+
+
+    public String uploadFile(String bucketName, String multipartFile) {
         String objectKey = UUID.randomUUID().toString();
             byte[] fileData = Base64.getDecoder().decode(multipartFile);
             ObjectMetadata objectMetadata = new ObjectMetadata();

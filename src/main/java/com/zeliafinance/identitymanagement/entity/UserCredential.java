@@ -46,9 +46,9 @@ public class UserCredential implements UserDetails {
     private String accountStatus;
     private double accountBalance;
     @CreationTimestamp
-    private LocalDate createdAt;
+    private LocalDateTime createdAt;
     @UpdateTimestamp
-    private LocalDate modifiedAt;
+    private LocalDateTime modifiedAt;
     private String passwordResetToken;
     private LocalDate tokenExpiryDate;
     private String emailVerifyStatus;
@@ -77,6 +77,7 @@ public class UserCredential implements UserDetails {
     private String createdBy;
     private LocalDateTime invitationLinkExpiry;
     private boolean inviteAccepted;
+    private LocalDateTime lastLoggedIn;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

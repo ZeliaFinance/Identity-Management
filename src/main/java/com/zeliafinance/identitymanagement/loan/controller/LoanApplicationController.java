@@ -5,7 +5,6 @@ import com.zeliafinance.identitymanagement.loan.dto.LoanApplicationRequest;
 import com.zeliafinance.identitymanagement.loan.service.LoanApplicationService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -43,12 +42,13 @@ public class LoanApplicationController {
                                                     @RequestBody LoanApplicationRequest request) throws Exception {
         return service.stageFive(loanRefNo, request);
     }
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+
     @GetMapping("loanApplicationList")
     public ResponseEntity<CustomResponse> fetchAllLoans(){
         return service.fetchAllLoanApplications();
     }
 
+    //Logged-in user
     @GetMapping("loanApplicationHistory")
     public ResponseEntity<CustomResponse> loanHistory(){
         return service.loanApplicationHistory();
@@ -72,5 +72,10 @@ public class LoanApplicationController {
     @DeleteMapping("deleteLoan/{loanId}")
     public ResponseEntity<CustomResponse> deleteLoan(@PathVariable long loanId){
         return service.deleteLoan(loanId);
+    }
+
+    @PostMapping("cancelLoanApplication")
+    public ResponseEntity<CustomResponse> cancelLoanApplication(@RequestParam String loanRefNo){
+        return service.cancelLoan(loanRefNo);
     }
 }
