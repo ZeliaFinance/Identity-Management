@@ -78,4 +78,9 @@ public class LoanApplicationController {
     public ResponseEntity<CustomResponse> cancelLoanApplication(@RequestParam String loanRefNo){
         return service.cancelLoan(loanRefNo);
     }
+
+    @GetMapping("fetchLoanByRefNo")
+    public ResponseEntity<CustomResponse> fetchSingleLoan(@RequestParam String loanRefNo){
+        return service.fetchByLoanRefNo(loanRefNo);
+    }
 }

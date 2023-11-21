@@ -9,12 +9,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class LoanProductRequest {
-    private String loanProductName;
+public class LoanOfferingRequest {
+    private String loanProduct;
+    private int daysAvailable;
+    private double interestRate;
     private double minAmount;
     private double maxAmount;
-    private int minDuration;
-    private int maxDuration;
-    private double interestRate;
-    private LoanOfferingResponse loanOfferingResponseList;
 }

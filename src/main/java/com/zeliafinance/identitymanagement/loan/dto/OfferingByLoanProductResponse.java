@@ -5,16 +5,16 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class LoanProductRequest {
-    private String loanProductName;
+public class OfferingByLoanProductResponse {
+    private String loanProduct;
     private double minAmount;
     private double maxAmount;
-    private int minDuration;
-    private int maxDuration;
     private double interestRate;
-    private LoanOfferingResponse loanOfferingResponseList;
+    private List<Integer> loanBrackets;
 }

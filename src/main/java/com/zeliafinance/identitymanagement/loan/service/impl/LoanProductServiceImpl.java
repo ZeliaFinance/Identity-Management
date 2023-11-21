@@ -2,12 +2,15 @@ package com.zeliafinance.identitymanagement.loan.service.impl;
 
 import com.zeliafinance.identitymanagement.dto.CustomResponse;
 import com.zeliafinance.identitymanagement.dto.Info;
+import com.zeliafinance.identitymanagement.loan.dto.LoanOfferingResponse;
 import com.zeliafinance.identitymanagement.loan.dto.LoanProductRequest;
 import com.zeliafinance.identitymanagement.loan.entity.LoanProduct;
 import com.zeliafinance.identitymanagement.loan.repository.LoanProductRepository;
+import com.zeliafinance.identitymanagement.loan.service.LoanOfferingService;
 import com.zeliafinance.identitymanagement.loan.service.LoanProductService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -15,6 +18,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static com.zeliafinance.identitymanagement.utils.AccountUtils.SUCCESS_MESSAGE;
@@ -25,6 +30,8 @@ import static com.zeliafinance.identitymanagement.utils.AccountUtils.SUCCESS_MES
 public class LoanProductServiceImpl implements LoanProductService {
 
     private LoanProductRepository loanProductRepository;
+    private LoanOfferingService loanOfferingService;
+    private ModelMapper modelMapper;
 
     @Override
     public ResponseEntity<CustomResponse> saveLoanProduct(LoanProductRequest request) {
@@ -50,17 +57,28 @@ public class LoanProductServiceImpl implements LoanProductService {
     }
 
     public ResponseEntity<CustomResponse> fetchAllLoanProducts(){
-        List<LoanProduct> productList = loanProductRepository.findAll().stream().filter(loanProduct -> loanProduct.getStatus().equalsIgnoreCase("ACTIVE"))
-                .toList();
-        productList.stream().collect(Collectors.groupingBy(LoanProduct::getLoanProductName));
+        List<LoanProductRequest> productList = loanProductRepository.findAll().stream().filter(loanProduct -> loanProduct.getStatus().equalsIgnoreCase("ACTIVE"))
+                .map(loanProduct -> modelMapper.map(loanProduct, LoanProductRequest.class)).toList();
+
+        Map<String, List<LoanProductRequest>> loanProductMap = productList.stream().map(loanProduct -> {
+            LoanOfferingResponse loanOfferingResponse = new LoanOfferingResponse();
+            loanOfferingResponse.setLoanProduct(loanProduct.getLoanProductName());
+            loanOfferingResponse = Objects.requireNonNull(loanOfferingService.fetchLoanOfferingByProductName(loanProduct.getLoanProductName()).getBody()).getLoanOfferingResponse();
+            loanProduct.setLoanOfferingResponseList(loanOfferingResponse);
+            return loanProduct;
+        }).collect(Collectors.groupingBy(LoanProductRequest::getLoanProductName));
         return ResponseEntity.ok(CustomResponse.builder()
                         .statusCode(HttpStatus.OK.value())
                         .responseMessage(SUCCESS_MESSAGE)
-                        .responseBody(productList.stream().collect(Collectors.groupingBy(LoanProduct::getLoanProductName)))
+                        .responseBody(loanProductMap)
                         .info(Info.builder()
                                 .totalElements((long) productList.size())
                                 .build())
                 .build());
+    }
+
+    private List<String> fetchLoanOfferings(List<LoanProduct> loanProducts){
+        return loanProductRepository.findAll().stream().map(LoanProduct::getLoanProductName).toList();
     }
 
     @Override

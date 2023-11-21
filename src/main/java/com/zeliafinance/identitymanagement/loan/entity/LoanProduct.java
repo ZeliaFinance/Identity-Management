@@ -5,6 +5,8 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.util.List;
+
 @Getter
 @Setter
 @AllArgsConstructor
@@ -29,4 +31,6 @@ public class LoanProduct {
     @UpdateTimestamp
     private String modifiedAt;
     private boolean minInterestRate;
+    @OneToMany
+    private List<LoanOffering> loanOffering;
 }

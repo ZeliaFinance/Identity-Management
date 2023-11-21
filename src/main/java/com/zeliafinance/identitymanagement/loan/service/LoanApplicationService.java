@@ -18,4 +18,5 @@ public interface LoanApplicationService {
     ResponseEntity<CustomResponse> searchByLoanAppStatus(String loanApplicationStatus);
     ResponseEntity<CustomResponse> deleteLoan(Long loanId);
     ResponseEntity<CustomResponse> cancelLoan(String loanRefNo);
+    ResponseEntity<CustomResponse> fetchByLoanRefNo(String loanRefNo);
 }

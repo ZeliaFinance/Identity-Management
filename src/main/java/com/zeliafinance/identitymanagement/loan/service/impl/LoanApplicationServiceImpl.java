@@ -683,6 +683,22 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
                 .build());
     }
 
+    @Override
+    public ResponseEntity<CustomResponse> fetchByLoanRefNo(String loanRefNo) {
+        LoanApplicationResponse loanApplicationResponse = modelMapper.map(loanApplicationRepository.findByLoanRefNo(loanRefNo).get(), LoanApplicationResponse.class);
+        if (loanApplicationResponse == null){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .statusCode(400)
+                            .responseMessage("Loan application does not exist")
+                    .build());
+        }
+        return ResponseEntity.ok(CustomResponse.builder()
+                        .statusCode(200)
+                        .responseMessage(AccountUtils.SUCCESS_MESSAGE)
+                        .responseBody(loanApplicationResponse)
+                .build());
+    }
+
 
     public String uploadFile(String bucketName, String multipartFile) {
         String objectKey = UUID.randomUUID().toString();
