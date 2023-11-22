@@ -67,10 +67,12 @@ public class LoanProductServiceImpl implements LoanProductService {
             loanProduct.setLoanOfferingResponseList(loanOfferingResponse);
             return loanProduct;
         }).collect(Collectors.groupingBy(LoanProductRequest::getLoanProductName));
+        LoanOfferingResponse loanOfferingResponse;
         return ResponseEntity.ok(CustomResponse.builder()
                         .statusCode(HttpStatus.OK.value())
                         .responseMessage(SUCCESS_MESSAGE)
                         .responseBody(loanProductMap)
+//                        .loanOfferingResponse()
                         .info(Info.builder()
                                 .totalElements((long) productList.size())
                                 .build())

@@ -9,14 +9,12 @@ import com.zeliafinance.identitymanagement.entity.Role;
 import com.zeliafinance.identitymanagement.entity.UserCredential;
 import com.zeliafinance.identitymanagement.repository.UserCredentialRepository;
 import com.zeliafinance.identitymanagement.service.EmailService;
+import com.zeliafinance.identitymanagement.thirdpartyapis.bani.dto.request.CreateCustomerDto;
+import com.zeliafinance.identitymanagement.thirdpartyapis.bani.dto.response.CreateCustomerResponse;
+import com.zeliafinance.identitymanagement.thirdpartyapis.bani.service.BaniService;
 import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.dto.request.NinRequest;
 import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.dto.response.NinLookupResponse;
 import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.service.DojahSmsService;
-import com.zeliafinance.identitymanagement.thirdpartyapis.providus.dto.request.BalanceEnquiryRequest;
-import com.zeliafinance.identitymanagement.thirdpartyapis.providus.dto.request.CreateReservedAccountRequest;
-import com.zeliafinance.identitymanagement.thirdpartyapis.providus.dto.response.BalanceEnquiryResponse;
-import com.zeliafinance.identitymanagement.thirdpartyapis.providus.dto.response.CreateReservedAccountResponse;
-import com.zeliafinance.identitymanagement.thirdpartyapis.providus.service.ProvidusService;
 import com.zeliafinance.identitymanagement.utils.AccountUtils;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
@@ -61,7 +59,7 @@ public class AuthService {
     private JwtTokenProvider jwtTokenProvider;
     private DojahSmsService dojahSmsService;
     private AmazonS3 amazonS3;
-    private ProvidusService providusService;
+    private BaniService baniService;
 
     public ResponseEntity<CustomResponse> signUp(SignUpRequest request){
         boolean isEmailExist = userCredentialRepository.existsByEmail(request.getEmail());
@@ -96,6 +94,7 @@ public class AuthService {
                 .hashedPassword(accountUtils.encode(request.getPassword(), 3))
                 .accountStatus("PENDING")
                 .accountBalance(0)
+                .availableBalance(0)
                 .inviteAccepted(false)
                 .build();
 
@@ -202,20 +201,6 @@ public class AuthService {
                 level = 1;
                 userCredential.setProfileSetupLevel(level);
             }
-
-            CreateReservedAccountResponse providusResponse = providusService.createReservedAccount(CreateReservedAccountRequest.builder()
-                            .accountName(request.getFirstName() + " " + request.getLastName() + " " + request.getOtherName())
-                            .bvn("")
-                    .build());
-
-            log.info("providus account details: {}", providusResponse);
-            userCredential.setNuban(providusResponse.getAccountNumber());
-            BalanceEnquiryResponse balanceEnquiryResponse = providusService.doBalanceEnquiry(BalanceEnquiryRequest.builder()
-                            .accountNumber(userCredential.getNuban())
-                            .userName("test")
-                            .password("test")
-                    .build());
-            userCredential.setAccountBalance(Double.parseDouble(balanceEnquiryResponse.getAvailableBalance()));
             UserCredential updatedUser = userCredentialRepository.save(userCredential);
             //Sending email alert
 
@@ -383,6 +368,26 @@ public class AuthService {
             if (userCredential.getProfileSetupLevel() < 5){
                 userCredential.setProfileSetupLevel(5);
             }
+            log.info("phone number: {}", userCredential.getPhoneNumber());
+
+            String prefix = "+234";
+            String suffix = userCredential.getPhoneNumber().substring(1);
+            String phoneNumber = prefix + suffix;
+            log.info("Phone Number: {}", phoneNumber);
+            CreateCustomerResponse baniCustomer = baniService.createCustomer(CreateCustomerDto.builder()
+                            .customer_first_name(userCredential.getFirstName())
+                            .customer_last_name(userCredential.getLastName())
+                            .customer_phone(phoneNumber)
+                            .customer_email(userCredential.getEmail())
+                            .customer_address(userCredential.getAddress())
+                            .customer_city("Zelia")
+                            .customer_state("Zelia")
+                            .customer_note("Zelia")
+                    .build());
+
+            String customerRef = baniCustomer.getCustomerRef();
+            userCredential.setCustomerRef(customerRef);
+            userCredential.setAccountStatus("Active");
 
             UserCredential updatedUser = userCredentialRepository.save(userCredential);
             //Sending email alert
