@@ -1,7 +1,9 @@
 package com.zeliafinance.identitymanagement.thirdpartyapis.bani.service;
 
 import com.zeliafinance.identitymanagement.thirdpartyapis.bani.dto.request.CreateCustomerDto;
+import com.zeliafinance.identitymanagement.thirdpartyapis.bani.dto.request.CreateVirtualAccountRequest;
 import com.zeliafinance.identitymanagement.thirdpartyapis.bani.dto.response.CreateCustomerResponse;
+import com.zeliafinance.identitymanagement.thirdpartyapis.bani.dto.response.CreateVirtualAccountResponse;
 import com.zeliafinance.identitymanagement.utils.AccountUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +41,17 @@ public class BaniService {
         HttpEntity<CreateCustomerDto>  entity = new HttpEntity<>(createCustomerDto, headers());
         log.info("Entity: {}", entity);
         ResponseEntity<CreateCustomerResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, entity, CreateCustomerResponse.class);
+        return responseEntity.getBody();
+    }
+
+    public CreateVirtualAccountResponse createVirtualAccount(CreateVirtualAccountRequest request){
+        log.info("dto: {}", request);
+        RestTemplate restTemplate = new RestTemplate();
+        String url = baseUrl + "/partner/collection/bank_transfer";
+        log.info("full url: {}", url);
+        HttpEntity<CreateVirtualAccountRequest> entity = new HttpEntity<>(request, headers());
+        log.info("Entity: {}", entity);
+        ResponseEntity<CreateVirtualAccountResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, entity, CreateVirtualAccountResponse.class);
         return responseEntity.getBody();
     }
 

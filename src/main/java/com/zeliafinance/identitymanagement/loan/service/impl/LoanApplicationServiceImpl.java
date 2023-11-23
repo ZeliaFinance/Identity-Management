@@ -61,6 +61,7 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
             loanApplications = loanApplications.stream().sorted(Comparator.comparing(LoanApplication::getCreatedAt)).toList();
             isLastLoanRepaid = loanApplications.get(loanApplications.size()-1).getLoanApplicationStatus().equalsIgnoreCase("REPAID") ||
             loanApplications.get(loanApplications.size()-1).getLoanApplicationStatus().equals("REJECTED")
+            || loanApplications.get(loanApplications.size()-1).getLoanApplicationStatus().equalsIgnoreCase("CANCELED")
             ;
         }
 

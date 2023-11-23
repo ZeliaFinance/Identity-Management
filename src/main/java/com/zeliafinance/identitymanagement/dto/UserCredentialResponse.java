@@ -44,6 +44,7 @@ public class UserCredentialResponse {
     private String imageFileName;
     private double availableBalance;
     private String walletId;
+    private String vAccountNumber;
     private double accountBalance;
     private String accountStatus;
     private String customerRef;

@@ -154,16 +154,25 @@ public class AccountUtils {
         return accountUtils.encode(text, 26 - shift);
     }
 
+    public static String generateTxnRef(String transactionType){
+        String prefix = "ZL" + transactionType.substring(0,2);
+        StringBuilder txnRef = new StringBuilder();
+        Random random = new Random();
+        int count = 0;
+        while (count < 6){
+            txnRef.append(random.nextInt(10));
+            ++count;
+        }
+        return prefix + txnRef;
+    }
+
     public static void main(String[] args) {
         AccountUtils accountUtils = new AccountUtils();
 //        System.out.println(accountUtils.decode("IOZSXEN_WHVW-8056gd94h6500ehg368dh7d98iie428f-A"
 //                , 3));
 //        System.out.println(accountUtils.encode("ef3e5df0a128aa43ff4f4115683f9b065009dfeaa18c43c25b5016d281129683", 5));
 
-        String prefix = "+234";
-        String suffix = "08139148965";
-        String result = prefix + suffix.substring(1);
-        System.out.println(result);
+        System.out.println(generateTxnRef("DEBIT"));
     }
 
     public String encodePin(String pin){

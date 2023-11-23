@@ -43,6 +43,7 @@ public class UserCredential implements UserDetails {
     private String pin;
     @Column(unique = true)
     private String walletId;
+    private String vAccountNumber;
     private String customerRef;
     private String accountStatus;
     private double accountBalance;

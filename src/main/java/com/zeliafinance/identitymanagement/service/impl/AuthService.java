@@ -10,7 +10,9 @@ import com.zeliafinance.identitymanagement.entity.UserCredential;
 import com.zeliafinance.identitymanagement.repository.UserCredentialRepository;
 import com.zeliafinance.identitymanagement.service.EmailService;
 import com.zeliafinance.identitymanagement.thirdpartyapis.bani.dto.request.CreateCustomerDto;
+import com.zeliafinance.identitymanagement.thirdpartyapis.bani.dto.request.CreateVirtualAccountRequest;
 import com.zeliafinance.identitymanagement.thirdpartyapis.bani.dto.response.CreateCustomerResponse;
+import com.zeliafinance.identitymanagement.thirdpartyapis.bani.dto.response.CreateVirtualAccountResponse;
 import com.zeliafinance.identitymanagement.thirdpartyapis.bani.service.BaniService;
 import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.dto.request.NinRequest;
 import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.dto.response.NinLookupResponse;
@@ -374,20 +376,40 @@ public class AuthService {
             String suffix = userCredential.getPhoneNumber().substring(1);
             String phoneNumber = prefix + suffix;
             log.info("Phone Number: {}", phoneNumber);
-            CreateCustomerResponse baniCustomer = baniService.createCustomer(CreateCustomerDto.builder()
-                            .customer_first_name(userCredential.getFirstName())
-                            .customer_last_name(userCredential.getLastName())
-                            .customer_phone(phoneNumber)
-                            .customer_email(userCredential.getEmail())
-                            .customer_address(userCredential.getAddress())
-                            .customer_city("Zelia")
-                            .customer_state("Zelia")
-                            .customer_note("Zelia")
-                    .build());
+            if(userCredential.getCustomerRef() == null){
+                CreateCustomerResponse baniCustomer = baniService.createCustomer(CreateCustomerDto.builder()
+                        .customer_first_name(userCredential.getFirstName())
+                        .customer_last_name(userCredential.getLastName())
+                        .customer_phone(phoneNumber)
+                        .customer_email(userCredential.getEmail())
+                        .customer_address(userCredential.getAddress())
+                        .customer_city("Zelia")
+                        .customer_state("Zelia")
+                        .customer_note("Zelia")
+                        .build());
 
-            String customerRef = baniCustomer.getCustomerRef();
-            userCredential.setCustomerRef(customerRef);
-            userCredential.setAccountStatus("Active");
+                String customerRef = baniCustomer.getCustomerRef();
+                userCredential.setCustomerRef(customerRef);
+                userCredential.setAccountStatus("Active");
+                userCredentialRepository.save(userCredential);
+
+            }
+            log.info("customer ref: {}", userCredential.getCustomerRef());
+            if (userCredential.getVAccountNumber() == null){
+                CreateVirtualAccountResponse virtualAccountResponse = baniService.createVirtualAccount(CreateVirtualAccountRequest.builder()
+                        .pay_va_step("direct")
+                        .country_code("NG")
+                        .pay_currency("NGN")
+                        .bank_name("providus")
+                        .holder_account_type("permanent")
+                        .customer_ref(userCredential.getCustomerRef())
+                        .holder_legal_number("22222222222")
+                        .pay_ext_ref(AccountUtils.generateTxnRef("VACREATION"))
+                        .build());
+
+                String virtualAccountNumber = virtualAccountResponse.getHolder_account_number();
+                userCredential.setVAccountNumber(virtualAccountNumber);
+            }
 
             UserCredential updatedUser = userCredentialRepository.save(userCredential);
             //Sending email alert
