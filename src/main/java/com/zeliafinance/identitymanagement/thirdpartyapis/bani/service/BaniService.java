@@ -2,8 +2,10 @@ package com.zeliafinance.identitymanagement.thirdpartyapis.bani.service;
 
 import com.zeliafinance.identitymanagement.thirdpartyapis.bani.dto.request.CreateCustomerDto;
 import com.zeliafinance.identitymanagement.thirdpartyapis.bani.dto.request.CreateVirtualAccountRequest;
+import com.zeliafinance.identitymanagement.thirdpartyapis.bani.dto.request.WebHookRequest;
 import com.zeliafinance.identitymanagement.thirdpartyapis.bani.dto.response.CreateCustomerResponse;
 import com.zeliafinance.identitymanagement.thirdpartyapis.bani.dto.response.CreateVirtualAccountResponse;
+import com.zeliafinance.identitymanagement.thirdpartyapis.bani.utils.SignatureGenerator;
 import com.zeliafinance.identitymanagement.utils.AccountUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +31,8 @@ public class BaniService {
 
     @Value("${bani.moniSignature}")
     private String moniSignature;
+    @Value("${bani.privateKey}")
+    private String privateKey;
 
     @Autowired
     private AccountUtils accountUtils;
@@ -53,6 +57,16 @@ public class BaniService {
         log.info("Entity: {}", entity);
         ResponseEntity<CreateVirtualAccountResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, entity, CreateVirtualAccountResponse.class);
         return responseEntity.getBody();
+    }
+
+    public String webHookResponse(WebHookRequest request){
+        String requestBody = request.toString();
+        String secret = accountUtils.decode(privateKey, 5);
+        log.info("secret key: {}", secret);
+
+        String signature = SignatureGenerator.encryptWebHookData(requestBody, secret);
+        System.out.println(signature);
+        return signature;
     }
 
 

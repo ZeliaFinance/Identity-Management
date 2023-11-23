@@ -29,6 +29,29 @@ public class SignatureGenerator {
         return signatureBuilder.toString();
     }
 
+    public static String encryptWebHookData(String data, String secret){
+        try {
+            Mac hmacSha256 = Mac.getInstance("HmacSHA256");
+            SecretKeySpec secretKeySpec = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+            hmacSha256.init(secretKeySpec);
+            byte[] hash = hmacSha256.doFinal(data.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hexString = new StringBuilder();
+
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xFF & b);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+
+            return hexString.toString();
+        } catch (NoSuchAlgorithmException | InvalidKeyException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     public static void main(String[] args) throws NoSuchAlgorithmException, InvalidKeyException {
         String merchantKey = "KZFeMtICCss8pdxlRbMgtg";
         String tribeAccountRef = "BN-hq0pn40mpzjgrrwzkxfsbvbp3m";

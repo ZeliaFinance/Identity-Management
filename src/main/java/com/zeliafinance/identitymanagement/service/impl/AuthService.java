@@ -6,6 +6,7 @@ import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.zeliafinance.identitymanagement.config.JwtTokenProvider;
 import com.zeliafinance.identitymanagement.dto.*;
 import com.zeliafinance.identitymanagement.entity.Role;
+import com.zeliafinance.identitymanagement.entity.Transactions;
 import com.zeliafinance.identitymanagement.entity.UserCredential;
 import com.zeliafinance.identitymanagement.repository.UserCredentialRepository;
 import com.zeliafinance.identitymanagement.service.EmailService;
@@ -62,6 +63,7 @@ public class AuthService {
     private DojahSmsService dojahSmsService;
     private AmazonS3 amazonS3;
     private BaniService baniService;
+    private TransactionService transactionService;
 
     public ResponseEntity<CustomResponse> signUp(SignUpRequest request){
         boolean isEmailExist = userCredentialRepository.existsByEmail(request.getEmail());
@@ -406,6 +408,17 @@ public class AuthService {
                         .holder_legal_number("22222222222")
                         .pay_ext_ref(AccountUtils.generateTxnRef("VACREATION"))
                         .build());
+
+                if (virtualAccountResponse.getStatus_code() == 200){
+                    transactionService.saveTransaction(Transactions.builder()
+                                    .externalRefNumber(virtualAccountResponse.getPayment_reference())
+                                    .transactionRef(virtualAccountResponse.getPayment_ext_reference())
+                                    .transactionAmount(0)
+                                    .transactionStatus("COMPLETED")
+                                    .transactionType("Virtual Account Creation")
+                                    .walletId(userCredential.getWalletId())
+                            .build());
+                }
 
                 String virtualAccountNumber = virtualAccountResponse.getHolder_account_number();
                 userCredential.setVAccountNumber(virtualAccountNumber);

@@ -2,6 +2,7 @@ package com.zeliafinance.identitymanagement.thirdpartyapis.bani.controller;
 
 import com.zeliafinance.identitymanagement.thirdpartyapis.bani.dto.request.CreateCustomerDto;
 import com.zeliafinance.identitymanagement.thirdpartyapis.bani.dto.request.CreateVirtualAccountRequest;
+import com.zeliafinance.identitymanagement.thirdpartyapis.bani.dto.request.WebHookRequest;
 import com.zeliafinance.identitymanagement.thirdpartyapis.bani.dto.response.CreateCustomerResponse;
 import com.zeliafinance.identitymanagement.thirdpartyapis.bani.dto.response.CreateVirtualAccountResponse;
 import com.zeliafinance.identitymanagement.thirdpartyapis.bani.service.BaniService;
@@ -26,5 +27,10 @@ public class BaniController {
     @PostMapping("/createVirtualAccount")
     public CreateVirtualAccountResponse createVirtualAccount(@RequestBody CreateVirtualAccountRequest request){
         return baniService.createVirtualAccount(request);
+    }
+
+    @PostMapping("/webHook")
+    public String webHook(@RequestBody WebHookRequest request){
+        return baniService.webHookResponse(request);
     }
 }

@@ -67,6 +67,7 @@ public class SecurityConfig {
                                 .requestMatchers(HttpMethod.GET, "/api/v1/users/{userId}").hasAnyRole("ADMIN", "SUPER_ADMIN")
                                 .requestMatchers(HttpMethod.GET, "/api/v1/users").hasAnyRole("ADMIN", "SUPER_ADMIN")
                                 .requestMatchers(HttpMethod.POST, "/api/v1/admin/acceptInvite").permitAll()
+                                .requestMatchers(HttpMethod.POST, "api/v1/bani/webHook").permitAll()
                                 .requestMatchers(HttpMethod.POST, "api/v1/users/resetPassword").permitAll()
                                 .requestMatchers(HttpMethod.POST, "api/v1/users/changePassword").permitAll()
                                 .requestMatchers(HttpMethod.POST, "api/v1/users/validateOtp").permitAll()
