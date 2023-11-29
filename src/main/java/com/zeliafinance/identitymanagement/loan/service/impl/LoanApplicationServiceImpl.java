@@ -10,12 +10,21 @@ import com.zeliafinance.identitymanagement.entity.UserCredential;
 import com.zeliafinance.identitymanagement.loan.dto.LoanApplicationRequest;
 import com.zeliafinance.identitymanagement.loan.dto.LoanApplicationResponse;
 import com.zeliafinance.identitymanagement.loan.dto.LoanCalculatorRequest;
-import com.zeliafinance.identitymanagement.loan.entity.*;
+import com.zeliafinance.identitymanagement.loan.entity.ApplicantCategory;
+import com.zeliafinance.identitymanagement.loan.entity.EmploymentType;
+import com.zeliafinance.identitymanagement.loan.entity.LoanApplication;
+import com.zeliafinance.identitymanagement.loan.entity.LoanProduct;
 import com.zeliafinance.identitymanagement.loan.repository.LoanApplicationRepository;
 import com.zeliafinance.identitymanagement.loan.repository.LoanProductRepository;
-import com.zeliafinance.identitymanagement.loan.repository.RepaymentsRepository;
 import com.zeliafinance.identitymanagement.loan.service.LoanApplicationService;
 import com.zeliafinance.identitymanagement.loan.service.LoanCalculatorService;
+import com.zeliafinance.identitymanagement.loanDisbursal.dto.DisbursalRequest;
+import com.zeliafinance.identitymanagement.loanDisbursal.entity.LoanDisbursal;
+import com.zeliafinance.identitymanagement.loanDisbursal.repository.LoanDisbursalRepository;
+import com.zeliafinance.identitymanagement.loanRepayment.dto.RepaymentData;
+import com.zeliafinance.identitymanagement.loanRepayment.dto.RepaymentResponse;
+import com.zeliafinance.identitymanagement.loanRepayment.entity.Repayments;
+import com.zeliafinance.identitymanagement.loanRepayment.repository.RepaymentsRepository;
 import com.zeliafinance.identitymanagement.repository.UserCredentialRepository;
 import com.zeliafinance.identitymanagement.service.impl.AuthService;
 import com.zeliafinance.identitymanagement.utils.AccountUtils;
@@ -28,10 +37,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayInputStream;
-import java.util.Base64;
-import java.util.Comparator;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @AllArgsConstructor
@@ -47,6 +53,7 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
     private final AmazonS3 amazonS3;
     private final LoanProductRepository loanProductRepository;
     private final RepaymentsRepository repaymentsRepository;
+    private final LoanDisbursalRepository loanDisbursalRepository;
 
     @Override
     public ResponseEntity<CustomResponse> stageOne(LoanApplicationRequest request) {
@@ -84,6 +91,7 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
                     .loanTenor(request.getLoanTenor())
                     .loanAmount(request.getLoanAmount())
                     .build()).getBody();
+            log.info("loan calculator response: {}", loanCalculatorResponse);
             if (loanCalculatorResponse != null){
                 loanApplication.setAmountToPayBack(loanCalculatorResponse.getLoanCalculatorResponse().getAmountToPayBack());
                 loanApplication.setInterestRate(loanCalculatorResponse.getLoanCalculatorResponse().getInterestRate());
@@ -507,8 +515,11 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
                 .stream().map(loanApplication -> {
                     LoanApplicationResponse loanApplicationResponse = modelMapper.map(loanApplication, LoanApplicationResponse.class);
                     UserCredential userCredential = userCredentialRepository.findByWalletId(loanApplication.getWalletId()).get();
+                    DisbursalRequest loanDisbursal = modelMapper.map(loanDisbursalRepository.findByLoanRefNo(loanApplication.getLoanRefNo()), DisbursalRequest.class);
+                    loanApplicationResponse.setLoanDisbursal(loanDisbursal);
                     loanApplicationResponse.setUserDetails(modelMapper.map(userCredential, UserCredentialResponse.class));
-                    List<Repayments> repayments = repaymentsRepository.findByLoanRefNo(loanApplication.getLoanRefNo());
+                    List<RepaymentResponse> repayments = repaymentsRepository.findByLoanRefNo(loanApplication.getLoanRefNo()).stream().map(repayments1 -> modelMapper.map(repayments1, RepaymentResponse.class)).toList();
+
                     loanApplicationResponse.setRepaymentsList(repayments);
                     return loanApplicationResponse;
 
@@ -546,6 +557,46 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
                     LoanApplicationResponse response = modelMapper.map(loanApplication, LoanApplicationResponse.class);
                     response.setLoanProduct(loanProduct);
                     response.setUserDetails(modelMapper.map(userCredential, UserCredentialResponse.class));
+
+                    //List of Disbursals, List of repayments
+                    List<LoanDisbursal> disbursalRequests = loanDisbursalRepository.findByWalletId(loanApplication.getWalletId());
+                    List<DisbursalRequest> requestList = disbursalRequests.stream().map(loanDisbursal -> modelMapper.map(loanDisbursal, DisbursalRequest.class)).toList();
+                    List<Repayments> repaymentsList = repaymentsRepository.findByLoanRefNo(loanApplication.getLoanRefNo());
+                    List<RepaymentResponse> mappedRepaymentList = repaymentsList.stream().map(repayments -> {
+                        RepaymentResponse repaymentResponse = new RepaymentResponse();
+                        LoanDisbursal loan = loanDisbursalRepository.findByLoanRefNo(repayments.getLoanRefNo());
+                        double amountDisbursed = loan.getAmountDisbursed();
+                        log.info("Amount Disbursed: {}", amountDisbursed);
+                        LoanApplication loanApplication1 = loanApplicationRepository.findByLoanRefNo(repayments.getLoanRefNo()).get();
+                        int loanTenor = loanApplication1.getLoanTenor();
+
+                        repaymentResponse.setMonthlyRepayment(loanApplication1.getAmountToPayBack() / (loanTenor/30));
+                        repaymentResponse.setNextRepayment(repayments.getNextRepaymentDate());
+                        repaymentResponse.setRepaymentMonths(loanTenor/30);
+                        repaymentResponse.setLoanType(loanApplication1.getLoanType());
+                        repaymentResponse.setAmountPaid(repayments.getAmountPaid());
+                        repaymentResponse.setRepaymentStatus(repayments.getRepaymentStatus());
+                        repaymentResponse.setUserId(userCredential.getId());
+                        repaymentResponse.setLoanTenor(loanTenor);
+                        repaymentResponse.setInterest(loanApplication.getInterest());
+                        repaymentResponse.setInterestRate((int)loanApplication.getInterestRate());
+                        int monthCount = 1;
+                        List<RepaymentData> repaymentData = new ArrayList<>();
+                        while (monthCount <= repaymentResponse.getRepaymentMonths()){
+                            repaymentData.add(RepaymentData.builder()
+                                            .monthCount(monthCount)
+                                            .amountPaid(repaymentResponse.getAmountPaid())
+                                    //expected amount;
+                                            .expectedAmount(loanDisbursalRepository.findByLoanRefNo(loanApplication.getLoanRefNo()).getAmountToPayBack()/(loanTenor/30))
+                                    .build());
+                            monthCount++;
+
+                        }
+                        repaymentResponse.setRepaymentData(repaymentData);
+                        return repaymentResponse;
+                    }).toList();
+                    response.setDisbursalList(requestList);
+                    response.setRepaymentsList(mappedRepaymentList);
                     return response;
                 })
                 .toList();

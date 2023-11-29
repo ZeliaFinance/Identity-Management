@@ -1,6 +1,7 @@
 package com.zeliafinance.identitymanagement.loan.entity;
 
 import com.zeliafinance.identitymanagement.entity.UserCredential;
+import com.zeliafinance.identitymanagement.loanRepayment.entity.Repayments;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;

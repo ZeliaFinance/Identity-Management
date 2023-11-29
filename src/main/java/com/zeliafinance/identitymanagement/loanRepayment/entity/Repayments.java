@@ -1,10 +1,12 @@
-package com.zeliafinance.identitymanagement.loan.entity;
+package com.zeliafinance.identitymanagement.loanRepayment.entity;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import lombok.*;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -17,10 +19,8 @@ public class Repayments {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String loanRefNo;
-    private String loanTenor;
-    private String nextRepaymentDate;
+    private int loanTenor;
+    private LocalDateTime nextRepaymentDate;
     private String repaymentStatus;
-    private String loanType;
-    private String loanStatus;
     private double amountPaid;
 }

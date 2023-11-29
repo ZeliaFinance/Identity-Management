@@ -1,6 +1,6 @@
-package com.zeliafinance.identitymanagement.loan.repository;
+package com.zeliafinance.identitymanagement.loanRepayment.repository;
 
-import com.zeliafinance.identitymanagement.loan.entity.Repayments;
+import com.zeliafinance.identitymanagement.loanRepayment.entity.Repayments;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

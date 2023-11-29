@@ -3,7 +3,8 @@ package com.zeliafinance.identitymanagement.loan.dto;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.zeliafinance.identitymanagement.dto.UserCredentialResponse;
 import com.zeliafinance.identitymanagement.loan.entity.LoanProduct;
-import com.zeliafinance.identitymanagement.loan.entity.Repayments;
+import com.zeliafinance.identitymanagement.loanDisbursal.dto.DisbursalRequest;
+import com.zeliafinance.identitymanagement.loanRepayment.dto.RepaymentResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -75,5 +76,7 @@ public class LoanApplicationResponse {
     private String loanApplicationStatus;
     private List<LoanProduct> loanProduct;
     private UserCredentialResponse userDetails;
-    private List<Repayments> repaymentsList;
+    private List<RepaymentResponse> repaymentsList;
+    private DisbursalRequest loanDisbursal;
+    private List<DisbursalRequest> disbursalList;
 }

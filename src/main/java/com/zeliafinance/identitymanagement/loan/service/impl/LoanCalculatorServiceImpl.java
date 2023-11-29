@@ -116,6 +116,7 @@ public class LoanCalculatorServiceImpl implements LoanCalculatorService {
                         .statusCode(HttpStatus.OK.value())
                         .responseMessage(SUCCESS_MESSAGE)
                         .responseBody(response)
+                        .loanCalculatorResponse(response)
                 .build());
     }
 }

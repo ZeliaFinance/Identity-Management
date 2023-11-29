@@ -1,10 +1,7 @@
 package com.zeliafinance.identitymanagement.thirdpartyapis.bani.service;
 
-import com.zeliafinance.identitymanagement.thirdpartyapis.bani.dto.request.CreateCustomerDto;
-import com.zeliafinance.identitymanagement.thirdpartyapis.bani.dto.request.CreateVirtualAccountRequest;
-import com.zeliafinance.identitymanagement.thirdpartyapis.bani.dto.request.WebHookRequest;
-import com.zeliafinance.identitymanagement.thirdpartyapis.bani.dto.response.CreateCustomerResponse;
-import com.zeliafinance.identitymanagement.thirdpartyapis.bani.dto.response.CreateVirtualAccountResponse;
+import com.zeliafinance.identitymanagement.thirdpartyapis.bani.dto.request.*;
+import com.zeliafinance.identitymanagement.thirdpartyapis.bani.dto.response.*;
 import com.zeliafinance.identitymanagement.thirdpartyapis.bani.utils.SignatureGenerator;
 import com.zeliafinance.identitymanagement.utils.AccountUtils;
 import lombok.RequiredArgsConstructor;
@@ -59,6 +56,29 @@ public class BaniService {
         return responseEntity.getBody();
     }
 
+    public PayoutResponse payout(PayoutRequest payoutRequest){
+        log.info("dto: {}", payoutRequest);
+        RestTemplate restTemplate = new RestTemplate();
+        String url = baseUrl + "/partner/payout/initiate_transfer";
+        log.info("full url: {}", url);
+        HttpEntity<PayoutRequest> entity = new HttpEntity<>(payoutRequest, headers());
+        log.info("Entity: {}", entity);
+        ResponseEntity<PayoutResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, entity, PayoutResponse.class);
+        return responseEntity.getBody();
+    }
+
+    public VerifyAccountResponse verifyAccount(VerifyAccountRequest request){
+        RestTemplate restTemplate = new RestTemplate();
+        String url = baseUrl + "/partner/payout/verify_bank_account";
+        log.info("Full url: {}", url);
+        HttpEntity<VerifyAccountRequest> entity = new HttpEntity<>(request, headers());
+        log.info("Request entity: {}", entity);
+        ResponseEntity<VerifyAccountResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, entity, VerifyAccountResponse.class);
+        log.info("Response body: {}", responseEntity.getBody());
+        return responseEntity.getBody();
+    }
+
+
     public String webHookResponse(WebHookRequest request){
         String requestBody = request.toString();
         String secret = accountUtils.decode(privateKey, 5);
@@ -67,6 +87,15 @@ public class BaniService {
         String signature = SignatureGenerator.encryptWebHookData(requestBody, secret);
         System.out.println(signature);
         return signature;
+    }
+
+    public BanksResponse fetchAllBanks(){
+        RestTemplate restTemplate = new RestTemplate();
+        String url = baseUrl + "/partner/list_banks/NG";
+        log.info("full url: " + url);
+        HttpEntity entity = new HttpEntity<>(headers());
+        ResponseEntity<BanksResponse> responseEntity = restTemplate.exchange(url, HttpMethod.GET, entity, BanksResponse.class);
+        return responseEntity.getBody();
     }
 
 

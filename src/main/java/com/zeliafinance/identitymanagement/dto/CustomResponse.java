@@ -3,6 +3,7 @@ package com.zeliafinance.identitymanagement.dto;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.zeliafinance.identitymanagement.loan.dto.LoanCalculatorResponse;
 import com.zeliafinance.identitymanagement.loan.dto.LoanOfferingResponse;
+import com.zeliafinance.identitymanagement.loanDisbursal.dto.DisbursalRequest;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -29,4 +30,5 @@ public class CustomResponse{
     private Boolean pinVerificationStatus;
     private boolean minInterestRate;
     private LoanOfferingResponse loanOfferingResponse;
+    private DisbursalRequest disbursalRequest;
 }

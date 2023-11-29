@@ -1,17 +1,11 @@
 package com.zeliafinance.identitymanagement.thirdpartyapis.bani.controller;
 
-import com.zeliafinance.identitymanagement.thirdpartyapis.bani.dto.request.CreateCustomerDto;
-import com.zeliafinance.identitymanagement.thirdpartyapis.bani.dto.request.CreateVirtualAccountRequest;
-import com.zeliafinance.identitymanagement.thirdpartyapis.bani.dto.request.WebHookRequest;
-import com.zeliafinance.identitymanagement.thirdpartyapis.bani.dto.response.CreateCustomerResponse;
-import com.zeliafinance.identitymanagement.thirdpartyapis.bani.dto.response.CreateVirtualAccountResponse;
+import com.zeliafinance.identitymanagement.thirdpartyapis.bani.dto.request.*;
+import com.zeliafinance.identitymanagement.thirdpartyapis.bani.dto.response.*;
 import com.zeliafinance.identitymanagement.thirdpartyapis.bani.service.BaniService;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @AllArgsConstructor
@@ -32,5 +26,20 @@ public class BaniController {
     @PostMapping("/webHook")
     public String webHook(@RequestBody WebHookRequest request){
         return baniService.webHookResponse(request);
+    }
+
+    @GetMapping("/banks")
+    public BanksResponse getBanks(){
+        return baniService.fetchAllBanks();
+    }
+
+    @PostMapping("/payout")
+    public PayoutResponse payout(@RequestBody PayoutRequest payoutRequest){
+        return baniService.payout(payoutRequest);
+    }
+
+    @GetMapping("/verifyAccount")
+    public VerifyAccountResponse verifyAccountResponse(@RequestBody VerifyAccountRequest verifyAccountRequest){
+        return baniService.verifyAccount(verifyAccountRequest);
     }
 }

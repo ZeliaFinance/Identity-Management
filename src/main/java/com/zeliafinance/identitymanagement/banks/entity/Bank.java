@@ -19,6 +19,7 @@ public class Bank {
     private String provider;
     private String bankCode;
     private String bankName;
+    private String listCode;
     private LocalDateTime createdAt;
     private String createdBy;
 }
