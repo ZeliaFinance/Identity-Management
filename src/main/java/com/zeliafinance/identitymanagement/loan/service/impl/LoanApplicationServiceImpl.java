@@ -4,6 +4,7 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.zeliafinance.identitymanagement.dto.CustomResponse;
+import com.zeliafinance.identitymanagement.dto.EmailDetails;
 import com.zeliafinance.identitymanagement.dto.PinSetupDto;
 import com.zeliafinance.identitymanagement.dto.UserCredentialResponse;
 import com.zeliafinance.identitymanagement.entity.UserCredential;
@@ -26,6 +27,7 @@ import com.zeliafinance.identitymanagement.loanRepayment.dto.RepaymentResponse;
 import com.zeliafinance.identitymanagement.loanRepayment.entity.Repayments;
 import com.zeliafinance.identitymanagement.loanRepayment.repository.RepaymentsRepository;
 import com.zeliafinance.identitymanagement.repository.UserCredentialRepository;
+import com.zeliafinance.identitymanagement.service.EmailService;
 import com.zeliafinance.identitymanagement.service.impl.AuthService;
 import com.zeliafinance.identitymanagement.utils.AccountUtils;
 import lombok.AllArgsConstructor;
@@ -38,22 +40,24 @@ import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayInputStream;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
 @Slf4j
 public class LoanApplicationServiceImpl implements LoanApplicationService {
 
-    private final LoanApplicationRepository loanApplicationRepository;
-    private final UserCredentialRepository userCredentialRepository;
-    private final LoanCalculatorService loanCalculatorService;
-    private final AuthService authService;
-    private final AccountUtils accountUtils;
-    private final ModelMapper modelMapper;
-    private final AmazonS3 amazonS3;
-    private final LoanProductRepository loanProductRepository;
-    private final RepaymentsRepository repaymentsRepository;
-    private final LoanDisbursalRepository loanDisbursalRepository;
+    private LoanApplicationRepository loanApplicationRepository;
+    private UserCredentialRepository userCredentialRepository;
+    private LoanCalculatorService loanCalculatorService;
+    private AuthService authService;
+    private AccountUtils accountUtils;
+    private ModelMapper modelMapper;
+    private AmazonS3 amazonS3;
+    private LoanProductRepository loanProductRepository;
+    private RepaymentsRepository repaymentsRepository;
+    private LoanDisbursalRepository loanDisbursalRepository;
+    private EmailService emailService;
 
     @Override
     public ResponseEntity<CustomResponse> stageOne(LoanApplicationRequest request) {
@@ -118,7 +122,7 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
     @Override
     public ResponseEntity<CustomResponse> stageTwo(String loanRefNo, LoanApplicationRequest request) throws Exception {
         LoanApplication loanApplication = loanApplicationRepository.findByLoanRefNo(loanRefNo).orElseThrow(Exception::new);
-        if (loanApplication == null){
+        if (loanApplication.getId() == null){
             return ResponseEntity.badRequest().body(CustomResponse.builder()
                             .statusCode(400)
                             .responseMessage("Loan Not Found")
@@ -204,7 +208,7 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
                         .responseBody(modelMapper.map(loanApplication, LoanApplicationResponse.class))
                         .build());
             }
-            if(loanApplication.getLoanType().equalsIgnoreCase("STUDENT_PERSONAL_LOAN")){
+            if(loanApplication.getLoanType().equalsIgnoreCase("STUDENT PERSONAL LOAN")){
                 loanApplication.setWardInstitutionName(request.getWardInstitutionName());
                 loanApplication.setFacultyName(request.getFacultyName());
                 loanApplication.setDepartmentName(request.getDepartName());
@@ -264,7 +268,7 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
                     .responseMessage("Loan has been submitted and already under processing")
                     .build());
         } else {
-            if (loanApplication.getLoanType().equalsIgnoreCase("SME Loan") || loanApplication.getLoanType().equalsIgnoreCase("STUDENT_PERSONAL_LOAN")){
+            if (loanApplication.getLoanType().equalsIgnoreCase("SME Loan") || loanApplication.getLoanType().equalsIgnoreCase("Student Personal Loan")){
                 CustomResponse customResponse = authService.verifyPin(PinSetupDto.builder()
                         .email(email)
                         .pin(loanApplicationRequest.getPin())
@@ -512,30 +516,58 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
     @Override
     public ResponseEntity<CustomResponse> fetchAllLoanApplications() {
         List<LoanApplicationResponse> loanApplicationList = loanApplicationRepository.findAll()
-                .stream().map(loanApplication -> {
-                    LoanApplicationResponse loanApplicationResponse = modelMapper.map(loanApplication, LoanApplicationResponse.class);
-                    UserCredential userCredential = userCredentialRepository.findByWalletId(loanApplication.getWalletId()).get();
-                    DisbursalRequest loanDisbursal = modelMapper.map(loanDisbursalRepository.findByLoanRefNo(loanApplication.getLoanRefNo()), DisbursalRequest.class);
-                    loanApplicationResponse.setLoanDisbursal(loanDisbursal);
-                    loanApplicationResponse.setUserDetails(modelMapper.map(userCredential, UserCredentialResponse.class));
-                    List<RepaymentResponse> repayments = repaymentsRepository.findByLoanRefNo(loanApplication.getLoanRefNo()).stream().map(repayments1 -> modelMapper.map(repayments1, RepaymentResponse.class)).toList();
-
-                    loanApplicationResponse.setRepaymentsList(repayments);
-                    return loanApplicationResponse;
-
-                })
+                .stream()
+                .map(this::mapToLoanApplicationResponse)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
                 .toList();
-        if (loanApplicationList.isEmpty()){
-            return ResponseEntity.ok(CustomResponse.builder()
+
+        if (loanApplicationList.isEmpty()) {
+            return ResponseEntity.ok(
+                    CustomResponse.builder()
                             .statusCode(200)
                             .responseMessage("You have no loan applications")
-                    .build());
+                            .build()
+            );
         }
-        return ResponseEntity.ok(CustomResponse.builder()
+
+        log.info("Loan Applications: {}", loanApplicationList);
+        return ResponseEntity.ok(
+                CustomResponse.builder()
                         .statusCode(200)
                         .responseMessage(AccountUtils.SUCCESS_MESSAGE)
                         .responseBody(loanApplicationList)
-                .build());
+                        .build()
+        );
+    }
+
+    private Optional<LoanApplicationResponse> mapToLoanApplicationResponse(LoanApplication loanApplication) {
+        try {
+            LoanApplicationResponse loanApplicationResponse = modelMapper.map(loanApplication, LoanApplicationResponse.class);
+
+            UserCredential userCredential = userCredentialRepository.findByWalletId(loanApplication.getWalletId()).orElse(null);
+            if (userCredential != null) {
+                loanApplicationResponse.setUserDetails(modelMapper.map(userCredential, UserCredentialResponse.class));
+            }
+
+            DisbursalRequest loanDisbursal = modelMapper.map(loanDisbursalRepository.findByLoanRefNo(loanApplication.getLoanRefNo()), DisbursalRequest.class);
+            if (loanDisbursal != null) {
+                loanApplicationResponse.setLoanDisbursal(modelMapper.map(loanDisbursal, DisbursalRequest.class));
+            }
+
+            List<RepaymentResponse> repayments = repaymentsRepository.findByLoanRefNo(loanApplication.getLoanRefNo())
+                    .stream()
+                    .map(repayments1 -> modelMapper.map(repayments1, RepaymentResponse.class))
+                    .collect(Collectors.toList());
+            loanApplicationResponse.setRepaymentsList(repayments);
+
+            log.info("Loan App Response: {}", loanApplicationResponse);
+            return Optional.of(loanApplicationResponse);
+
+        } catch (Exception e) {
+            log.error("Error mapping loan application to response: {}", e.getMessage());
+            return Optional.empty();
+        }
     }
 
     @Override
@@ -749,6 +781,34 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
                         .responseMessage(AccountUtils.SUCCESS_MESSAGE)
                         .responseBody(loanApplicationResponse)
                 .build());
+    }
+
+    @Override
+    public ResponseEntity<CustomResponse> approveLoan(String loanRefNo) {
+        LoanApplication loanToApprove = loanApplicationRepository.findByLoanRefNo(loanRefNo).get();
+        loanToApprove.setLoanApplicationStatus("APPROVED");
+        loanToApprove.setModifiedBy(SecurityContextHolder.getContext().getAuthentication().getName());
+        loanToApprove = loanApplicationRepository.save(loanToApprove);
+
+        String walletId = loanToApprove.getWalletId();
+        log.info("Wallet Id: {}", walletId);
+        UserCredential userCredential = userCredentialRepository.findByWalletId(walletId).get();
+        String email = userCredential.getEmail();
+
+
+        emailService.sendEmailAlert(EmailDetails.builder()
+                        .messageBody("Congratulations! Your loan has been approved. Log onto the app to accept your loan offer")
+                        .recipient(email)
+                        .subject("LOAN OFFER APPROVED")
+                .build());
+
+        return ResponseEntity.ok(CustomResponse.builder()
+                        .statusCode(200)
+                        .responseMessage(AccountUtils.SUCCESS_MESSAGE)
+                        .responseBody(modelMapper.map(loanToApprove, LoanApplicationResponse.class))
+                .build());
+
+
     }
 
 

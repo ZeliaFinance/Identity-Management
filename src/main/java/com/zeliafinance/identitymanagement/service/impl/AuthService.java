@@ -205,6 +205,7 @@ public class AuthService {
                 level = 1;
                 userCredential.setProfileSetupLevel(level);
             }
+            userCredential.setAccountStatus("ACTIVE");
             UserCredential updatedUser = userCredentialRepository.save(userCredential);
             //Sending email alert
 
@@ -998,6 +999,7 @@ public class AuthService {
             userCredential.setAccountStatus("LOCKED");
             userCredential.setLockoutTimeStamp(LocalDateTime.now().plusMinutes(lockoutDurationInMinutes));
         }
+        userCredentialRepository.save(userCredential);
     }
 
     private void resetIncorrectPinAttempts(UserCredential userCredential){

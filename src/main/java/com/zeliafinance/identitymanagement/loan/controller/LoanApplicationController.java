@@ -5,14 +5,15 @@ import com.zeliafinance.identitymanagement.loan.dto.LoanApplicationRequest;
 import com.zeliafinance.identitymanagement.loan.service.LoanApplicationService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @AllArgsConstructor
-@RequestMapping("api/v1/loanApplication")
+@RequestMapping("/api/v1/loanApplication")
 public class LoanApplicationController {
 
-    private final LoanApplicationService service;
+    private LoanApplicationService service;
 
     @PostMapping("stageOne")
     public ResponseEntity<CustomResponse> stageOne(@RequestBody LoanApplicationRequest request){
@@ -82,5 +83,11 @@ public class LoanApplicationController {
     @GetMapping("fetchLoanByRefNo")
     public ResponseEntity<CustomResponse> fetchSingleLoan(@RequestParam String loanRefNo){
         return service.fetchByLoanRefNo(loanRefNo);
+    }
+
+    @PostMapping("/approveLoan")
+    @PreAuthorize("{hasRole('ROLE_SUPER_ADMIN')}")
+    public ResponseEntity<CustomResponse> approveLoan(@RequestParam String loanRefNo){
+        return service.approveLoan(loanRefNo);
     }
 }

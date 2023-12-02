@@ -70,6 +70,8 @@ public class AccountUtils {
     public static final String LOAN_NOT_FOUND = "Loan not found";
     public static final String NON_ADMIN_LOGIN = "No User Access";
     public static final String DUPLICATE_DISBURSAL_ATTEMPT = "Duplicate disbursal attempt";
+    public static final String CARD_EXPIRED = "Card is expired";
+    public static final String INSUFFICIENT_BALANCE = "Insufficient Balance";
     @Bean
     public String generateAccountNumber(){
         StringBuilder accountNumber = new StringBuilder();
@@ -138,8 +140,6 @@ public class AccountUtils {
                 result.append(ch);
             }
         }
-
-
         return result.toString();
     }
 

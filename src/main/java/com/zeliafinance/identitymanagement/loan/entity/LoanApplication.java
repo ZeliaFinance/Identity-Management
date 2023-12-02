@@ -1,14 +1,12 @@
 package com.zeliafinance.identitymanagement.loan.entity;
 
 import com.zeliafinance.identitymanagement.entity.UserCredential;
-import com.zeliafinance.identitymanagement.loanRepayment.entity.Repayments;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -78,8 +76,6 @@ public class LoanApplication {
     private String nextRepaymentStatus;
     @OneToOne
     private LoanProduct loanProduct;
-    @ManyToMany
-    private List<Repayments> repayments;
     @ManyToOne
     private UserCredential loanApplicant;
     private LocalDateTime dateDisbursed;
