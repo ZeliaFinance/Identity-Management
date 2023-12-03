@@ -17,7 +17,7 @@ import java.util.Optional;
 @RestController
 @RequestMapping("api/v1/users")
 @Slf4j
-@CrossOrigin(origins = {"https://www.sandbox.zeliafinance.com", "http://www.sandbox.zeliafinance.com", "http://localhost:5173", "https://test-admin.zeliafinance.com", "https://zelia-admin-app-git-staging-zeliafinance.vercel.app", "https://zelia-admin-app.vercel.app"}, maxAge = 3600)
+@CrossOrigin(origins = {"https://www.sandbox.zeliafinance.com", "http://www.sandbox.zeliafinance.com", "http://localhost:5173", "https://test-admin.zeliafinance.com", "https://zelia-admin-app.vercel.app"}, maxAge = 3600)
 public class UserCredentialsController {
 
     private final AuthService service;
@@ -63,7 +63,6 @@ public class UserCredentialsController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<CustomResponse> fetchAllUsers(
             @RequestParam(value = "pageNo", defaultValue = "1") int pageNo,
             @RequestParam(value = "pageSize", defaultValue = "50") int pageSize

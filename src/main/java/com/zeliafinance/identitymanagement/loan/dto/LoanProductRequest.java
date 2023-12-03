@@ -16,4 +16,5 @@ public class LoanProductRequest {
     private int minDuration;
     private int maxDuration;
     private double interestRate;
+    private LoanOfferingResponse loanOfferingResponseList;
 }

@@ -6,17 +6,18 @@ import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.zeliafinance.identitymanagement.config.JwtTokenProvider;
 import com.zeliafinance.identitymanagement.dto.*;
 import com.zeliafinance.identitymanagement.entity.Role;
+import com.zeliafinance.identitymanagement.entity.Transactions;
 import com.zeliafinance.identitymanagement.entity.UserCredential;
 import com.zeliafinance.identitymanagement.repository.UserCredentialRepository;
 import com.zeliafinance.identitymanagement.service.EmailService;
+import com.zeliafinance.identitymanagement.thirdpartyapis.bani.dto.request.CreateCustomerDto;
+import com.zeliafinance.identitymanagement.thirdpartyapis.bani.dto.request.CreateVirtualAccountRequest;
+import com.zeliafinance.identitymanagement.thirdpartyapis.bani.dto.response.CreateCustomerResponse;
+import com.zeliafinance.identitymanagement.thirdpartyapis.bani.dto.response.CreateVirtualAccountResponse;
+import com.zeliafinance.identitymanagement.thirdpartyapis.bani.service.BaniService;
 import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.dto.request.NinRequest;
 import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.dto.response.NinLookupResponse;
 import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.service.DojahSmsService;
-import com.zeliafinance.identitymanagement.thirdpartyapis.providus.dto.request.BalanceEnquiryRequest;
-import com.zeliafinance.identitymanagement.thirdpartyapis.providus.dto.request.CreateReservedAccountRequest;
-import com.zeliafinance.identitymanagement.thirdpartyapis.providus.dto.response.BalanceEnquiryResponse;
-import com.zeliafinance.identitymanagement.thirdpartyapis.providus.dto.response.CreateReservedAccountResponse;
-import com.zeliafinance.identitymanagement.thirdpartyapis.providus.service.ProvidusService;
 import com.zeliafinance.identitymanagement.utils.AccountUtils;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
@@ -26,9 +27,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -48,7 +46,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.stream.Collectors;
 
 
 @Service
@@ -65,7 +62,8 @@ public class AuthService {
     private JwtTokenProvider jwtTokenProvider;
     private DojahSmsService dojahSmsService;
     private AmazonS3 amazonS3;
-    private ProvidusService providusService;
+    private BaniService baniService;
+    private TransactionService transactionService;
 
     public ResponseEntity<CustomResponse> signUp(SignUpRequest request){
         boolean isEmailExist = userCredentialRepository.existsByEmail(request.getEmail());
@@ -100,6 +98,8 @@ public class AuthService {
                 .hashedPassword(accountUtils.encode(request.getPassword(), 3))
                 .accountStatus("PENDING")
                 .accountBalance(0)
+                .availableBalance(0)
+                .inviteAccepted(false)
                 .build();
 
         userCredential.setRole(Role.ROLE_USER);
@@ -205,20 +205,7 @@ public class AuthService {
                 level = 1;
                 userCredential.setProfileSetupLevel(level);
             }
-
-            CreateReservedAccountResponse providusResponse = providusService.createReservedAccount(CreateReservedAccountRequest.builder()
-                            .accountName(request.getFirstName() + " " + request.getLastName() + " " + request.getOtherName())
-                            .bvn("")
-                    .build());
-
-            log.info("providus account details: {}", providusResponse);
-            userCredential.setNuban(providusResponse.getAccountNumber());
-            BalanceEnquiryResponse balanceEnquiryResponse = providusService.doBalanceEnquiry(BalanceEnquiryRequest.builder()
-                            .accountNumber(userCredential.getNuban())
-                            .userName("test")
-                            .password("test")
-                    .build());
-            userCredential.setAccountBalance(Double.parseDouble(balanceEnquiryResponse.getAvailableBalance()));
+            userCredential.setAccountStatus("ACTIVE");
             UserCredential updatedUser = userCredentialRepository.save(userCredential);
             //Sending email alert
 
@@ -386,6 +373,57 @@ public class AuthService {
             if (userCredential.getProfileSetupLevel() < 5){
                 userCredential.setProfileSetupLevel(5);
             }
+            log.info("phone number: {}", userCredential.getPhoneNumber());
+
+            String prefix = "+234";
+            String suffix = userCredential.getPhoneNumber().substring(1);
+            String phoneNumber = prefix + suffix;
+            log.info("Phone Number: {}", phoneNumber);
+            if(userCredential.getCustomerRef() == null){
+                CreateCustomerResponse baniCustomer = baniService.createCustomer(CreateCustomerDto.builder()
+                        .customer_first_name(userCredential.getFirstName())
+                        .customer_last_name(userCredential.getLastName())
+                        .customer_phone(phoneNumber)
+                        .customer_email(userCredential.getEmail())
+                        .customer_address(userCredential.getAddress())
+                        .customer_city("Zelia")
+                        .customer_state("Zelia")
+                        .customer_note("Zelia")
+                        .build());
+
+                String customerRef = baniCustomer.getCustomerRef();
+                userCredential.setCustomerRef(customerRef);
+                userCredential.setAccountStatus("Active");
+                userCredentialRepository.save(userCredential);
+
+            }
+            log.info("customer ref: {}", userCredential.getCustomerRef());
+            if (userCredential.getVAccountNumber() == null){
+                CreateVirtualAccountResponse virtualAccountResponse = baniService.createVirtualAccount(CreateVirtualAccountRequest.builder()
+                        .pay_va_step("direct")
+                        .country_code("NG")
+                        .pay_currency("NGN")
+                        .bank_name("providus")
+                        .holder_account_type("permanent")
+                        .customer_ref(userCredential.getCustomerRef())
+                        .holder_legal_number("22222222222")
+                        .pay_ext_ref(AccountUtils.generateTxnRef("VACREATION"))
+                        .build());
+
+                if (virtualAccountResponse.getStatus_code() == 200){
+                    transactionService.saveTransaction(Transactions.builder()
+                                    .externalRefNumber(virtualAccountResponse.getPayment_reference())
+                                    .transactionRef(virtualAccountResponse.getPayment_ext_reference())
+                                    .transactionAmount(0)
+                                    .transactionStatus("COMPLETED")
+                                    .transactionType("Virtual Account Creation")
+                                    .walletId(userCredential.getWalletId())
+                            .build());
+                }
+
+                String virtualAccountNumber = virtualAccountResponse.getHolder_account_number();
+                userCredential.setVAccountNumber(virtualAccountNumber);
+            }
 
             UserCredential updatedUser = userCredentialRepository.save(userCredential);
             //Sending email alert
@@ -444,7 +482,8 @@ public class AuthService {
                 .build();
 
         emailService.sendEmailAlert(loginAlert);
-
+        userCredential.setLastLoggedIn(LocalDateTime.now());
+        userCredentialRepository.save(userCredential);
 
 
         return ResponseEntity.ok(CustomResponse.builder()
@@ -496,23 +535,23 @@ public class AuthService {
 
     public ResponseEntity<CustomResponse> fetchAllUsers(int pageNo, int pageSize) {
 
-        Pageable pageable = PageRequest.of(pageNo - 1, pageSize);
-        Page<UserCredential> userCredentials = userCredentialRepository.findAll(pageable);
-        List<UserCredential> list = userCredentials.getContent();
-
-        Object response = list.stream().map(user -> modelMapper.map(user, UserCredentialResponse.class)).collect(Collectors.toList());
+        List<UserCredentialResponse> usersList = userCredentialRepository.findAll()
+                .stream()
+                .skip(pageNo-1)
+                .limit(pageSize).sorted(Comparator.comparing(UserCredential::getCreatedAt).reversed())
+                .map(userCredential -> modelMapper.map(userCredential, UserCredentialResponse.class))
+                .toList();
 
 
         return ResponseEntity.ok(CustomResponse.builder()
                 .statusCode(HttpStatus.OK.value())
                 .responseMessage("SUCCESS")
-                .responseBody(response)
+                .responseBody(usersList)
                 .info(Info.builder()
-                        .totalPages(userCredentials.getTotalPages())
-                        .totalElements(userCredentials.getTotalElements())
-                        .pageSize(userCredentials.getSize())
+                        .totalPages((usersList.size()/pageSize)+1)
+                        .totalElements((long)usersList.size())
+                        .pageSize(pageSize)
                         .build())
-
                 .build());
 
     }
@@ -560,6 +599,13 @@ public class AuthService {
                     .build());
         }
 
+        if(userCredential.getRole().equals(Role.ROLE_SUPER_ADMIN)){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .statusCode(HttpStatus.FORBIDDEN.value())
+                            .responseMessage("Super Admin Cannot Reset Password. Contact the Engineering team for help")
+                    .build());
+        }
+
         CustomResponse otpResponse = sendOtp(OtpDto.builder()
                 .email(email)
                 .build()).getBody();
@@ -600,6 +646,14 @@ public class AuthService {
                     .build());
         }
         UserCredential userCredential = userCredentialRepository.findByEmail(email).get();
+        if(userCredential.getRole().equals(Role.ROLE_SUPER_ADMIN)){
+            String message = "Super Admin Cannot Reset Password. Contact the Engineering team for help";
+            log.info("Error message: {}", message);
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                    .statusCode(HttpStatus.FORBIDDEN.value())
+                    .responseMessage(message)
+                    .build());
+        }
         CustomResponse validationResponse = validateOtp(ValidateOtpDto.builder()
                 .email(email)
                 .otp(passwordResetDto.getOtp())
@@ -945,6 +999,7 @@ public class AuthService {
             userCredential.setAccountStatus("LOCKED");
             userCredential.setLockoutTimeStamp(LocalDateTime.now().plusMinutes(lockoutDurationInMinutes));
         }
+        userCredentialRepository.save(userCredential);
     }
 
     private void resetIncorrectPinAttempts(UserCredential userCredential){
@@ -1104,5 +1159,4 @@ public class AuthService {
                         .responseMessage(AccountUtils.SUCCESS_MESSAGE)
                 .build());
     }
-
 }

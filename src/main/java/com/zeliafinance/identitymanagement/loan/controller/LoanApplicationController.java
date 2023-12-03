@@ -10,10 +10,10 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @AllArgsConstructor
-@RequestMapping("api/v1/loanApplication")
+@RequestMapping("/api/v1/loanApplication")
 public class LoanApplicationController {
 
-    private final LoanApplicationService service;
+    private LoanApplicationService service;
 
     @PostMapping("stageOne")
     public ResponseEntity<CustomResponse> stageOne(@RequestBody LoanApplicationRequest request){
@@ -43,12 +43,13 @@ public class LoanApplicationController {
                                                     @RequestBody LoanApplicationRequest request) throws Exception {
         return service.stageFive(loanRefNo, request);
     }
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+
     @GetMapping("loanApplicationList")
     public ResponseEntity<CustomResponse> fetchAllLoans(){
         return service.fetchAllLoanApplications();
     }
 
+    //Logged-in user
     @GetMapping("loanApplicationHistory")
     public ResponseEntity<CustomResponse> loanHistory(){
         return service.loanApplicationHistory();
@@ -72,5 +73,27 @@ public class LoanApplicationController {
     @DeleteMapping("deleteLoan/{loanId}")
     public ResponseEntity<CustomResponse> deleteLoan(@PathVariable long loanId){
         return service.deleteLoan(loanId);
+    }
+
+    @PostMapping("cancelLoanApplication")
+    public ResponseEntity<CustomResponse> cancelLoanApplication(@RequestParam String loanRefNo){
+        return service.cancelLoan(loanRefNo);
+    }
+
+    @GetMapping("fetchLoanByRefNo")
+    public ResponseEntity<CustomResponse> fetchSingleLoan(@RequestParam String loanRefNo){
+        return service.fetchByLoanRefNo(loanRefNo);
+    }
+
+    @PostMapping("/approveLoan")
+    @PreAuthorize("{hasRole('ROLE_SUPER_ADMIN')}")
+    public ResponseEntity<CustomResponse> approveLoan(@RequestParam String loanRefNo){
+        return service.approveLoan(loanRefNo);
+    }
+
+    @PostMapping("/denyLoan")
+    @PreAuthorize("{hasRole('ROLE_SUPER_ADMIN')}")
+    public ResponseEntity<CustomResponse> denyLoan(@RequestParam String loanRefNo){
+        return service.denyLoan(loanRefNo);
     }
 }

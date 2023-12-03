@@ -1,14 +1,13 @@
 package com.zeliafinance.identitymanagement.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.zeliafinance.identitymanagement.loan.dto.LoanApplicationResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
-import java.util.List;
+import java.time.LocalDateTime;
 
 @Data
 @Builder
@@ -32,7 +31,6 @@ public class UserCredentialResponse {
     private String nin;
     private String ninStatus;
     private String pin;
-    private double accountBalance;
     private String role;
     private String emailVerifyStatus;
     private String referralCode;
@@ -44,7 +42,12 @@ public class UserCredentialResponse {
     private Integer profileSetupLevel;
     private String imagePath;
     private String imageFileName;
-    private String nuban;
+    private double availableBalance;
     private String walletId;
-    private List<LoanApplicationResponse> loanApplications;
+    private String vAccountNumber;
+    private double accountBalance;
+    private String accountStatus;
+    private String customerRef;
+    private LocalDateTime createdAt;
+    private LocalDateTime lastLoggedIn;
 }

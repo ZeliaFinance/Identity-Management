@@ -7,7 +7,6 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -77,8 +76,6 @@ public class LoanApplication {
     private String nextRepaymentStatus;
     @OneToOne
     private LoanProduct loanProduct;
-    @ManyToMany
-    private List<Repayments> repayments;
     @ManyToOne
     private UserCredential loanApplicant;
     private LocalDateTime dateDisbursed;

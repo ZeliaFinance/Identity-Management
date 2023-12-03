@@ -43,12 +43,15 @@ public class UserCredential implements UserDetails {
     private String pin;
     @Column(unique = true)
     private String walletId;
+    private String vAccountNumber;
+    private String customerRef;
     private String accountStatus;
     private double accountBalance;
+    private double availableBalance;
     @CreationTimestamp
-    private LocalDate createdAt;
+    private LocalDateTime createdAt;
     @UpdateTimestamp
-    private LocalDate modifiedAt;
+    private LocalDateTime modifiedAt;
     private String passwordResetToken;
     private LocalDate tokenExpiryDate;
     private String emailVerifyStatus;
@@ -70,9 +73,13 @@ public class UserCredential implements UserDetails {
     private String securityAnswer;
     private String imagePath;
     private String imageFileName;
-    private String nuban;
     private int failedPinAttempts;
     private LocalDateTime lockoutTimeStamp;
+    private String team;
+    private String createdBy;
+    private LocalDateTime invitationLinkExpiry;
+    private boolean inviteAccepted;
+    private LocalDateTime lastLoggedIn;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

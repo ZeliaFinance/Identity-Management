@@ -90,12 +90,12 @@ public class LoanCalculatorServiceImpl implements LoanCalculatorService {
                 log.info("Id of loan product: {}", loanProduct.getId());
                 if (request.getLoanTenor() < 30){
                     numberOfMonths = 1;
-                    interest = (request.getLoanAmount() * (loanProduct.getInterestRate()/100) * (1));
+                    interest = (request.getLoanAmount() * (loanProduct.getInterestRate()/100) * ((double) request.getLoanTenor()/30));
                     amountToPay = request.getLoanAmount() + interest;
                     monthlyRepayment = amountToPay/numberOfMonths;
                 } else {
                     numberOfMonths = request.getLoanTenor()/30;
-                    interest = (request.getLoanAmount() * (loanProduct.getInterestRate()/100) * (request.getLoanTenor()/30));
+                    interest = (request.getLoanAmount() * (loanProduct.getInterestRate()/100) * ((double) request.getLoanTenor()/30));
                     amountToPay = request.getLoanAmount() + interest;
                     monthlyRepayment = amountToPay/numberOfMonths;
 
@@ -105,8 +105,8 @@ public class LoanCalculatorServiceImpl implements LoanCalculatorService {
 
         }
         LoanCalculatorResponse response = LoanCalculatorResponse.builder()
-                .amountToPayBack(amountToPay)
-                .monthlyRepayment(monthlyRepayment)
+                .amountToPayBack(Double.parseDouble(decimalFormat.format(amountToPay)))
+                .monthlyRepayment(Double.parseDouble(decimalFormat.format(monthlyRepayment)))
                 .interest(Double.parseDouble(decimalFormat.format(interest)))
                 .interestRate(interestRate)
                 .build();
