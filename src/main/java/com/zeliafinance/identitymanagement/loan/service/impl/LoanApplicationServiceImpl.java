@@ -22,6 +22,7 @@ import com.zeliafinance.identitymanagement.loan.service.LoanCalculatorService;
 import com.zeliafinance.identitymanagement.loanDisbursal.dto.DisbursalRequest;
 import com.zeliafinance.identitymanagement.loanDisbursal.entity.LoanDisbursal;
 import com.zeliafinance.identitymanagement.loanDisbursal.repository.LoanDisbursalRepository;
+import com.zeliafinance.identitymanagement.loanDisbursal.service.LoanDisbursalService;
 import com.zeliafinance.identitymanagement.loanRepayment.dto.RepaymentData;
 import com.zeliafinance.identitymanagement.loanRepayment.dto.RepaymentResponse;
 import com.zeliafinance.identitymanagement.loanRepayment.entity.Repayments;
@@ -58,6 +59,7 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
     private RepaymentsRepository repaymentsRepository;
     private LoanDisbursalRepository loanDisbursalRepository;
     private EmailService emailService;
+    private LoanDisbursalService loanDisbursalService;
 
     @Override
     public ResponseEntity<CustomResponse> stageOne(LoanApplicationRequest request) {
@@ -119,6 +121,10 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
         return loanApplicationRepository.findByLoanRefNo(loanRefNo).get().getLoanApplicationStatus().equalsIgnoreCase("CANCELED");
     }
 
+    private boolean checkDeniedLoan(String loanRefNo){
+        return loanApplicationRepository.findByLoanRefNo(loanRefNo).get().getLoanApplicationStatus().equalsIgnoreCase("DENIED");
+    }
+
     @Override
     public ResponseEntity<CustomResponse> stageTwo(String loanRefNo, LoanApplicationRequest request) throws Exception {
         LoanApplication loanApplication = loanApplicationRepository.findByLoanRefNo(loanRefNo).orElseThrow(Exception::new);
@@ -126,6 +132,12 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
             return ResponseEntity.badRequest().body(CustomResponse.builder()
                             .statusCode(400)
                             .responseMessage("Loan Not Found")
+                    .build());
+        }
+        if (checkDeniedLoan(loanRefNo)){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .statusCode(400)
+                            .responseMessage("This loan application has been denied")
                     .build());
         }
         if (checkCanceledLoan(loanRefNo)){
@@ -245,6 +257,12 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
         }
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
 
+        if (checkDeniedLoan(loanRefNo)){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                    .statusCode(400)
+                    .responseMessage("This loan application has been denied")
+                    .build());
+        }
         if (checkCanceledLoan(loanRefNo)){
             return ResponseEntity.badRequest().body(CustomResponse.builder()
                     .statusCode(400)
@@ -375,6 +393,12 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
                     .responseMessage("Loan Not Found")
                     .build());
         }
+        if (checkDeniedLoan(loanRefNo)){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                    .statusCode(400)
+                    .responseMessage("This loan application has been denied")
+                    .build());
+        }
         if (checkCanceledLoan(loanRefNo)){
             return ResponseEntity.badRequest().body(CustomResponse.builder()
                     .statusCode(400)
@@ -478,6 +502,12 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
                     .responseMessage("Loan with reference No " + loanRefNo + "has been canceled")
                     .build());
         }
+        if (checkDeniedLoan(loanRefNo)){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                    .statusCode(400)
+                    .responseMessage("This loan application has been denied")
+                    .build());
+        }
         log.info("loan ref no: {}", loanRefNo);
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         CustomResponse pinVerificationResponse = authService.verifyPin(PinSetupDto.builder()
@@ -516,10 +546,18 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
     @Override
     public ResponseEntity<CustomResponse> fetchAllLoanApplications() {
         List<LoanApplicationResponse> loanApplicationList = loanApplicationRepository.findAll()
-                .stream()
-                .map(this::mapToLoanApplicationResponse)
-                .filter(Optional::isPresent)
-                .map(Optional::get)
+                .stream().map(loanApplication -> {
+                    LoanApplicationResponse loanApplicationResponse = modelMapper.map(loanApplication, LoanApplicationResponse.class);
+                    UserCredential userCredential = userCredentialRepository.findByWalletId(loanApplicationResponse.getWalletId()).get();
+                    UserCredentialResponse userCredentialResponse = modelMapper.map(userCredential, UserCredentialResponse.class);
+                    loanApplicationResponse.setUserDetails(userCredentialResponse);
+
+                    List<Repayments> repayments = repaymentsRepository.findByLoanRefNo(loanApplicationResponse.getLoanRefNo());
+                    loanApplicationResponse.setRepaymentsList(repayments.stream().map(repayment -> modelMapper.map(repayment, RepaymentResponse.class)).toList());
+                    return loanApplicationResponse;
+
+                    //map user details and repayment
+                    })
                 .toList();
 
         if (loanApplicationList.isEmpty()) {
@@ -656,6 +694,12 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
                             .responseMessage(AccountUtils.LOAN_NOT_FOUND)
                     .build());
         }
+        if (checkDeniedLoan(loanRefNo)){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                    .statusCode(400)
+                    .responseMessage("This loan application has been denied")
+                    .build());
+        }
         if (checkCanceledLoan(loanRefNo)){
             return ResponseEntity.badRequest().body(CustomResponse.builder()
                     .statusCode(400)
@@ -770,16 +814,60 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
     @Override
     public ResponseEntity<CustomResponse> fetchByLoanRefNo(String loanRefNo) {
         LoanApplicationResponse loanApplicationResponse = modelMapper.map(loanApplicationRepository.findByLoanRefNo(loanRefNo).get(), LoanApplicationResponse.class);
-        if (loanApplicationResponse == null){
-            return ResponseEntity.badRequest().body(CustomResponse.builder()
-                            .statusCode(400)
-                            .responseMessage("Loan application does not exist")
-                    .build());
-        }
+        UserCredential userCredential = userCredentialRepository.findByWalletId(loanApplicationResponse.getWalletId()).get();
+        loanApplicationResponse.setUserDetails(modelMapper.map(userCredential, UserCredentialResponse.class));
+        List<RepaymentResponse> repayments = repaymentsRepository.findByLoanRefNo(loanRefNo).stream().map(repayment -> {
+            RepaymentResponse repaymentResponse = modelMapper.map(repayment, RepaymentResponse.class);
+            List<RepaymentData> repaymentData = new ArrayList<>();
+            int monthCount = 1;
+            if (loanApplicationResponse.getLoanTenor() == 30){
+                repaymentData.add(RepaymentData.builder()
+                        .monthCount(monthCount)
+                        .amountPaid(repayment.getAmountPaid())
+                        .expectedAmount(loanDisbursalRepository.findByLoanRefNo(loanApplicationResponse.getLoanRefNo()).getAmountToPayBack()/(loanApplicationResponse.getLoanTenor()/30))
+                        .build());
+                monthCount++;
+            }
+            while(monthCount <= repaymentResponse.getLoanTenor()/30){
+                repaymentData.add(RepaymentData.builder()
+                                .monthCount(monthCount)
+                                .amountPaid(repayment.getAmountPaid())
+                                .expectedAmount(loanDisbursalRepository.findByLoanRefNo(loanApplicationResponse.getLoanRefNo()).getAmountToPayBack()/(loanApplicationResponse.getLoanTenor()/30))
+                        .build());
+                monthCount++;
+            }
+            repaymentResponse.setRepaymentData(repaymentData);
+            return repaymentResponse;
+        }).toList();
+        loanApplicationResponse.setRepaymentsList(repayments);
+
         return ResponseEntity.ok(CustomResponse.builder()
                         .statusCode(200)
                         .responseMessage(AccountUtils.SUCCESS_MESSAGE)
                         .responseBody(loanApplicationResponse)
+                .build());
+    }
+
+    @Override
+    public ResponseEntity<CustomResponse> denyLoan(String loanRefNo) {
+        LoanApplication loanToDeny = loanApplicationRepository.findByLoanRefNo(loanRefNo).get();
+        loanToDeny.setLoanApplicationStatus("DENIED");
+        loanToDeny.setModifiedBy(SecurityContextHolder.getContext().getAuthentication().getName());
+        loanToDeny = loanApplicationRepository.save(loanToDeny);
+
+        String walletId = loanToDeny.getWalletId();
+        log.info("Wallet Id: {}", walletId);
+        UserCredential userCredential = userCredentialRepository.findByWalletId(walletId).get();
+        String email = userCredential.getEmail();
+        emailService.sendEmailAlert(EmailDetails.builder()
+                        .subject("LOAN DENIED")
+                        .recipient(email)
+                        .messageBody("Your loan application has been denied. Please check our other loan products and apply again")
+                .build());
+        return ResponseEntity.ok(CustomResponse.builder()
+                        .statusCode(200)
+                        .responseMessage(AccountUtils.SUCCESS_MESSAGE)
+                        .responseBody(modelMapper.map(loanToDeny, LoanApplicationResponse.class))
                 .build());
     }
 
@@ -794,6 +882,7 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
         log.info("Wallet Id: {}", walletId);
         UserCredential userCredential = userCredentialRepository.findByWalletId(walletId).get();
         String email = userCredential.getEmail();
+
 
 
         emailService.sendEmailAlert(EmailDetails.builder()

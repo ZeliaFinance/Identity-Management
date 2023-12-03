@@ -23,5 +23,6 @@ public class RepaymentResponse {
     private double amountPaid;
     private List<RepaymentData> repaymentData;
     private double interest;
-    private int interestRate;
+    private double interestRate;
+    private String walletId;
 }

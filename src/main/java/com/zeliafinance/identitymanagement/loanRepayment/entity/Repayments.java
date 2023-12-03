@@ -23,4 +23,5 @@ public class Repayments {
     private LocalDateTime nextRepaymentDate;
     private String repaymentStatus;
     private double amountPaid;
+    private String walletId;
 }

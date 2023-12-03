@@ -14,4 +14,5 @@ public class InviteLinkRequest {
     private String lastName;
     private String email;
     private String team;
+    private String role;
 }

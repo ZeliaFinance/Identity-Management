@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface RepaymentsRepository extends JpaRepository<Repayments, Long> {
     List<Repayments> findByLoanRefNo(String loanRefNo);
+    List<Repayments> findByWalletId(String walletId);
 }

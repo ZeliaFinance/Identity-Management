@@ -93,6 +93,7 @@ public class LoanDisbursalService {
                 .amountPaid(0)
                 .repaymentStatus("PENDING")
                 .loanRefNo(request.getLoanRefNo())
+                .walletId(walletId)
                 .build();
         repaymentsRepository.save(repayments);
 

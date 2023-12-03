@@ -90,4 +90,10 @@ public class LoanApplicationController {
     public ResponseEntity<CustomResponse> approveLoan(@RequestParam String loanRefNo){
         return service.approveLoan(loanRefNo);
     }
+
+    @PostMapping("/denyLoan")
+    @PreAuthorize("{hasRole('ROLE_SUPER_ADMIN')}")
+    public ResponseEntity<CustomResponse> denyLoan(@RequestParam String loanRefNo){
+        return service.denyLoan(loanRefNo);
+    }
 }

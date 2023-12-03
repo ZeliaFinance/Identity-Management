@@ -39,7 +39,7 @@ public class AdminService {
                 userCredentialExists.get().setInvitationLinkExpiry(LocalDateTime.now().plusHours(24));
                 userCredentialRepository.save(userCredentialExists.get());
                 String encryptedEmail = accountUtils.encode(request.getEmail(), 5);
-                String invitationLink = "https://www.zeliafinance.com/?email=" + encryptedEmail;
+                String invitationLink = "http://localhost:5173/?email=" + encryptedEmail;
 
                 emailService.sendEmailAlert(EmailDetails.builder()
                         .subject("ADMIN INVITE")
@@ -65,21 +65,27 @@ public class AdminService {
             }
 
         }
+        if (request.getRole().equalsIgnoreCase( "ROLE_USER")){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .statusCode(400)
+                            .responseMessage("User role cannot be applied here")
+                    .build());
+        }
         UserCredential userCredential = UserCredential.builder()
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
                 .team(request.getTeam())
                 .email(request.getEmail())
+                .role(Role.valueOf(request.getRole()))
                 .createdBy(loggedInUser)
                 .modifiedby(loggedInUser)
-                .role(Role.ROLE_ADMIN)
                 .inviteAccepted(false)
                 .invitationLinkExpiry(LocalDateTime.now().plusHours(24))
                 .build();
             UserCredential savedAdminCredential = userCredentialRepository.save(userCredential);
             log.info("Saved user: {}", modelMapper.map(savedAdminCredential, AdminResponse.class));
             String encryptedEmail = accountUtils.encode(savedAdminCredential.getEmail(), 5);
-            String invitationLink = "https://www.zeliafinance.com/?email=" + encryptedEmail;
+            String invitationLink = "http://www.localhost:5173/?email=" + encryptedEmail;
 
             emailService.sendEmailAlert(EmailDetails.builder()
                     .subject("ADMIN INVITE")

@@ -20,4 +20,5 @@ public interface LoanApplicationService {
     ResponseEntity<CustomResponse> cancelLoan(String loanRefNo);
     ResponseEntity<CustomResponse> fetchByLoanRefNo(String loanRefNo);
     ResponseEntity<CustomResponse> approveLoan(String loanRefNo);
+    ResponseEntity<CustomResponse> denyLoan(String loanRefNo);
 }
