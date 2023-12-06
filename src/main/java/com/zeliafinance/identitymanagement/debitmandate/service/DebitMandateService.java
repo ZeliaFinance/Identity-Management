@@ -3,11 +3,13 @@ package com.zeliafinance.identitymanagement.debitmandate.service;
 import com.zeliafinance.identitymanagement.debitmandate.dto.CardRequest;
 import com.zeliafinance.identitymanagement.debitmandate.repository.CardRepository;
 import com.zeliafinance.identitymanagement.dto.CustomResponse;
+import com.zeliafinance.identitymanagement.entity.Transactions;
 import com.zeliafinance.identitymanagement.entity.UserCredential;
 import com.zeliafinance.identitymanagement.repository.UserCredentialRepository;
 import com.zeliafinance.identitymanagement.service.impl.TransactionService;
 import com.zeliafinance.identitymanagement.thirdpartyapis.paystack.dto.request.*;
 import com.zeliafinance.identitymanagement.thirdpartyapis.paystack.dto.response.CreateChargeResponse;
+import com.zeliafinance.identitymanagement.thirdpartyapis.paystack.dto.response.CreateFundResponse;
 import com.zeliafinance.identitymanagement.thirdpartyapis.paystack.service.PayStackService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +18,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.Year;
 import java.time.YearMonth;
 import java.util.List;
@@ -60,6 +63,15 @@ public class DebitMandateService {
                                 .build())
                 .build());
 
+        transactionService.saveTransaction(Transactions.builder()
+                        .externalRefNumber(payStackResponse.getData().getReference())
+                        .transactionRef(generateTxnRef("MANDATE_CHARGE"))
+                        .walletId(userCredential.getWalletId())
+                        .transactionAmount(50)
+                        .createdAt(LocalDateTime.now())
+                        .transactionStatus("COMPLETED")
+                .build());
+
         //Check is card expired
         int currentCentury = Year.now().getValue()/100;
         int year = Integer.parseInt(currentCentury + cardRequest.getExpiryYear());
@@ -83,9 +95,21 @@ public class DebitMandateService {
                     .build());
         }
 
-        payStackService.refundAccount(CreateRefundRequest.builder()
+        CreateFundResponse refundResponse = payStackService.refundAccount(CreateRefundRequest.builder()
                         .transaction(payStackResponse.getData().getReference())
                 .build());
+
+        if (refundResponse.isStatus()){
+            transactionService.saveTransaction(Transactions.builder()
+                            .transactionStatus("COMPLETED")
+                            .transactionAmount(50)
+                            .transactionType("CARD_REFUND")
+                            .transactionRef(generateTxnRef("REFUND"))
+                            .createdAt(LocalDateTime.now())
+                            .walletId(userCredential.getWalletId())
+                            .externalRefNumber(payStackResponse.getData().getReference())
+                    .build());
+        }
 
         com.zeliafinance.identitymanagement.debitmandate.entity.Card customerCard = cardRepository.save(com.zeliafinance.identitymanagement.debitmandate.entity.Card.builder()
                         .walletId(userCredential.getWalletId())

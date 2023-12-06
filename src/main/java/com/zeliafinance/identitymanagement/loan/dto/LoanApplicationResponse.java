@@ -74,6 +74,7 @@ public class LoanApplicationResponse {
     private String coSignerEmploymentType;
     private String coSignerRelationship;
     private String loanApplicationStatus;
+    private String matriculationNumber;
     private List<LoanProduct> loanProduct;
     private UserCredentialResponse userDetails;
     private List<RepaymentResponse> repaymentsList;

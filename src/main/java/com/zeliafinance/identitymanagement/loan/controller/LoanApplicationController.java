@@ -45,14 +45,23 @@ public class LoanApplicationController {
     }
 
     @GetMapping("loanApplicationList")
-    public ResponseEntity<CustomResponse> fetchAllLoans(){
-        return service.fetchAllLoanApplications();
+    public ResponseEntity<CustomResponse> fetchAllLoans(@RequestParam(defaultValue = "1") int pageNo, @RequestParam(defaultValue = "50") int pageSize){
+        return service.fetchAllLoanApplications(pageNo, pageSize);
     }
 
     //Logged-in user
     @GetMapping("loanApplicationHistory")
-    public ResponseEntity<CustomResponse> loanHistory(){
-        return service.loanApplicationHistory();
+    public ResponseEntity<CustomResponse> loanHistory(@RequestParam(defaultValue = "1") int pageNo,
+                                                      @RequestParam(defaultValue = "50") int pageSize){
+        return service.loanApplicationHistory(pageNo, pageSize);
+    }
+
+
+    @GetMapping("loanApplicationsByStatus")
+    public ResponseEntity<CustomResponse> loanApplicationByStatus(@RequestParam String loanApplicationStatus,
+                                                                  @RequestParam(defaultValue = "1") int pageNo,
+                                                                  @RequestParam(defaultValue = "50") int pageSize){
+        return service.viewLoanApplicationsByStatus(loanApplicationStatus, pageNo, pageSize);
     }
 
     @PostMapping("updateStageOne")

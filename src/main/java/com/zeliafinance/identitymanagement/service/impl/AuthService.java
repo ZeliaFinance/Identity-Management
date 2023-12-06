@@ -449,6 +449,13 @@ public class AuthService {
     public ResponseEntity<CustomResponse> login(LoginDto loginDto){
         Authentication authentication=null;
         UserCredential userCredential = userCredentialRepository.findByEmail(loginDto.getEmail()).get();
+        boolean isUserExists = userCredentialRepository.existsByEmail(loginDto.getEmail());
+        if(!isUserExists){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .statusCode(400)
+                            .responseMessage(AccountUtils.USER_NOT_EXIST_MESSAGE)
+                    .build());
+        }
         if (loginDto.getAuthMethod().equalsIgnoreCase("biometric")){
             log.info("using biometric login");
             authentication = authenticationManager.authenticate(
@@ -958,13 +965,13 @@ public class AuthService {
         UserCredential userCredential = userCredentialRepository.findByEmail(pinSetupDto.getEmail()).orElseThrow();
         String savedPin = accountUtils.decodePin(userCredential.getPin());
         log.info(savedPin);
-        if (userCredential.getAccountStatus().equalsIgnoreCase("LOCKED")){
-            return ResponseEntity.status(HttpStatus.LOCKED).body(CustomResponse.builder()
-                            .statusCode(HttpStatus.LOCKED.value())
-                            .responseMessage("Your account is locked. Please try again in 5 minutes")
-                            .pinVerificationStatus(false)
-                    .build());
-        }
+//        if (userCredential.getAccountStatus().equalsIgnoreCase("LOCKED")){
+//            return ResponseEntity.status(HttpStatus.LOCKED).body(CustomResponse.builder()
+//                            .statusCode(HttpStatus.LOCKED.value())
+//                            .responseMessage("Your account is locked. Please try again in 5 minutes")
+//                            .pinVerificationStatus(false)
+//                    .build());
+//        }
         if (!pinSetupDto.getPin().equals(pinSetupDto.getConfirmPin())){
             return ResponseEntity.badRequest().body(CustomResponse.builder()
                             .statusCode(HttpStatus.BAD_REQUEST.value())

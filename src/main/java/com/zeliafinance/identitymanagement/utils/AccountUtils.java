@@ -72,6 +72,11 @@ public class AccountUtils {
     public static final String DUPLICATE_DISBURSAL_ATTEMPT = "Duplicate disbursal attempt";
     public static final String CARD_EXPIRED = "Card is expired";
     public static final String INSUFFICIENT_BALANCE = "Insufficient Balance";
+    public static final String APPROVED_LOAN_CHECKS = "You have an approved / disbursed loan";
+    public static final String CANCEL_APPROVED_LOAN_ERROR = "Error canceling an approved loan";
+    public static final String CANCEL_DISBURSED_LOAN_ERROR = "Error canceling a disbursed loan";
+    public static final String LOAN_APPROVED_ERROR = "This loan has already been approved";
+    public static final String LOAN_SUBMITTED_ERROR = "This loan is already submitted for processing";
     @Bean
     public String generateAccountNumber(){
         StringBuilder accountNumber = new StringBuilder();

@@ -57,7 +57,7 @@ public class LoanOfferingServiceImpl implements LoanOfferingService {
     }
 
     @Override
-    public ResponseEntity<CustomResponse> fetchLoanOfferingByProductName(String loanProduct) {
+    public List<LoanOfferingResponse> fetchLoanOfferingByProductName(String loanProduct) {
         List<LoanOfferingResponse> loans = loanOfferingRepository.findByLoanProduct(loanProduct).stream().map(loanOffering -> modelMapper.map(loanOffering, LoanOfferingResponse.class)).toList();
 
         // Group by loanProduct, interestRate, minAmount, and maxAmount
@@ -80,11 +80,7 @@ public class LoanOfferingServiceImpl implements LoanOfferingService {
             aggregatedLoans.add(aggregatedLoan);
         }
 
-        return ResponseEntity.ok(CustomResponse.builder()
-                        .statusCode(200)
-                        .responseMessage(AccountUtils.SUCCESS_MESSAGE)
-                        .responseBody(aggregatedLoans)
-                .build());
+        return aggregatedLoans;
 
 
     }
