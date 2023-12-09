@@ -80,4 +80,5 @@ public class LoanApplicationResponse {
     private List<RepaymentResponse> repaymentsList;
     private DisbursalRequest loanDisbursal;
     private List<DisbursalRequest> disbursalList;
+    private List<LoanOfferingResponse> loanOfferingResponses;
 }

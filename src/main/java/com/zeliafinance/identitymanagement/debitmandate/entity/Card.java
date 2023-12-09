@@ -17,10 +17,9 @@ import java.time.LocalDate;
 public class Card {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String walletId;
-    private String cvv;
     private String bin;
     private String lastFour;
     private String authCode;

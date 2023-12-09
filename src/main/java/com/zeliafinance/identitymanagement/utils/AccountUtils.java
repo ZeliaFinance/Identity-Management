@@ -177,7 +177,9 @@ public class AccountUtils {
 //        System.out.println(accountUtils.decode("IOZSXEN_WHVW-8056gd94h6500ehg368dh7d98iie428f-A"
 //                , 3));
 //        System.out.println(accountUtils.encode("ef3e5df0a128aa43ff4f4115683f9b065009dfeaa18c43c25b5016d281129683", 5));
-        System.out.println(accountUtils.encode("pk_test_f080af268e02399ad327903bf0479839f65cf0b2", 5));
+//        System.out.println(accountUtils.encode("pk_test_f080af268e02399ad327903bf0479839f65cf0b2", 5));
+        System.out.println(accountUtils.decodePin("MTg5MA=="));
+        System.out.println(accountUtils.encodePin("1818"));
     }
 
     public String encodePin(String pin){

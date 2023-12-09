@@ -39,7 +39,7 @@ public class AdminService {
                 userCredentialExists.get().setInvitationLinkExpiry(LocalDateTime.now().plusHours(24));
                 userCredentialRepository.save(userCredentialExists.get());
                 String encryptedEmail = accountUtils.encode(request.getEmail(), 5);
-                String invitationLink = "http://localhost:5173/?email=" + encryptedEmail;
+                String invitationLink = "https://sandbox.zeliafinance.com/?email=" + encryptedEmail;
 
                 emailService.sendEmailAlert(EmailDetails.builder()
                         .subject("ADMIN INVITE")

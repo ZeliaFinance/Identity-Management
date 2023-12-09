@@ -87,8 +87,7 @@ public class LoanProductServiceImpl implements LoanProductService {
         double minInterestRate = loanProductRepository.findAll().stream().mapToDouble(LoanProduct::getInterestRate).min().orElse(0.0);
         List<LoanProduct> loanProducts = loanProductRepository.findAll()
                 .stream()
-                .filter(product -> product.getLoanProductName().equalsIgnoreCase(loanProductName)
-                        && product.getStatus().equalsIgnoreCase("ACTIVE"))
+                .filter(product -> product.getLoanProductName().equalsIgnoreCase(loanProductName))
                 .sorted(Comparator.comparing(LoanProduct::getInterestRate))
                 .toList();
 

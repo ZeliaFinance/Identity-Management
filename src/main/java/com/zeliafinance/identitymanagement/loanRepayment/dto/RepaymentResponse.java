@@ -25,4 +25,5 @@ public class RepaymentResponse {
     private double interest;
     private double interestRate;
     private String walletId;
+    private double principal;
 }
