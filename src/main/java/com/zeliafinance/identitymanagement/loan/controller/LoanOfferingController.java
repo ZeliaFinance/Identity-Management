@@ -2,10 +2,13 @@ package com.zeliafinance.identitymanagement.loan.controller;
 
 import com.zeliafinance.identitymanagement.dto.CustomResponse;
 import com.zeliafinance.identitymanagement.loan.dto.LoanOfferingRequest;
+import com.zeliafinance.identitymanagement.loan.dto.LoanOfferingResponse;
 import com.zeliafinance.identitymanagement.loan.service.LoanOfferingService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @AllArgsConstructor
@@ -25,7 +28,7 @@ public class LoanOfferingController {
     }
 
     @GetMapping("fetchOfferingByLoanProduct")
-    public ResponseEntity<CustomResponse> fetchOfferingByLoanProduct(@RequestParam String loanProduct){
+    public List<LoanOfferingResponse> fetchOfferingByLoanProduct(@RequestParam String loanProduct){
         return loanOfferingService.fetchLoanOfferingByProductName(loanProduct);
     }
 }

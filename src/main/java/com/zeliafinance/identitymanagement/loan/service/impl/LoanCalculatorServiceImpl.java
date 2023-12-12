@@ -88,9 +88,14 @@ public class LoanCalculatorServiceImpl implements LoanCalculatorService {
                 interestRate = loanProduct.getInterestRate();
                 log.info("Interest rate: {}", loanProduct.getInterestRate());
                 log.info("Id of loan product: {}", loanProduct.getId());
-                if (request.getLoanTenor() < 30){
+                if (request.getLoanTenor() == 14){
                     numberOfMonths = 1;
-                    interest = (request.getLoanAmount() * (loanProduct.getInterestRate()/100) * ((double) request.getLoanTenor()/30));
+                    interest = (request.getLoanAmount() * (loanProduct.getInterestRate()/100) * (0.5));
+                    amountToPay = request.getLoanAmount() + interest;
+                    monthlyRepayment = amountToPay/numberOfMonths;
+                } else if (request.getLoanTenor() == 21) {
+                    numberOfMonths = 1;
+                    interest = (request.getLoanAmount() * (loanProduct.getInterestRate()/100) * (21.0/30));
                     amountToPay = request.getLoanAmount() + interest;
                     monthlyRepayment = amountToPay/numberOfMonths;
                 } else {

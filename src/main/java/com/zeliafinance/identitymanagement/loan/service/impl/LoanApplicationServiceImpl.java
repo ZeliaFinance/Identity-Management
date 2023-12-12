@@ -3,14 +3,13 @@ package com.zeliafinance.identitymanagement.loan.service.impl;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
-import com.zeliafinance.identitymanagement.dto.CustomResponse;
-import com.zeliafinance.identitymanagement.dto.EmailDetails;
-import com.zeliafinance.identitymanagement.dto.PinSetupDto;
-import com.zeliafinance.identitymanagement.dto.UserCredentialResponse;
+import com.zeliafinance.identitymanagement.debitmandate.entity.Card;
+import com.zeliafinance.identitymanagement.dto.*;
 import com.zeliafinance.identitymanagement.entity.UserCredential;
 import com.zeliafinance.identitymanagement.loan.dto.LoanApplicationRequest;
 import com.zeliafinance.identitymanagement.loan.dto.LoanApplicationResponse;
 import com.zeliafinance.identitymanagement.loan.dto.LoanCalculatorRequest;
+import com.zeliafinance.identitymanagement.loan.dto.LoanOfferingResponse;
 import com.zeliafinance.identitymanagement.loan.entity.ApplicantCategory;
 import com.zeliafinance.identitymanagement.loan.entity.EmploymentType;
 import com.zeliafinance.identitymanagement.loan.entity.LoanApplication;
@@ -19,14 +18,15 @@ import com.zeliafinance.identitymanagement.loan.repository.LoanApplicationReposi
 import com.zeliafinance.identitymanagement.loan.repository.LoanProductRepository;
 import com.zeliafinance.identitymanagement.loan.service.LoanApplicationService;
 import com.zeliafinance.identitymanagement.loan.service.LoanCalculatorService;
+import com.zeliafinance.identitymanagement.loan.service.LoanOfferingService;
 import com.zeliafinance.identitymanagement.loanDisbursal.dto.DisbursalRequest;
 import com.zeliafinance.identitymanagement.loanDisbursal.entity.LoanDisbursal;
 import com.zeliafinance.identitymanagement.loanDisbursal.repository.LoanDisbursalRepository;
 import com.zeliafinance.identitymanagement.loanDisbursal.service.LoanDisbursalService;
 import com.zeliafinance.identitymanagement.loanRepayment.dto.RepaymentData;
 import com.zeliafinance.identitymanagement.loanRepayment.dto.RepaymentResponse;
-import com.zeliafinance.identitymanagement.loanRepayment.entity.Repayments;
 import com.zeliafinance.identitymanagement.loanRepayment.repository.RepaymentsRepository;
+import com.zeliafinance.identitymanagement.mappings.CustomMapper;
 import com.zeliafinance.identitymanagement.repository.UserCredentialRepository;
 import com.zeliafinance.identitymanagement.service.EmailService;
 import com.zeliafinance.identitymanagement.service.impl.AuthService;
@@ -60,6 +60,14 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
     private LoanDisbursalRepository loanDisbursalRepository;
     private EmailService emailService;
     private LoanDisbursalService loanDisbursalService;
+    private CustomMapper customMapper;
+    private LoanOfferingService loanOfferingService;
+
+    private boolean checkIfUserHasApprovedLoan(List<LoanApplication> loanApplications){
+        List<String> loanStatuses = loanApplications.stream()
+                .map(LoanApplication::getLoanApplicationStatus).toList();
+        return loanStatuses.contains("APPROVED");
+    }
 
     @Override
     public ResponseEntity<CustomResponse> stageOne(LoanApplicationRequest request) {
@@ -78,12 +86,20 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
             ;
         }
 
+        //check if user has an approved loan
+        if (checkIfUserHasApprovedLoan(loanApplications)){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .statusCode(400)
+                            .responseMessage(AccountUtils.APPROVED_LOAN_CHECKS)
+                    .build());
+        }
+
 
         boolean isLoanExists = loanApplicationRepository.existsByWalletId(walletId);
         if (isLoanExists  && !isLastLoanRepaid){
             return ResponseEntity.badRequest().body(CustomResponse.builder()
                     .statusCode(HttpStatus.BAD_REQUEST.value())
-                    .responseMessage("You have an unpaid loan still running")
+                    .responseMessage("You can't apply for a new loan at this time!")
                     .build());
         }
         if (loanApplication.getLoanApplicationLevel() < 1){
@@ -147,6 +163,22 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
                     .build());
         }
 
+        if (checkIfUserHasApprovedLoan(loanApplicationRepository.findByWalletId(loanApplication.getWalletId()).get())){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .statusCode(400)
+                            .responseMessage(AccountUtils.APPROVED_LOAN_CHECKS)
+                    .build());
+        }
+
+        if(loanApplication.getLoanApplicationStatus().equalsIgnoreCase("APPROVED") ||
+        loanApplication.getLoanApplicationStatus().equalsIgnoreCase("DISBURSED")){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .statusCode(400)
+                            .responseMessage(AccountUtils.LOAN_APPROVED_ERROR)
+                    .build());
+        }
+
+
         if (loanApplication.getLoanApplicationStatus().equalsIgnoreCase("SUBMITTED")){
             return ResponseEntity.badRequest().body(CustomResponse.builder()
                             .statusCode(400)
@@ -190,6 +222,7 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
                 loanApplication.setWardInstitutionName(request.getWardInstitutionName());
                 loanApplication.setApplicantCategory(request.getApplicantCategory());
                 loanApplication.setWardIdCard(fileName);
+                loanApplication.setMatriculationNumber(request.getMatriculationNumber());
 
                 if (loanApplication.getLoanApplicationLevel() < 2){
                     loanApplication.setLoanApplicationLevel(2);
@@ -206,6 +239,7 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
                 loanApplication.setFacultyName(request.getFacultyName());
                 loanApplication.setDepartmentName(request.getDepartName());
                 loanApplication.setApplicantCategory(request.getApplicantCategory());
+                loanApplication.setMatriculationNumber(request.getMatriculationNumber());
 
                 log.info("File upload is completed");
                 loanApplication.setWardIdCard(fileName);
@@ -224,6 +258,7 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
                 loanApplication.setWardInstitutionName(request.getWardInstitutionName());
                 loanApplication.setFacultyName(request.getFacultyName());
                 loanApplication.setDepartmentName(request.getDepartName());
+                loanApplication.setMatriculationNumber(request.getMatriculationNumber());
                 log.info("File upload is completed");
                 loanApplication.setWardIdCard(fileName);
                 if (loanApplication.getLoanApplicationLevel() < 2){
@@ -263,10 +298,29 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
                     .responseMessage("This loan application has been denied")
                     .build());
         }
+        if(checkIfUserHasApprovedLoan(loanApplicationRepository.findByWalletId(loanApplication.getWalletId()).get())){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .statusCode(400)
+                            .responseMessage(AccountUtils.APPROVED_LOAN_CHECKS)
+                    .build());
+        }
+        if(loanApplication.getLoanApplicationStatus().equalsIgnoreCase("APPROVED") ||
+                loanApplication.getLoanApplicationStatus().equalsIgnoreCase("DISBURSED")){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                    .statusCode(400)
+                    .responseMessage(AccountUtils.LOAN_APPROVED_ERROR)
+                    .build());
+        }
         if (checkCanceledLoan(loanRefNo)){
             return ResponseEntity.badRequest().body(CustomResponse.builder()
                     .statusCode(400)
                     .responseMessage("Loan with reference No " + loanRefNo + "has been canceled")
+                    .build());
+        }
+        if (loanApplication.getLoanApplicationStatus().equalsIgnoreCase("SUBMITTED")){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .statusCode(400)
+                            .responseMessage(AccountUtils.LOAN_SUBMITTED_ERROR)
                     .build());
         }
 
@@ -405,6 +459,25 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
                     .responseMessage("Loan with reference No " + loanRefNo + "has been canceled")
                     .build());
         }
+        if(checkIfUserHasApprovedLoan(loanApplicationRepository.findByWalletId(loanApplication.getWalletId()).get())){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .statusCode(400)
+                            .responseMessage(AccountUtils.APPROVED_LOAN_CHECKS)
+                    .build());
+        }
+        if(loanApplication.getLoanApplicationStatus().equalsIgnoreCase("APPROVED") ||
+                loanApplication.getLoanApplicationStatus().equalsIgnoreCase("DISBURSED")){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                    .statusCode(400)
+                    .responseMessage(AccountUtils.LOAN_APPROVED_ERROR)
+                    .build());
+        }
+        if (loanApplication.getLoanApplicationStatus().equalsIgnoreCase("SUBMITTED")){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .statusCode(400)
+                            .responseMessage(AccountUtils.LOAN_SUBMITTED_ERROR)
+                    .build());
+        }
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         String companyIdCardExt;
         String companyIdCard = "";
@@ -473,7 +546,7 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
                     .build()).getBody();
 
             assert customResponse != null;
-            if (customResponse.getPinVerificationStatus()) {
+            if (!customResponse.getPinVerificationStatus()) {
                 return ResponseEntity.internalServerError().body(CustomResponse.builder()
                         .statusCode(500)
                         .responseMessage("Pin Error")
@@ -508,6 +581,21 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
                     .responseMessage("This loan application has been denied")
                     .build());
         }
+
+        if(checkIfUserHasApprovedLoan(loanApplicationRepository.findByWalletId(loanApplication.getWalletId()).get())){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .statusCode(400)
+                            .responseMessage(AccountUtils.APPROVED_LOAN_CHECKS)
+                    .build());
+        }
+        if(loanApplication.getLoanApplicationStatus().equalsIgnoreCase("APPROVED") ||
+                loanApplication.getLoanApplicationStatus().equalsIgnoreCase("DISBURSED")){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                    .statusCode(400)
+                    .responseMessage(AccountUtils.LOAN_APPROVED_ERROR)
+                    .build());
+        }
+
         log.info("loan ref no: {}", loanRefNo);
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         CustomResponse pinVerificationResponse = authService.verifyPin(PinSetupDto.builder()
@@ -542,18 +630,26 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
                 .build());
     }
 
-
     @Override
-    public ResponseEntity<CustomResponse> fetchAllLoanApplications() {
-        List<LoanApplicationResponse> loanApplicationList = loanApplicationRepository.findAll()
-                .stream().map(loanApplication -> {
-                    LoanApplicationResponse loanApplicationResponse = modelMapper.map(loanApplication, LoanApplicationResponse.class);
-                    UserCredential userCredential = userCredentialRepository.findByWalletId(loanApplicationResponse.getWalletId()).get();
-                    UserCredentialResponse userCredentialResponse = modelMapper.map(userCredential, UserCredentialResponse.class);
-                    loanApplicationResponse.setUserDetails(userCredentialResponse);
+    public ResponseEntity<CustomResponse> fetchAllLoanApplications(int pageNo, int pageSize) {
+        List<LoanApplication> allLoans = loanApplicationRepository.findAll();
+        List<LoanApplication> loanApplications = loanApplicationRepository.findAll()
+                .stream().skip(pageNo-1).limit(pageSize)
+                .sorted(Comparator.comparing(LoanApplication::getCreatedAt).reversed())
+                .toList();
 
-                    List<Repayments> repayments = repaymentsRepository.findByLoanRefNo(loanApplicationResponse.getLoanRefNo());
-                    loanApplicationResponse.setRepaymentsList(repayments.stream().map(repayment -> modelMapper.map(repayment, RepaymentResponse.class)).toList());
+        List<LoanApplicationResponse> loanApplicationList = loanApplications
+                .stream().map(loanApplication -> {
+
+                    LoanApplicationResponse loanApplicationResponse = customMapper.mapLoanApplicationToUserCredential(loanApplication);
+                    log.info("Loan Application Response: {}", loanApplicationResponse);
+                    if(repaymentsRepository.findByLoanRefNo(loanApplication.getLoanRefNo()) != null){
+                        loanApplicationResponse.setRepaymentsList(customMapper.mapLoanApplicationToRepayment(loanApplication));
+                    } else {
+                        loanApplicationResponse.setRepaymentsList(null);
+                    }
+
+
                     return loanApplicationResponse;
 
                     //map user details and repayment
@@ -572,12 +668,20 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
         log.info("Loan Applications: {}", loanApplicationList);
         return ResponseEntity.ok(
                 CustomResponse.builder()
+                        .info(Info.builder()
+                                .totalElements((long)allLoans.size())
+                                .pageSize(pageSize)
+                                .totalPages(allLoans.size()/pageSize)
+                                .build())
+
                         .statusCode(200)
                         .responseMessage(AccountUtils.SUCCESS_MESSAGE)
                         .responseBody(loanApplicationList)
                         .build()
         );
     }
+
+
 
     private Optional<LoanApplicationResponse> mapToLoanApplicationResponse(LoanApplication loanApplication) {
         try {
@@ -609,13 +713,13 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
     }
 
     @Override
-    public ResponseEntity<CustomResponse> loanApplicationHistory() {
+    public ResponseEntity<CustomResponse> loanApplicationHistory(int pageNo, int pageSize) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         UserCredential userCredential = userCredentialRepository.findByEmail(email).get();
         String walletId = userCredential.getWalletId();
         List<LoanApplicationResponse> loanApplicationList = loanApplicationRepository.findAll().stream()
                 .filter(loanApplication -> loanApplication.getWalletId().equals(walletId))
-                .sorted(Comparator.comparing(LoanApplication::getCreatedAt).reversed())
+                .skip(pageNo-1).limit(pageSize).sorted(Comparator.comparing(LoanApplication::getCreatedAt).reversed())
                 .map(loanApplication -> {
 
                     List<LoanProduct> loanProduct = loanProductRepository.findAll().stream().filter(loanProduct1 -> loanProduct1.getLoanProductName().equalsIgnoreCase(loanApplication.getLoanType())
@@ -627,46 +731,15 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
                     LoanApplicationResponse response = modelMapper.map(loanApplication, LoanApplicationResponse.class);
                     response.setLoanProduct(loanProduct);
                     response.setUserDetails(modelMapper.map(userCredential, UserCredentialResponse.class));
+                    List<LoanOfferingResponse> loanOfferingResponses = loanOfferingService.fetchLoanOfferingByProductName(response.getLoanType());
+                    response.setLoanOfferingResponses(loanOfferingResponses);
 
                     //List of Disbursals, List of repayments
                     List<LoanDisbursal> disbursalRequests = loanDisbursalRepository.findByWalletId(loanApplication.getWalletId());
                     List<DisbursalRequest> requestList = disbursalRequests.stream().map(loanDisbursal -> modelMapper.map(loanDisbursal, DisbursalRequest.class)).toList();
-                    List<Repayments> repaymentsList = repaymentsRepository.findByLoanRefNo(loanApplication.getLoanRefNo());
-                    List<RepaymentResponse> mappedRepaymentList = repaymentsList.stream().map(repayments -> {
-                        RepaymentResponse repaymentResponse = new RepaymentResponse();
-                        LoanDisbursal loan = loanDisbursalRepository.findByLoanRefNo(repayments.getLoanRefNo());
-                        double amountDisbursed = loan.getAmountDisbursed();
-                        log.info("Amount Disbursed: {}", amountDisbursed);
-                        LoanApplication loanApplication1 = loanApplicationRepository.findByLoanRefNo(repayments.getLoanRefNo()).get();
-                        int loanTenor = loanApplication1.getLoanTenor();
-
-                        repaymentResponse.setMonthlyRepayment(loanApplication1.getAmountToPayBack() / (loanTenor/30));
-                        repaymentResponse.setNextRepayment(repayments.getNextRepaymentDate());
-                        repaymentResponse.setRepaymentMonths(loanTenor/30);
-                        repaymentResponse.setLoanType(loanApplication1.getLoanType());
-                        repaymentResponse.setAmountPaid(repayments.getAmountPaid());
-                        repaymentResponse.setRepaymentStatus(repayments.getRepaymentStatus());
-                        repaymentResponse.setUserId(userCredential.getId());
-                        repaymentResponse.setLoanTenor(loanTenor);
-                        repaymentResponse.setInterest(loanApplication.getInterest());
-                        repaymentResponse.setInterestRate((int)loanApplication.getInterestRate());
-                        int monthCount = 1;
-                        List<RepaymentData> repaymentData = new ArrayList<>();
-                        while (monthCount <= repaymentResponse.getRepaymentMonths()){
-                            repaymentData.add(RepaymentData.builder()
-                                            .monthCount(monthCount)
-                                            .amountPaid(repaymentResponse.getAmountPaid())
-                                    //expected amount;
-                                            .expectedAmount(loanDisbursalRepository.findByLoanRefNo(loanApplication.getLoanRefNo()).getAmountToPayBack()/(loanTenor/30))
-                                    .build());
-                            monthCount++;
-
-                        }
-                        repaymentResponse.setRepaymentData(repaymentData);
-                        return repaymentResponse;
-                    }).toList();
                     response.setDisbursalList(requestList);
-                    response.setRepaymentsList(mappedRepaymentList);
+
+                    response.setRepaymentsList(customMapper.mapLoanApplicationToRepayment(loanApplication));
                     return response;
                 })
                 .toList();
@@ -674,15 +747,40 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
 
 
         return ResponseEntity.ok(CustomResponse.builder()
+                        .info(Info.builder()
+                            .totalElements((long)loanApplicationList.size())
+                            .pageSize(pageSize)
+                            .totalPages(loanApplicationList.size()/pageSize)
+                            .build())
                         .statusCode(200)
                         .responseMessage(AccountUtils.SUCCESS_MESSAGE)
                         .responseBody(loanApplicationList)
+
                 .build());
     }
 
     @Override
-    public ResponseEntity<CustomResponse> viewLoanApplicationsByStatus(String loanApplicationStatus) {
-        return null;
+    public ResponseEntity<CustomResponse> viewLoanApplicationsByStatus(String loanApplicationStatus, int pageNo, int pageSize) {
+        List<LoanApplicationResponse> loanApplicationList = loanApplicationRepository.findAll().stream().filter(loanApplication -> loanApplication.getLoanApplicationStatus().equalsIgnoreCase(loanApplicationStatus))
+                .sorted(Comparator.comparing(LoanApplication::getCreatedAt))
+                .skip(pageNo-1).limit(pageSize).map(loanApplication ->{
+                    List<RepaymentResponse> repaymentResponses = customMapper.mapLoanApplicationToRepayment(loanApplication);
+                            LoanApplicationResponse loanApplicationResponse = modelMapper.map(loanApplication, LoanApplicationResponse.class);
+                            loanApplicationResponse.setRepaymentsList(repaymentResponses);
+                            return loanApplicationResponse;
+                        }
+                        ).toList();
+
+        return ResponseEntity.ok(CustomResponse.builder()
+                        .info(Info.builder()
+                                .totalElements((long)loanApplicationList.size())
+                                .totalPages(loanApplicationList.size()/pageSize)
+                                .pageSize(pageSize)
+                                .build())
+                        .statusCode(200)
+                        .responseMessage(AccountUtils.SUCCESS_MESSAGE)
+                        .responseBody(loanApplicationList)
+                .build());
     }
 
     @Override
@@ -785,6 +883,7 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
         return ResponseEntity.ok(CustomResponse.builder()
                 .statusCode(200)
                 .responseMessage(AccountUtils.SUCCESS_MESSAGE)
+
                 .responseBody(loanApplications)
                 .build());
     }
@@ -801,6 +900,19 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
     @Override
     public ResponseEntity<CustomResponse> cancelLoan(String loanRefNo) {
         LoanApplication loanApplication = loanApplicationRepository.findByLoanRefNo(loanRefNo).get();
+        if (loanApplication.getLoanApplicationStatus().equalsIgnoreCase("APPROVED")){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .statusCode(400)
+                            .responseMessage(AccountUtils.CANCEL_APPROVED_LOAN_ERROR)
+                    .build());
+        }
+
+        if(loanApplication.getLoanApplicationStatus().equalsIgnoreCase("DISBURSED")){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .statusCode(400)
+                            .responseMessage(AccountUtils.CANCEL_DISBURSED_LOAN_ERROR)
+                    .build());
+        }
         loanApplication.setLoanApplicationStatus("CANCELED");
         loanApplicationRepository.save(loanApplication);
 
@@ -815,12 +927,17 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
     public ResponseEntity<CustomResponse> fetchByLoanRefNo(String loanRefNo) {
         LoanApplicationResponse loanApplicationResponse = modelMapper.map(loanApplicationRepository.findByLoanRefNo(loanRefNo).get(), LoanApplicationResponse.class);
         UserCredential userCredential = userCredentialRepository.findByWalletId(loanApplicationResponse.getWalletId()).get();
-        loanApplicationResponse.setUserDetails(modelMapper.map(userCredential, UserCredentialResponse.class));
+        UserCredentialResponse userCredentialResponse = modelMapper.map(userCredential, UserCredentialResponse.class);
+        Card card = customMapper.mapUserToCard(userCredentialResponse);
+        userCredentialResponse.setCardDetails(card);
+        loanApplicationResponse.setUserDetails(userCredentialResponse);
+
+
         List<RepaymentResponse> repayments = repaymentsRepository.findByLoanRefNo(loanRefNo).stream().map(repayment -> {
             RepaymentResponse repaymentResponse = modelMapper.map(repayment, RepaymentResponse.class);
             List<RepaymentData> repaymentData = new ArrayList<>();
             int monthCount = 1;
-            if (loanApplicationResponse.getLoanTenor() == 30){
+            if (loanApplicationResponse.getLoanTenor() <= 30){
                 repaymentData.add(RepaymentData.builder()
                         .monthCount(monthCount)
                         .amountPaid(repayment.getAmountPaid())
@@ -874,6 +991,18 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
     @Override
     public ResponseEntity<CustomResponse> approveLoan(String loanRefNo) {
         LoanApplication loanToApprove = loanApplicationRepository.findByLoanRefNo(loanRefNo).get();
+        if (loanToApprove.getLoanApplicationStatus().equalsIgnoreCase("CANCELED")){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .statusCode(400)
+                            .responseMessage("Error Approving a canceled loan")
+                    .build());
+        }
+        if (loanToApprove.getLoanApplicationStatus().equalsIgnoreCase("DISBURSED")){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .statusCode(400)
+                            .responseMessage("This loan has already been disbursed")
+                    .build());
+        }
         loanToApprove.setLoanApplicationStatus("APPROVED");
         loanToApprove.setModifiedBy(SecurityContextHolder.getContext().getAuthentication().getName());
         loanToApprove = loanApplicationRepository.save(loanToApprove);
@@ -881,8 +1010,16 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
         String walletId = loanToApprove.getWalletId();
         log.info("Wallet Id: {}", walletId);
         UserCredential userCredential = userCredentialRepository.findByWalletId(walletId).get();
+        UserCredentialResponse userCredentialResponse = modelMapper.map(userCredential, UserCredentialResponse.class);
         String email = userCredential.getEmail();
 
+        if (userCredentialResponse.isCardExists()){
+            emailService.sendEmailAlert(EmailDetails.builder()
+                            .messageBody("Congratulations. Your loan has been approved. Your wallet will be credited shortly")
+                            .recipient(email)
+                            .subject("LOAN OFFER APPROVED")
+                    .build());
+        }
 
 
         emailService.sendEmailAlert(EmailDetails.builder()

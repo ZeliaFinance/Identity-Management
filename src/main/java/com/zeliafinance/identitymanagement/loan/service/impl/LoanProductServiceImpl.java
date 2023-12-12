@@ -19,7 +19,6 @@ import org.springframework.stereotype.Service;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static com.zeliafinance.identitymanagement.utils.AccountUtils.SUCCESS_MESSAGE;
@@ -63,8 +62,9 @@ public class LoanProductServiceImpl implements LoanProductService {
         Map<String, List<LoanProductRequest>> loanProductMap = productList.stream().map(loanProduct -> {
             LoanOfferingResponse loanOfferingResponse = new LoanOfferingResponse();
             loanOfferingResponse.setLoanProduct(loanProduct.getLoanProductName());
-            loanOfferingResponse = Objects.requireNonNull(loanOfferingService.fetchLoanOfferingByProductName(loanProduct.getLoanProductName()).getBody()).getLoanOfferingResponse();
-            loanProduct.setLoanOfferingResponseList(loanOfferingResponse);
+
+            List<LoanOfferingResponse> loanOfferingList = loanOfferingService.fetchLoanOfferingByProductName(loanProduct.getLoanProductName());
+            loanProduct.setLoanOfferingResponseList(loanOfferingList);
             return loanProduct;
         }).collect(Collectors.groupingBy(LoanProductRequest::getLoanProductName));
         LoanOfferingResponse loanOfferingResponse;
@@ -72,7 +72,6 @@ public class LoanProductServiceImpl implements LoanProductService {
                         .statusCode(HttpStatus.OK.value())
                         .responseMessage(SUCCESS_MESSAGE)
                         .responseBody(loanProductMap)
-//                        .loanOfferingResponse()
                         .info(Info.builder()
                                 .totalElements((long) productList.size())
                                 .build())
@@ -88,8 +87,7 @@ public class LoanProductServiceImpl implements LoanProductService {
         double minInterestRate = loanProductRepository.findAll().stream().mapToDouble(LoanProduct::getInterestRate).min().orElse(0.0);
         List<LoanProduct> loanProducts = loanProductRepository.findAll()
                 .stream()
-                .filter(product -> product.getLoanProductName().equalsIgnoreCase(loanProductName)
-                        && product.getStatus().equalsIgnoreCase("ACTIVE"))
+                .filter(product -> product.getLoanProductName().equalsIgnoreCase(loanProductName))
                 .sorted(Comparator.comparing(LoanProduct::getInterestRate))
                 .toList();
 

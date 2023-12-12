@@ -27,7 +27,7 @@ public class MyRunner implements CommandLineRunner {
 //                .lastName("Onofe")
 //                .email("hope.onofe@zeliafinance.com")
 //                .role(Role.ROLE_SUPER_ADMIN)
-//                .password(passwordEncoder.encode("admin"))
+//                .password(passwordEncoder.encode("Payload1."))
 //                .build();
 //
 //        emailService.sendEmailAlert(EmailDetails.builder()

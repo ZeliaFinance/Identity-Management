@@ -4,10 +4,15 @@ import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.zeliafinance.identitymanagement.config.JwtTokenProvider;
+import com.zeliafinance.identitymanagement.debitmandate.entity.Card;
+import com.zeliafinance.identitymanagement.debitmandate.repository.CardRepository;
 import com.zeliafinance.identitymanagement.dto.*;
 import com.zeliafinance.identitymanagement.entity.Role;
 import com.zeliafinance.identitymanagement.entity.Transactions;
 import com.zeliafinance.identitymanagement.entity.UserCredential;
+import com.zeliafinance.identitymanagement.loan.entity.LoanApplication;
+import com.zeliafinance.identitymanagement.loan.repository.LoanApplicationRepository;
+import com.zeliafinance.identitymanagement.mappings.CustomMapper;
 import com.zeliafinance.identitymanagement.repository.UserCredentialRepository;
 import com.zeliafinance.identitymanagement.service.EmailService;
 import com.zeliafinance.identitymanagement.thirdpartyapis.bani.dto.request.CreateCustomerDto;
@@ -64,6 +69,9 @@ public class AuthService {
     private AmazonS3 amazonS3;
     private BaniService baniService;
     private TransactionService transactionService;
+    private CustomMapper customMapper;
+    private CardRepository cardRepository;
+    private LoanApplicationRepository loanApplicationRepository;
 
     public ResponseEntity<CustomResponse> signUp(SignUpRequest request){
         boolean isEmailExist = userCredentialRepository.existsByEmail(request.getEmail());
@@ -449,6 +457,13 @@ public class AuthService {
     public ResponseEntity<CustomResponse> login(LoginDto loginDto){
         Authentication authentication=null;
         UserCredential userCredential = userCredentialRepository.findByEmail(loginDto.getEmail()).get();
+        boolean isUserExists = userCredentialRepository.existsByEmail(loginDto.getEmail());
+        if(!isUserExists){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .statusCode(400)
+                            .responseMessage(AccountUtils.USER_NOT_EXIST_MESSAGE)
+                    .build());
+        }
         if (loginDto.getAuthMethod().equalsIgnoreCase("biometric")){
             log.info("using biometric login");
             authentication = authenticationManager.authenticate(
@@ -485,12 +500,24 @@ public class AuthService {
         userCredential.setLastLoggedIn(LocalDateTime.now());
         userCredentialRepository.save(userCredential);
 
+        UserCredentialResponse userCredentialResponse = modelMapper.map(userCredential, UserCredentialResponse.class);
+
+            Card card = customMapper.mapUserToCard(modelMapper.map(userCredential, UserCredentialResponse.class));
+            userCredentialResponse.setCardDetails(card);
+
+
+
+//        userCredentialResponse.setCreatedAt(userCredential.getCreatedAt().format(DateTimeFormatter.ISO_DATE));
+        log.info("Card details: {}", card);
+
+            userCredentialResponse.setCardDetails(card);
+
 
         return ResponseEntity.ok(CustomResponse.builder()
                         .statusCode(HttpStatus.OK.value())
                 .responseMessage(AccountUtils.LOGIN_SUCCESS_MESSAGE)
                 .token(jwtTokenProvider.generateToken(authentication))
-                .responseBody(modelMapper.map(userCredential, UserCredentialResponse.class))
+                .responseBody(userCredentialResponse)
                 .build());
     }
 
@@ -539,7 +566,12 @@ public class AuthService {
                 .stream()
                 .skip(pageNo-1)
                 .limit(pageSize).sorted(Comparator.comparing(UserCredential::getCreatedAt).reversed())
-                .map(userCredential -> modelMapper.map(userCredential, UserCredentialResponse.class))
+                .map(userCredential -> {
+                    UserCredentialResponse userCredentialResponse = modelMapper.map(userCredential, UserCredentialResponse.class);
+                    Card card = customMapper.mapUserToCard(userCredentialResponse);
+                    userCredentialResponse.setCardDetails(card);
+                    return userCredentialResponse;
+                })
                 .toList();
 
 
@@ -563,6 +595,8 @@ public class AuthService {
         }
         UserCredential userCredential = userCredentialRepository.findById(userId).orElseThrow();
         UserCredentialResponse response = modelMapper.map(userCredential, UserCredentialResponse.class);
+        Card card = customMapper.mapUserToCard(response);
+        response.setCardDetails(card);
         return ResponseEntity.ok(CustomResponse.builder()
                         .statusCode(HttpStatus.OK.value())
                 .responseMessage(AccountUtils.SUCCESS_MESSAGE)
@@ -797,6 +831,11 @@ public class AuthService {
     public ResponseEntity<CustomResponse> loggedInUser(String email){
         boolean isEmailExists = userCredentialRepository.existsByEmail(email);
         UserCredential userCredential = userCredentialRepository.findByEmail(email).get();
+        UserCredentialResponse userCredentialResponse = modelMapper.map(userCredential, UserCredentialResponse.class);
+        Card card = customMapper.mapUserToCard(userCredentialResponse);
+        if (card!=null){
+            userCredentialResponse.setCardDetails(card);
+        }
 
         if (!isEmailExists){
             return ResponseEntity.badRequest().body(CustomResponse.builder()
@@ -804,6 +843,7 @@ public class AuthService {
                             .responseMessage(AccountUtils.USER_NOT_EXIST_MESSAGE)
                     .build());
         }
+
 
         return ResponseEntity.ok(CustomResponse.builder()
                         .statusCode(HttpStatus.OK.value())
@@ -958,13 +998,13 @@ public class AuthService {
         UserCredential userCredential = userCredentialRepository.findByEmail(pinSetupDto.getEmail()).orElseThrow();
         String savedPin = accountUtils.decodePin(userCredential.getPin());
         log.info(savedPin);
-        if (userCredential.getAccountStatus().equalsIgnoreCase("LOCKED")){
-            return ResponseEntity.status(HttpStatus.LOCKED).body(CustomResponse.builder()
-                            .statusCode(HttpStatus.LOCKED.value())
-                            .responseMessage("Your account is locked. Please try again in 5 minutes")
-                            .pinVerificationStatus(false)
-                    .build());
-        }
+//        if (userCredential.getAccountStatus().equalsIgnoreCase("LOCKED")){
+//            return ResponseEntity.status(HttpStatus.LOCKED).body(CustomResponse.builder()
+//                            .statusCode(HttpStatus.LOCKED.value())
+//                            .responseMessage("Your account is locked. Please try again in 5 minutes")
+//                            .pinVerificationStatus(false)
+//                    .build());
+//        }
         if (!pinSetupDto.getPin().equals(pinSetupDto.getConfirmPin())){
             return ResponseEntity.badRequest().body(CustomResponse.builder()
                             .statusCode(HttpStatus.BAD_REQUEST.value())
@@ -1154,6 +1194,36 @@ public class AuthService {
         if (authentication != null){
             new SecurityContextLogoutHandler().logout(request, response, authentication);
         }
+        return ResponseEntity.ok(CustomResponse.builder()
+                        .statusCode(200)
+                        .responseMessage(AccountUtils.SUCCESS_MESSAGE)
+                .build());
+    }
+
+    public ResponseEntity<CustomResponse> deleteAccount(){
+        String email = getLoggedInUserEmail();
+        UserCredential userCredential = userCredentialRepository.findByEmail(email).get();
+        String walletId = userCredential.getWalletId();
+        List<LoanApplication> loanApplications = loanApplicationRepository.findByWalletId(walletId).get();
+        List<String> loanApplicationStatus = new ArrayList<>();
+        List<String> loanRepaymentStatus = new ArrayList<>();
+        loanApplications.forEach(loanApplication -> {
+            loanApplicationStatus.add(loanApplication.getLoanApplicationStatus());
+            loanRepaymentStatus.add(loanApplication.getRepaymentStatus());
+        });
+        if(loanApplicationStatus.contains("DISBURSED") || loanApplicationStatus.contains("APPROVED") || loanRepaymentStatus.contains("ONGOING") || loanRepaymentStatus.contains("PENDING")){
+            return ResponseEntity.unprocessableEntity().body(CustomResponse.builder()
+                            .statusCode(HttpStatus.UNPROCESSABLE_ENTITY.value())
+                            .responseMessage("you have an ongoing loan. Payback or contact admin")
+                    .build());
+        }
+        if (userCredential.getAccountBalance() > 0){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .statusCode(400)
+                            .responseMessage("You still have some amount in your wallet")
+                    .build());
+        }
+        userCredentialRepository.delete(userCredential);
         return ResponseEntity.ok(CustomResponse.builder()
                         .statusCode(200)
                         .responseMessage(AccountUtils.SUCCESS_MESSAGE)

@@ -3,11 +3,13 @@ package com.zeliafinance.identitymanagement.debitmandate.service;
 import com.zeliafinance.identitymanagement.debitmandate.dto.CardRequest;
 import com.zeliafinance.identitymanagement.debitmandate.repository.CardRepository;
 import com.zeliafinance.identitymanagement.dto.CustomResponse;
+import com.zeliafinance.identitymanagement.entity.Transactions;
 import com.zeliafinance.identitymanagement.entity.UserCredential;
 import com.zeliafinance.identitymanagement.repository.UserCredentialRepository;
 import com.zeliafinance.identitymanagement.service.impl.TransactionService;
 import com.zeliafinance.identitymanagement.thirdpartyapis.paystack.dto.request.*;
 import com.zeliafinance.identitymanagement.thirdpartyapis.paystack.dto.response.CreateChargeResponse;
+import com.zeliafinance.identitymanagement.thirdpartyapis.paystack.dto.response.CreateFundResponse;
 import com.zeliafinance.identitymanagement.thirdpartyapis.paystack.service.PayStackService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +18,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.Year;
 import java.time.YearMonth;
 import java.util.List;
@@ -53,11 +56,23 @@ public class DebitMandateService {
                                         .build()))
                                 .build())
                         .card(Card.builder()
-                                .cvv(cardRequest.getCvv())
                                 .expiry_month(cardRequest.getExpiryMonth())
                                 .expiry_year(cardRequest.getExpiryYear())
                                 .number(cardRequest.getCardNumber())
+                                .cvv(cardRequest.getCvv())
                                 .build())
+                .build());
+
+
+
+        transactionService.saveTransaction(Transactions.builder()
+                        .externalRefNumber(payStackResponse.getData().getReference())
+                        .transactionRef(generateTxnRef("MANDATE_CHARGE"))
+                        .walletId(userCredential.getWalletId())
+                        .transactionAmount(50)
+                        .createdAt(LocalDateTime.now())
+                        .transactionType("CARD SETUP")
+                        .transactionStatus("COMPLETED")
                 .build());
 
         //Check is card expired
@@ -83,25 +98,70 @@ public class DebitMandateService {
                     .build());
         }
 
-        payStackService.refundAccount(CreateRefundRequest.builder()
+        CreateFundResponse refundResponse = payStackService.refundAccount(CreateRefundRequest.builder()
                         .transaction(payStackResponse.getData().getReference())
                 .build());
 
-        com.zeliafinance.identitymanagement.debitmandate.entity.Card customerCard = cardRepository.save(com.zeliafinance.identitymanagement.debitmandate.entity.Card.builder()
-                        .walletId(userCredential.getWalletId())
-                        .bin(cardRequest.getCardNumber().substring(0, 6))
-                        .lastFour(cardRequest.getCardNumber().substring(cardRequest.getCardNumber().length()-5))
-                        .authCode(payStackResponse.getData().getAuthorization().getAuthorization_code())
-                        .cardExpiry(expiryDate)
-                        .cvv(cardRequest.getCvv())
-                        .cardType(payStackResponse.getData().getAuthorization().getCard_type())
-                .build());
+        if (refundResponse.isStatus()){
+            transactionService.saveTransaction(Transactions.builder()
+                            .transactionStatus("COMPLETED")
+                            .transactionAmount(5000)
+                            .transactionType("CARD_REFUND")
+                            .transactionRef(generateTxnRef("REFUND"))
+                            .createdAt(LocalDateTime.now())
+                            .walletId(userCredential.getWalletId())
+                            .externalRefNumber(payStackResponse.getData().getReference())
+                    .build());
+        }
+        boolean isCardExist = cardRepository.existsByWalletId(userCredential.getWalletId());
+        com.zeliafinance.identitymanagement.debitmandate.entity.Card existingCard = cardRepository.findByWalletId(userCredential.getWalletId());
+        com.zeliafinance.identitymanagement.debitmandate.entity.Card cardToReturn;
+        log.info("Does card exist: {}", isCardExist);
+        if (isCardExist){
+            existingCard.setCardExpiry(expiryDate);
+            existingCard.setCardType(payStackResponse.getData().getAuthorization().getCard_type());
+            existingCard.setBin(cardRequest.getCardNumber().substring(0, 6));
+            existingCard.setLastFour(cardRequest.getCardNumber().substring(cardRequest.getCardNumber().length()-4));
+            existingCard.setAuthCode(payStackResponse.getData().getAuthorization().getAuthorization_code());
+            existingCard.setWalletId(userCredential.getWalletId());
+            cardToReturn = existingCard;
+
+            cardRepository.save(existingCard);
+        } else {
+            com.zeliafinance.identitymanagement.debitmandate.entity.Card customerCard = cardRepository.save(com.zeliafinance.identitymanagement.debitmandate.entity.Card.builder()
+                    .walletId(userCredential.getWalletId())
+                    .bin(cardRequest.getCardNumber().replaceAll(" ", "").substring(0, 6))
+                    .lastFour(cardRequest.getCardNumber().substring(cardRequest.getCardNumber().length()-4))
+                    .authCode(payStackResponse.getData().getAuthorization().getAuthorization_code())
+                    .cardExpiry(expiryDate)
+                    .cardType(payStackResponse.getData().getAuthorization().getCard_type())
+                    .build());
+            cardToReturn = customerCard;
+        }
 
 
         return ResponseEntity.ok(CustomResponse.builder()
                         .statusCode(200)
                         .responseMessage(SUCCESS_MESSAGE)
-                        .responseBody(customerCard)
+                        .responseBody(cardToReturn)
+                .build());
+    }
+
+    public ResponseEntity<CustomResponse> fetchUserCardDetails(){
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        UserCredential userCredential = userCredentialRepository.findByEmail(email).get();
+        String walletId = userCredential.getWalletId();
+        com.zeliafinance.identitymanagement.debitmandate.entity.Card card = cardRepository.findByWalletId(walletId);
+        if (card == null){
+            return ResponseEntity.ok(CustomResponse.builder()
+                            .statusCode(200)
+                            .responseMessage("No Card(s) present")
+                    .build());
+        }
+        return ResponseEntity.ok(CustomResponse.builder()
+                        .statusCode(200)
+                        .responseMessage(SUCCESS_MESSAGE)
+                        .responseBody(card)
                 .build());
     }
 }

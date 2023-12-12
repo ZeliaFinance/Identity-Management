@@ -13,4 +13,7 @@ public class RepaymentData {
     private int monthCount;
     private double expectedAmount;
     private double amountPaid;
+    private String repaymentStatus;
+    private double interest;
+    private String repaymentDate;
 }

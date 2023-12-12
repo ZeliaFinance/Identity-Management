@@ -72,6 +72,11 @@ public class AccountUtils {
     public static final String DUPLICATE_DISBURSAL_ATTEMPT = "Duplicate disbursal attempt";
     public static final String CARD_EXPIRED = "Card is expired";
     public static final String INSUFFICIENT_BALANCE = "Insufficient Balance";
+    public static final String APPROVED_LOAN_CHECKS = "You have an approved / disbursed loan";
+    public static final String CANCEL_APPROVED_LOAN_ERROR = "Error canceling an approved loan";
+    public static final String CANCEL_DISBURSED_LOAN_ERROR = "Error canceling a disbursed loan";
+    public static final String LOAN_APPROVED_ERROR = "This loan has already been approved";
+    public static final String LOAN_SUBMITTED_ERROR = "This loan is already submitted for processing";
     @Bean
     public String generateAccountNumber(){
         StringBuilder accountNumber = new StringBuilder();
@@ -172,7 +177,9 @@ public class AccountUtils {
 //        System.out.println(accountUtils.decode("IOZSXEN_WHVW-8056gd94h6500ehg368dh7d98iie428f-A"
 //                , 3));
 //        System.out.println(accountUtils.encode("ef3e5df0a128aa43ff4f4115683f9b065009dfeaa18c43c25b5016d281129683", 5));
-        System.out.println(accountUtils.encode("pk_test_f080af268e02399ad327903bf0479839f65cf0b2", 5));
+//        System.out.println(accountUtils.encode("pk_test_f080af268e02399ad327903bf0479839f65cf0b2", 5));
+        System.out.println(accountUtils.decodePin("MTg5MA=="));
+        System.out.println(accountUtils.encodePin("1818"));
     }
 
     public String encodePin(String pin){

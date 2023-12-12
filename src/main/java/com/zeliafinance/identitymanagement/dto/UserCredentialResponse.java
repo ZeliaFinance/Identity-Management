@@ -1,13 +1,11 @@
 package com.zeliafinance.identitymanagement.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.zeliafinance.identitymanagement.debitmandate.entity.Card;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Data
 @Builder
@@ -20,7 +18,7 @@ public class UserCredentialResponse {
     private String lastName;
     private String otherName;
     private String address;
-    private LocalDate dateOBirth;
+    private String dateOBirth;
     private String email;
     private String phoneNumber;
     private String mobileNumber;
@@ -48,6 +46,8 @@ public class UserCredentialResponse {
     private double accountBalance;
     private String accountStatus;
     private String customerRef;
-    private LocalDateTime createdAt;
-    private LocalDateTime lastLoggedIn;
+    private String createdAt;
+    private String lastLoggedIn;
+    private Card cardDetails;
+    private boolean isCardExists;
 }

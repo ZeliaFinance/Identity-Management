@@ -80,4 +80,5 @@ public class LoanApplication {
     private UserCredential loanApplicant;
     private LocalDateTime dateDisbursed;
     private double amountDisbursed;
+    private String matriculationNumber;
 }

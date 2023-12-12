@@ -1,6 +1,9 @@
 package com.zeliafinance.identitymanagement.loanDisbursal.service;
 
+import com.zeliafinance.identitymanagement.debitmandate.entity.Card;
+import com.zeliafinance.identitymanagement.debitmandate.repository.CardRepository;
 import com.zeliafinance.identitymanagement.dto.CustomResponse;
+import com.zeliafinance.identitymanagement.dto.EmailDetails;
 import com.zeliafinance.identitymanagement.entity.Transactions;
 import com.zeliafinance.identitymanagement.entity.UserCredential;
 import com.zeliafinance.identitymanagement.loan.dto.LoanCalculatorRequest;
@@ -13,7 +16,9 @@ import com.zeliafinance.identitymanagement.loanDisbursal.entity.LoanDisbursal;
 import com.zeliafinance.identitymanagement.loanDisbursal.repository.LoanDisbursalRepository;
 import com.zeliafinance.identitymanagement.loanRepayment.entity.Repayments;
 import com.zeliafinance.identitymanagement.loanRepayment.repository.RepaymentsRepository;
+import com.zeliafinance.identitymanagement.mappings.CustomMapper;
 import com.zeliafinance.identitymanagement.repository.UserCredentialRepository;
+import com.zeliafinance.identitymanagement.service.EmailService;
 import com.zeliafinance.identitymanagement.service.impl.TransactionService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +43,9 @@ public class LoanDisbursalService {
     private final RepaymentsRepository repaymentsRepository;
     private final LoanCalculatorService loanCalculatorService;
     private final TransactionService transactionService;
+    private final CustomMapper customMapper;
+    private final CardRepository cardRepository;
+    private final EmailService emailService;
 
     public ResponseEntity<CustomResponse> disburseLoan(DisbursalRequest request){
         //check for double disbursements
@@ -48,8 +56,19 @@ public class LoanDisbursalService {
                             .responseMessage(DUPLICATE_DISBURSAL_ATTEMPT)
                     .build());
         }
+
+
+
+
         LoanApplication loanApplication = loanApplicationRepository.findByLoanRefNo(request.getLoanRefNo()).get();
         String walletId = loanApplication.getWalletId();
+        Card card = cardRepository.findByWalletId(walletId);
+        if (card == null){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .statusCode(400)
+                            .responseMessage("Attempt to disburse loan to a user without a debit mandate")
+                    .build());
+        }
 
         log.info("Loan Application: {}", walletId);
 
@@ -77,10 +96,18 @@ public class LoanDisbursalService {
         loanApplication.setLoanApplicationStatus("DISBURSED");
         loanApplicationRepository.save(loanApplication);
 
+
         //update wallet balance
         UserCredential userCredential = userCredentialRepository.findByWalletId(walletId).get();
-        userCredential.setAccountBalance(disbursal.getAmountDisbursed());
+        userCredential.setAccountBalance(userCredential.getAccountBalance()+ disbursal.getAmountDisbursed());
         userCredentialRepository.save(userCredential);
+
+        //Transaction Notification
+        emailService.sendEmailAlert(EmailDetails.builder()
+                .subject("CREDIT ALERT!")
+                .recipient(userCredential.getEmail())
+                        .messageBody("Your wallet was credited with the sum of ₦" + request.getAmountDisbursed())
+                .build());
 
         //update Loan application status, disbursed,
         //update Repayments

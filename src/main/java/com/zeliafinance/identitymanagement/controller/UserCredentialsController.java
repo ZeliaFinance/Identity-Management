@@ -176,5 +176,10 @@ public class UserCredentialsController {
         return service.logout(request, response);
     }
 
+    @DeleteMapping("/deleteProfile")
+    public ResponseEntity<CustomResponse> deleteProfile(){
+        return service.deleteAccount();
+    }
+
 
 }

@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -16,5 +18,5 @@ public class LoanProductRequest {
     private int minDuration;
     private int maxDuration;
     private double interestRate;
-    private LoanOfferingResponse loanOfferingResponseList;
+    private List<LoanOfferingResponse> loanOfferingResponseList;
 }

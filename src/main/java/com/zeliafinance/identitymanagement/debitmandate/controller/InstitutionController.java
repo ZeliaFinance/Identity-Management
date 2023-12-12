@@ -25,4 +25,9 @@ public class InstitutionController {
     public ResponseEntity<CustomResponse> addCard(@RequestBody CardRequest cardRequest){
         return debitMandateService.addCard(cardRequest);
     }
+
+    @GetMapping("/viewCard")
+    public ResponseEntity<CustomResponse> viewCards(){
+        return debitMandateService.fetchUserCardDetails();
+    }
 }

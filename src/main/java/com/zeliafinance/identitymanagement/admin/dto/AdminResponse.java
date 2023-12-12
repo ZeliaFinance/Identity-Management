@@ -12,6 +12,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.joda.time.format.ISODateTimeFormat;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -26,7 +27,7 @@ public class AdminResponse {
     private String firstName;
     private String lastName;
     private String otherName;
-    private LocalDate dateOBirth;
+    private ISODateTimeFormat dateOBirth;
     private String email;
     @JsonIgnore
     private String password;

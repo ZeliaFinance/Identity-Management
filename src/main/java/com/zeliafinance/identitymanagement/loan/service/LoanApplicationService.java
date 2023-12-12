@@ -10,9 +10,9 @@ public interface LoanApplicationService {
     ResponseEntity<CustomResponse> stageThree(String loanRefNo, LoanApplicationRequest loanApplicationRequest) throws Exception;
     ResponseEntity<CustomResponse> stageFour(String loanRefNo, LoanApplicationRequest request) throws Exception;
     ResponseEntity<CustomResponse> stageFive(String loanRefNo, LoanApplicationRequest request) throws Exception;
-    ResponseEntity<CustomResponse> fetchAllLoanApplications();
-    ResponseEntity<CustomResponse> loanApplicationHistory();
-    ResponseEntity<CustomResponse> viewLoanApplicationsByStatus(String loanApplicationStatus);
+    ResponseEntity<CustomResponse> fetchAllLoanApplications(int pageNo, int pageSize);
+    ResponseEntity<CustomResponse> loanApplicationHistory(int pageNo, int pageSize);
+    ResponseEntity<CustomResponse> viewLoanApplicationsByStatus(String loanApplicationStatus, int pageNo, int pageSize);
     ResponseEntity<CustomResponse> updateStageOne(String loanRefNo, LoanApplicationRequest request) throws Exception;
     ResponseEntity<CustomResponse> searchByPhoneNumber(String phoneNumber);
     ResponseEntity<CustomResponse> searchByLoanAppStatus(String loanApplicationStatus);

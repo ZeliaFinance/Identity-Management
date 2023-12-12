@@ -78,6 +78,7 @@ public class SecurityConfig {
                                 .requestMatchers(HttpMethod.GET, "/api/v1/loanApplication/loanApplicationList").hasAnyRole("ADMIN", "SUPER_ADMIN")
                                 .requestMatchers(HttpMethod.GET, "/api/v1/loanApplication/searchByPhoneNumber").hasAnyRole("ADMIN", "SUPER_ADMIN")
                                 .requestMatchers(HttpMethod.GET, "/api/v1/loanApplication/searchByLoanApplicationStatus").hasAnyRole("ADMIN", "SUPER_ADMIN")
+                                .requestMatchers(HttpMethod.GET, "/api/v1/loanApplication/loanApplicationsByStatus/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
                                 .requestMatchers("/").permitAll()
                                 .anyRequest().authenticated()
                 );
