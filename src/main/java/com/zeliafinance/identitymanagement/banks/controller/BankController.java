@@ -1,6 +1,7 @@
 package com.zeliafinance.identitymanagement.banks.controller;
 
 import com.zeliafinance.identitymanagement.banks.dto.BankRequest;
+import com.zeliafinance.identitymanagement.banks.dto.NameEnquiryRequest;
 import com.zeliafinance.identitymanagement.banks.service.BankService;
 import com.zeliafinance.identitymanagement.dto.CustomResponse;
 import lombok.AllArgsConstructor;
@@ -26,5 +27,10 @@ public class BankController {
     @PostMapping("saveSingleBank")
     public ResponseEntity<CustomResponse> saveSingleBank(@RequestBody BankRequest request){
         return bankService.saveBanks(request);
+    }
+
+    @GetMapping("nameEnquiry")
+    public ResponseEntity<CustomResponse> nameEnquiry(@RequestBody NameEnquiryRequest nameEnquiryRequest){
+        return bankService.verifyAccount(nameEnquiryRequest);
     }
 }

@@ -1,9 +1,6 @@
 package com.zeliafinance.identitymanagement.service.impl;
 
-import com.zeliafinance.identitymanagement.dto.CustomResponse;
-import com.zeliafinance.identitymanagement.dto.EmailDetails;
-import com.zeliafinance.identitymanagement.dto.TransferRequest;
-import com.zeliafinance.identitymanagement.dto.WalletDetailsDto;
+import com.zeliafinance.identitymanagement.dto.*;
 import com.zeliafinance.identitymanagement.entity.Transactions;
 import com.zeliafinance.identitymanagement.entity.UserCredential;
 import com.zeliafinance.identitymanagement.repository.TransactionRepository;
@@ -11,6 +8,7 @@ import com.zeliafinance.identitymanagement.repository.UserCredentialRepository;
 import com.zeliafinance.identitymanagement.service.EmailService;
 import com.zeliafinance.identitymanagement.utils.AccountUtils;
 import lombok.AllArgsConstructor;
+import org.modelmapper.ModelMapper;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -28,6 +26,7 @@ public class TransactionService {
     private UserCredentialRepository userCredentialRepository;
     private EmailService emailService;
     private AccountUtils accountUtils;
+    private ModelMapper modelMapper;
 
     public ResponseEntity<CustomResponse> saveTransaction(Transactions transactions){
         Transactions newTransaction = Transactions.builder()
@@ -74,9 +73,10 @@ public class TransactionService {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         UserCredential userCredential = userCredentialRepository.findByEmail(email).get();
         String walletId = userCredential.getWalletId();
-        List<Transactions> transactionsList = transactionRepository.findAll().stream()
+        List<TransactionsResponse> transactionsList = transactionRepository.findAll().stream()
                 .filter(transactions -> transactions.getWalletId().equals(walletId))
                 .sorted(Comparator.comparing(Transactions::getCreatedAt).reversed())
+                .map(transactions -> modelMapper.map(transactions, TransactionsResponse.class))
                 .toList();
         return ResponseEntity.ok(CustomResponse.builder()
                         .statusCode(200)

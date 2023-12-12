@@ -99,7 +99,7 @@ public class LoanDisbursalService {
 
         //update wallet balance
         UserCredential userCredential = userCredentialRepository.findByWalletId(walletId).get();
-        userCredential.setAccountBalance(disbursal.getAmountDisbursed());
+        userCredential.setAccountBalance(userCredential.getAccountBalance()+ disbursal.getAmountDisbursed());
         userCredentialRepository.save(userCredential);
 
         //Transaction Notification

@@ -499,9 +499,20 @@ public class AuthService {
         emailService.sendEmailAlert(loginAlert);
         userCredential.setLastLoggedIn(LocalDateTime.now());
         userCredentialRepository.save(userCredential);
-        Card card = customMapper.mapUserToCard(modelMapper.map(userCredential, UserCredentialResponse.class));
+
         UserCredentialResponse userCredentialResponse = modelMapper.map(userCredential, UserCredentialResponse.class);
-        userCredentialResponse.setCardDetails(card);
+
+            Card card = customMapper.mapUserToCard(modelMapper.map(userCredential, UserCredentialResponse.class));
+            userCredentialResponse.setCardDetails(card);
+
+
+
+//        userCredentialResponse.setCreatedAt(userCredential.getCreatedAt().format(DateTimeFormatter.ISO_DATE));
+        log.info("Card details: {}", card);
+
+            userCredentialResponse.setCardDetails(card);
+
+
         return ResponseEntity.ok(CustomResponse.builder()
                         .statusCode(HttpStatus.OK.value())
                 .responseMessage(AccountUtils.LOGIN_SUCCESS_MESSAGE)
@@ -822,7 +833,10 @@ public class AuthService {
         UserCredential userCredential = userCredentialRepository.findByEmail(email).get();
         UserCredentialResponse userCredentialResponse = modelMapper.map(userCredential, UserCredentialResponse.class);
         Card card = customMapper.mapUserToCard(userCredentialResponse);
-        userCredentialResponse.setCardDetails(card);
+        if (card!=null){
+            userCredentialResponse.setCardDetails(card);
+        }
+
         if (!isEmailExists){
             return ResponseEntity.badRequest().body(CustomResponse.builder()
                             .statusCode(HttpStatus.BAD_REQUEST.value())

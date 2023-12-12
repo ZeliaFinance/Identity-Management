@@ -763,7 +763,13 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
     public ResponseEntity<CustomResponse> viewLoanApplicationsByStatus(String loanApplicationStatus, int pageNo, int pageSize) {
         List<LoanApplicationResponse> loanApplicationList = loanApplicationRepository.findAll().stream().filter(loanApplication -> loanApplication.getLoanApplicationStatus().equalsIgnoreCase(loanApplicationStatus))
                 .sorted(Comparator.comparing(LoanApplication::getCreatedAt))
-                .skip(pageNo-1).limit(pageSize).map(loanApplication -> modelMapper.map(loanApplication, LoanApplicationResponse.class)).toList();
+                .skip(pageNo-1).limit(pageSize).map(loanApplication ->{
+                    List<RepaymentResponse> repaymentResponses = customMapper.mapLoanApplicationToRepayment(loanApplication);
+                            LoanApplicationResponse loanApplicationResponse = modelMapper.map(loanApplication, LoanApplicationResponse.class);
+                            loanApplicationResponse.setRepaymentsList(repaymentResponses);
+                            return loanApplicationResponse;
+                        }
+                        ).toList();
 
         return ResponseEntity.ok(CustomResponse.builder()
                         .info(Info.builder()
@@ -931,7 +937,7 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
             RepaymentResponse repaymentResponse = modelMapper.map(repayment, RepaymentResponse.class);
             List<RepaymentData> repaymentData = new ArrayList<>();
             int monthCount = 1;
-            if (loanApplicationResponse.getLoanTenor() == 30){
+            if (loanApplicationResponse.getLoanTenor() <= 30){
                 repaymentData.add(RepaymentData.builder()
                         .monthCount(monthCount)
                         .amountPaid(repayment.getAmountPaid())

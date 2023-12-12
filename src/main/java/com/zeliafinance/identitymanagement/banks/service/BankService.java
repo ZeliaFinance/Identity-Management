@@ -1,11 +1,14 @@
 package com.zeliafinance.identitymanagement.banks.service;
 
 import com.zeliafinance.identitymanagement.banks.dto.BankRequest;
+import com.zeliafinance.identitymanagement.banks.dto.NameEnquiryRequest;
 import com.zeliafinance.identitymanagement.banks.entity.Bank;
 import com.zeliafinance.identitymanagement.banks.repository.BankRepository;
 import com.zeliafinance.identitymanagement.dto.CustomResponse;
 import com.zeliafinance.identitymanagement.dto.Info;
+import com.zeliafinance.identitymanagement.thirdpartyapis.bani.dto.request.VerifyAccountRequest;
 import com.zeliafinance.identitymanagement.thirdpartyapis.bani.dto.response.BanksResponse;
+import com.zeliafinance.identitymanagement.thirdpartyapis.bani.dto.response.VerifyAccountResponse;
 import com.zeliafinance.identitymanagement.thirdpartyapis.bani.service.BaniService;
 import com.zeliafinance.identitymanagement.thirdpartyapis.providus.service.ProvidusService;
 import com.zeliafinance.identitymanagement.utils.AccountUtils;
@@ -95,5 +98,28 @@ public class BankService {
                         .responseBody(bankList)
 
                 .build());
+    }
+
+    public ResponseEntity<CustomResponse> verifyAccount(NameEnquiryRequest nameEnquiryRequest){
+        Bank bank = bankRepository.findByBankName(nameEnquiryRequest.getBankName());
+        if (bank == null){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .statusCode(400)
+                            .responseMessage("No such Bank exists")
+                    .build());
+        }
+        VerifyAccountResponse verifyAccountResponse = baniService.verifyAccount(VerifyAccountRequest.builder()
+                        .account_number(nameEnquiryRequest.getAccountNumber())
+                        .bank_code(bank.getBankCode())
+                        .country_code("NG")
+                        .list_code(bank.getListCode())
+                .build());
+
+        return ResponseEntity.ok(CustomResponse.builder()
+                        .statusCode(200)
+                        .responseMessage(AccountUtils.SUCCESS_MESSAGE)
+                        .responseBody(verifyAccountResponse)
+                .build());
+
     }
 }

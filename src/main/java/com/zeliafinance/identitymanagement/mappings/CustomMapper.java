@@ -99,12 +99,12 @@ public class CustomMapper {
                             repaymentData.setRepaymentDate(String.valueOf(LocalDate.from(loanApplication.getCreatedAt().plusDays(loanApplication.getLoanTenor()))));
                             repaymentData.setMonthCount(monthCount);
                             repaymentData.setRepaymentStatus(loanApplication.getRepaymentStatus());
-                            repaymentData.setExpectedAmount(loanApplication.getAmountToPayBack());
+                            repaymentData.setExpectedAmount(loanApplication.getAmountToPayBack()/numberOfRepayments);
                             repaymentData.setInterest(loanApplication.getInterest());
                             repaymentData.setAmountPaid(loanApplication.getAmountRepaid());
                             repaymentDataList.add(repaymentData);
                             while (monthCount < numberOfRepayments){
-                                double monthlyRepayment = loanApplication.getLoanAmount()/numberOfRepayments;
+                                double monthlyRepayment = loanApplication.getAmountToPayBack()/numberOfRepayments;
                                 String repaymentStatus;
                                 if (loanApplication.getAmountRepaid() == (repaymentData.getExpectedAmount()*monthCount)){
                                     repaymentStatus = "REPAID";
@@ -113,7 +113,7 @@ public class CustomMapper {
                                 }
                                 repaymentData.setRepaymentDate(LocalDate.parse(repaymentData.getRepaymentDate(), DateTimeFormatter.ISO_DATE).plusDays(30).toString());
                                 repaymentDataList.add(RepaymentData.builder()
-                                                .monthCount(monthCount++)
+                                                .monthCount(++monthCount)
                                                 .repaymentDate(repaymentData.getRepaymentDate())
                                                 .repaymentStatus(repaymentStatus)
                                                 .expectedAmount(monthlyRepayment)
@@ -131,6 +131,14 @@ public class CustomMapper {
     }
 
     public Card mapUserToCard(UserCredentialResponse userCredentialResponse){
-        return cardRepository.findByWalletId(userCredentialResponse.getWalletId());
+        Card card = cardRepository.findByWalletId(userCredentialResponse.getWalletId());
+        if (card != null){
+            userCredentialResponse.setCardExists(true);
+            userCredentialResponse.setCardDetails(card);
+            return cardRepository.findByWalletId(userCredentialResponse.getWalletId());
+        }
+        userCredentialResponse.setCardExists(false);
+        return null;
+
     }
 }
