@@ -69,6 +69,10 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
         return loanStatuses.contains("APPROVED");
     }
 
+    private List<LoanProduct> isLoanProductRestricted(List<LoanProduct> loanProducts){
+        return loanProducts.stream().filter(loanProduct -> loanProduct.getStatus().equalsIgnoreCase("INACTIVE")).toList();
+    }
+
     @Override
     public ResponseEntity<CustomResponse> stageOne(LoanApplicationRequest request) {
         LoanApplication loanApplication = new LoanApplication();
@@ -84,6 +88,21 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
             loanApplications.get(loanApplications.size()-1).getLoanApplicationStatus().equals("REJECTED")
             || loanApplications.get(loanApplications.size()-1).getLoanApplicationStatus().equalsIgnoreCase("CANCELED")
             ;
+        }
+        //get Number of loansRepaid
+        int numberOfLoansRepaid = repaymentsRepository.findByWalletId(walletId).stream().filter(repayments -> repayments.getRepaymentStatus().equalsIgnoreCase("PAID")).toList().size();
+        if(numberOfLoansRepaid < 1 && (request.getLoanType().equalsIgnoreCase("Student Personal Loan") && request.getLoanAmount() >= 12000 || request.getLoanAmount() <= 30000)){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .statusCode(400)
+                            .responseMessage("Improve your credit rating to unlock more loans")
+                    .build());
+        }
+
+        if(numberOfLoansRepaid < 2 && (request.getLoanType().equalsIgnoreCase("Student Personal Loan") && request.getLoanAmount() >= 30001 || request.getLoanAmount() <= 50000)){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                    .statusCode(400)
+                    .responseMessage("Improve your credit rating to unlock more loans")
+                    .build());
         }
 
         //check if user has an approved loan

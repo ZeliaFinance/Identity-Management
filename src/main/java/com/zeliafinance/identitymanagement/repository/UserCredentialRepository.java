@@ -1,6 +1,8 @@
 package com.zeliafinance.identitymanagement.repository;
 
+import com.google.common.collect.Multiset;
 import com.zeliafinance.identitymanagement.entity.UserCredential;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -23,4 +25,5 @@ public interface UserCredentialRepository extends JpaRepository<UserCredential, 
     List<UserCredential> findByEmailVerifyStatusEquals(String emailVerifyStatus);
     Optional<UserCredential> findByPhoneNumber(String phoneNumber);
 
+    Multiset<Object> findAll(Specification<UserCredential> userCredentialSpecification);
 }

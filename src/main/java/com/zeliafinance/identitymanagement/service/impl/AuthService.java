@@ -504,13 +504,15 @@ public class AuthService {
 
             Card card = customMapper.mapUserToCard(modelMapper.map(userCredential, UserCredentialResponse.class));
             userCredentialResponse.setCardDetails(card);
+            if (card != null){
+                userCredentialResponse.setCardExists(true);
+            }
+
 
 
 
 //        userCredentialResponse.setCreatedAt(userCredential.getCreatedAt().format(DateTimeFormatter.ISO_DATE));
         log.info("Card details: {}", card);
-
-            userCredentialResponse.setCardDetails(card);
 
 
         return ResponseEntity.ok(CustomResponse.builder()
