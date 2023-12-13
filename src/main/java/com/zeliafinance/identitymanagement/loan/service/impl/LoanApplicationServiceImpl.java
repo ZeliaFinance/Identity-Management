@@ -91,7 +91,7 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
         }
         //get Number of loansRepaid
         int numberOfLoansRepaid = repaymentsRepository.findByWalletId(walletId).stream().filter(repayments -> repayments.getRepaymentStatus().equalsIgnoreCase("PAID")).toList().size();
-        if(numberOfLoansRepaid < 1 && (request.getLoanType().equalsIgnoreCase("Student Personal Loan") && request.getLoanAmount() >= 12000 || request.getLoanAmount() <= 30000)){
+        if(numberOfLoansRepaid < 1 && (request.getLoanType().equalsIgnoreCase("Student Personal Loan") && request.getLoanAmount() >= 12000 || request.getLoanAmount() <= 50000)){
             return ResponseEntity.badRequest().body(CustomResponse.builder()
                             .statusCode(400)
                             .responseMessage("Improve your credit rating to unlock more loans")
