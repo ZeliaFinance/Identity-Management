@@ -18,5 +18,8 @@ public class LoanProductRequest {
     private int minDuration;
     private int maxDuration;
     private double interestRate;
+    private boolean canApplyForLoan;
+    private String status;
     private List<LoanOfferingResponse> loanOfferingResponseList;
+
 }

@@ -3,6 +3,7 @@ package com.zeliafinance.identitymanagement.loan.controller;
 import com.zeliafinance.identitymanagement.dto.CustomResponse;
 import com.zeliafinance.identitymanagement.loan.dto.LoanApplicationRequest;
 import com.zeliafinance.identitymanagement.loan.service.LoanApplicationService;
+import com.zeliafinance.identitymanagement.otp.dto.OtpValidationRequest;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -104,5 +105,15 @@ public class LoanApplicationController {
     @PreAuthorize("{hasRole('ROLE_SUPER_ADMIN')}")
     public ResponseEntity<CustomResponse> denyLoan(@RequestParam String loanRefNo){
         return service.denyLoan(loanRefNo);
+    }
+
+    @PostMapping("initiateCosignerVerification")
+    public ResponseEntity<CustomResponse> initiateCosignerVerification(@RequestParam String loanRefNo){
+        return service.initiateCosignerVerification(loanRefNo);
+    }
+
+    @PostMapping("verifyCosigner")
+    public ResponseEntity<CustomResponse> verifyCosigner(@RequestParam String loanRefNo, @RequestBody OtpValidationRequest otpValidationRequest){
+        return service.validateCosignerEmail(loanRefNo, otpValidationRequest);
     }
 }

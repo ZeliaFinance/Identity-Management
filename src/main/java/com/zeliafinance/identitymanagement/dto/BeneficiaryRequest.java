@@ -9,10 +9,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class TransferRequest {
-    private String sourceAccountNumber;
+public class BeneficiaryRequest {
+    private String walletId;
     private String beneficiaryAccountNumber;
-    private double amount;
-    private String bankName;
-    private String accountName;
+    private String beneficiaryBank;
 }

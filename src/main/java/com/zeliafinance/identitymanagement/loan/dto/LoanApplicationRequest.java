@@ -44,6 +44,7 @@ public class LoanApplicationRequest {
     private String businessAccountName;
     private String coSignerFirstName;
     private String coSignerLastName;
+    private String coSignerEmail;
     private String coSignerAddress;
     private String coSignerPhoneNumber;
     private String coSignerEmploymentType;

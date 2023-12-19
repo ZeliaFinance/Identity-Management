@@ -1,7 +1,9 @@
 package com.zeliafinance.identitymanagement.thirdpartyapis.paystack.service;
 
+import com.zeliafinance.identitymanagement.thirdpartyapis.paystack.dto.request.ChargeCardRequest;
 import com.zeliafinance.identitymanagement.thirdpartyapis.paystack.dto.request.CreateChargeRequest;
 import com.zeliafinance.identitymanagement.thirdpartyapis.paystack.dto.request.CreateRefundRequest;
+import com.zeliafinance.identitymanagement.thirdpartyapis.paystack.dto.response.ChargeCardResponse;
 import com.zeliafinance.identitymanagement.thirdpartyapis.paystack.dto.response.CreateChargeResponse;
 import com.zeliafinance.identitymanagement.thirdpartyapis.paystack.dto.response.CreateFundResponse;
 import com.zeliafinance.identitymanagement.utils.AccountUtils;
@@ -65,6 +67,18 @@ public class PayStackService {
         ResponseEntity<CreateFundResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, entity, CreateFundResponse.class);
         log.info("Response Body: {}", responseEntity);
         return responseEntity.getBody();
+    }
+
+    public ChargeCardResponse chargeCard(ChargeCardRequest chargeCardRequest){
+        String url = baseUrl + "/transaction/charge_authorization";
+        log.info("full url: {}", chargeCardRequest);
+        log.info("Request Body: {}", chargeCardRequest);
+        RestTemplate restTemplate = new RestTemplate();
+        HttpEntity<ChargeCardRequest> entity = new HttpEntity<>(chargeCardRequest, headers());
+        log.info("Headers: {}", entity.getHeaders());
+        ResponseEntity<ChargeCardResponse> response = restTemplate.exchange(url, HttpMethod.POST, entity, ChargeCardResponse.class);
+        log.info("Response Body: {}", response);
+        return response.getBody();
     }
 
     private HttpHeaders headers(){

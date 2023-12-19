@@ -1,7 +1,9 @@
 package com.zeliafinance.identitymanagement.thirdpartyapis.paystack.controller;
 
+import com.zeliafinance.identitymanagement.thirdpartyapis.paystack.dto.request.ChargeCardRequest;
 import com.zeliafinance.identitymanagement.thirdpartyapis.paystack.dto.request.CreateChargeRequest;
 import com.zeliafinance.identitymanagement.thirdpartyapis.paystack.dto.request.CreateRefundRequest;
+import com.zeliafinance.identitymanagement.thirdpartyapis.paystack.dto.response.ChargeCardResponse;
 import com.zeliafinance.identitymanagement.thirdpartyapis.paystack.dto.response.CreateChargeResponse;
 import com.zeliafinance.identitymanagement.thirdpartyapis.paystack.dto.response.CreateFundResponse;
 import com.zeliafinance.identitymanagement.thirdpartyapis.paystack.service.PayStackService;
@@ -28,5 +30,10 @@ public class PayStackController {
     @PostMapping("/refund")
     public CreateFundResponse refund(@RequestBody CreateRefundRequest request){
         return payStackService.refundAccount(request);
+    }
+
+    @PostMapping("chargeAuth")
+    public ChargeCardResponse chargeCard(@RequestBody ChargeCardRequest chargeCardRequest){
+        return payStackService.chargeCard(chargeCardRequest);
     }
 }

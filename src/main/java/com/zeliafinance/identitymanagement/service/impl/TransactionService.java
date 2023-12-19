@@ -1,13 +1,19 @@
 package com.zeliafinance.identitymanagement.service.impl;
 
+import com.zeliafinance.identitymanagement.banks.entity.Bank;
+import com.zeliafinance.identitymanagement.banks.repository.BankRepository;
 import com.zeliafinance.identitymanagement.dto.*;
 import com.zeliafinance.identitymanagement.entity.Transactions;
 import com.zeliafinance.identitymanagement.entity.UserCredential;
 import com.zeliafinance.identitymanagement.repository.TransactionRepository;
 import com.zeliafinance.identitymanagement.repository.UserCredentialRepository;
 import com.zeliafinance.identitymanagement.service.EmailService;
+import com.zeliafinance.identitymanagement.thirdpartyapis.bani.dto.request.PayoutRequest;
+import com.zeliafinance.identitymanagement.thirdpartyapis.bani.dto.response.PayoutResponse;
+import com.zeliafinance.identitymanagement.thirdpartyapis.bani.service.BaniService;
 import com.zeliafinance.identitymanagement.utils.AccountUtils;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -20,15 +26,17 @@ import java.util.Optional;
 
 @Service
 @AllArgsConstructor
+@Slf4j
 public class TransactionService {
 
     private TransactionRepository transactionRepository;
     private UserCredentialRepository userCredentialRepository;
     private EmailService emailService;
-    private AccountUtils accountUtils;
     private ModelMapper modelMapper;
+    private BaniService baniService;
+    private BankRepository bankRepository;
 
-    public ResponseEntity<CustomResponse> saveTransaction(Transactions transactions){
+    public void saveTransaction(Transactions transactions){
         Transactions newTransaction = Transactions.builder()
                 .transactionRef(transactions.getTransactionRef())
                 .transactionType(transactions.getTransactionType())
@@ -37,14 +45,11 @@ public class TransactionService {
                 .createdAt(LocalDateTime.now())
                 .walletId(transactions.getWalletId())
                 .externalRefNumber(transactions.getExternalRefNumber())
+                .transactionCategory(transactions.getTransactionCategory())
                 .build();
 
         Transactions savedTransaction = transactionRepository.save(transactions);
-        return ResponseEntity.ok(CustomResponse.builder()
-                        .statusCode(200)
-                        .responseMessage(AccountUtils.SUCCESS_MESSAGE)
-                        .responseBody(savedTransaction)
-                .build());
+
     }
 
     public ResponseEntity<CustomResponse> accountEnquiry(String walletId){
@@ -142,7 +147,67 @@ public class TransactionService {
                 .build());
     }
 
-//    public ResponseEntity<CustomResponse> transfer(){
-//
-//    }
+    public ResponseEntity<CustomResponse> walletToCommercialBankTransfer(TransferRequest transferRequest){
+        Bank bank = bankRepository.findByBankName(transferRequest.getBankName());
+        String transactionRef = AccountUtils.generateTxnRef("DEBIT");
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        String walletId = userCredentialRepository.findByEmail(email).get().getWalletId();
+        UserCredential userCredential = userCredentialRepository.findByEmail(email).get();
+        if (userCredential.getAccountBalance() < transferRequest.getAmount()){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .statusCode(400)
+                            .responseMessage("INSUFFICIENT BALANCE")
+                    .build());
+        }
+        log.info("Wallet Id: {}", walletId);
+        log.info("Transaction Ref: {}", transactionRef);
+        log.info("Zelia Request: {}", transferRequest);
+        PayoutRequest payoutRequest = PayoutRequest.builder()
+                .payout_step("direct")
+                .receiver_currency("NGN")
+                .receiver_amount(String.valueOf(transferRequest.getAmount()))
+                .transfer_method("bank")
+                .transfer_receiver_type("personal")
+                .receiver_account_num(transferRequest.getBeneficiaryAccountNumber())
+                .receiver_country_code("NG")
+                .receiver_sort_code(bank.getListCode())
+                .receiver_account_name(transferRequest.getAccountName())
+                .sender_amount(String.valueOf(transferRequest.getAmount()))
+                .sender_currency("NGN")
+                .transfer_note("Wallet to Bank Transfer")
+                .build();
+        log.info("Bani Request: {}", payoutRequest);
+        PayoutResponse payoutResponse = baniService.payout(payoutRequest);
+        log.info("Response: {}", payoutResponse);
+
+        if(!payoutResponse.isStatus()){
+            return ResponseEntity.internalServerError().body(CustomResponse.builder()
+                            .statusCode(500)
+                            .responseMessage("Transfer failed")
+                    .build());
+        }
+        else {
+            //update transactions, update account balance
+            Transactions transactions = Transactions.builder()
+                    .walletId(walletId)
+                    .transactionStatus("COMPLETED")
+                    .transactionRef(transactionRef)
+                    .transactionType("Wallet to Bank Transfer")
+                    .transactionAmount(transferRequest.getAmount())
+                    .transactionCategory("DEBIT")
+                    .externalRefNumber(null)
+                    .build();
+            userCredential.setAccountBalance(userCredential.getAccountBalance()-transferRequest.getAmount());
+            transactionRepository.save(transactions);
+            userCredentialRepository.save(userCredential);
+
+            return ResponseEntity.ok(CustomResponse.builder()
+                            .statusCode(200)
+                            .responseMessage("SUCCESS")
+                            .responseBody(transferRequest)
+                    .build());
+
+        }
+
+    }
 }
