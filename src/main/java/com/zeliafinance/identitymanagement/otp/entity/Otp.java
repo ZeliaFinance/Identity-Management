@@ -1,28 +1,27 @@
-package com.zeliafinance.identitymanagement.loanRepayment.entity;
+package com.zeliafinance.identitymanagement.otp.entity;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
-@Entity
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class Repayments {
+@Entity
+public class Otp {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String loanRefNo;
-    private int loanTenor;
-    private LocalDateTime nextRepaymentDate;
-    private String repaymentStatus;
-    private double amountPaid;
-    private String walletId;
-    private LocalDateTime repaymentDate;
+    private String otp;
+    private String ownerEmail;
+    @CreationTimestamp
+    private LocalDateTime createdAt;
+    private LocalDateTime expiresAt;
 }

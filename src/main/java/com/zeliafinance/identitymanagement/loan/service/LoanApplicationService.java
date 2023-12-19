@@ -2,6 +2,7 @@ package com.zeliafinance.identitymanagement.loan.service;
 
 import com.zeliafinance.identitymanagement.dto.CustomResponse;
 import com.zeliafinance.identitymanagement.loan.dto.LoanApplicationRequest;
+import com.zeliafinance.identitymanagement.otp.dto.OtpValidationRequest;
 import org.springframework.http.ResponseEntity;
 
 public interface LoanApplicationService {
@@ -10,6 +11,8 @@ public interface LoanApplicationService {
     ResponseEntity<CustomResponse> stageThree(String loanRefNo, LoanApplicationRequest loanApplicationRequest) throws Exception;
     ResponseEntity<CustomResponse> stageFour(String loanRefNo, LoanApplicationRequest request) throws Exception;
     ResponseEntity<CustomResponse> stageFive(String loanRefNo, LoanApplicationRequest request) throws Exception;
+    ResponseEntity<CustomResponse> initiateCosignerVerification(String loanRefNo);
+    ResponseEntity<CustomResponse> validateCosignerEmail(String loanRefNo, OtpValidationRequest otpValidationRequest);
     ResponseEntity<CustomResponse> fetchAllLoanApplications(int pageNo, int pageSize);
     ResponseEntity<CustomResponse> loanApplicationHistory(int pageNo, int pageSize);
     ResponseEntity<CustomResponse> viewLoanApplicationsByStatus(String loanApplicationStatus, int pageNo, int pageSize);

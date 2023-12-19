@@ -8,7 +8,6 @@ import com.zeliafinance.identitymanagement.debitmandate.entity.Card;
 import com.zeliafinance.identitymanagement.debitmandate.repository.CardRepository;
 import com.zeliafinance.identitymanagement.dto.*;
 import com.zeliafinance.identitymanagement.entity.Role;
-import com.zeliafinance.identitymanagement.entity.Transactions;
 import com.zeliafinance.identitymanagement.entity.UserCredential;
 import com.zeliafinance.identitymanagement.loan.entity.LoanApplication;
 import com.zeliafinance.identitymanagement.loan.repository.LoanApplicationRepository;
@@ -418,16 +417,16 @@ public class AuthService {
                         .pay_ext_ref(AccountUtils.generateTxnRef("VACREATION"))
                         .build());
 
-                if (virtualAccountResponse.getStatus_code() == 200){
-                    transactionService.saveTransaction(Transactions.builder()
-                                    .externalRefNumber(virtualAccountResponse.getPayment_reference())
-                                    .transactionRef(virtualAccountResponse.getPayment_ext_reference())
-                                    .transactionAmount(0)
-                                    .transactionStatus("COMPLETED")
-                                    .transactionType("Virtual Account Creation")
-                                    .walletId(userCredential.getWalletId())
-                            .build());
-                }
+//                if (virtualAccountResponse.getStatus_code() == 200){
+//                    transactionService.saveTransaction(Transactions.builder()
+//                                    .externalRefNumber(virtualAccountResponse.getPayment_reference())
+//                                    .transactionRef(virtualAccountResponse.getPayment_ext_reference())
+//                                    .transactionAmount(0)
+//                                    .transactionStatus("COMPLETED")
+//                                    .transactionType("Virtual Account Creation")
+//                                    .walletId(userCredential.getWalletId())
+//                            .build());
+//                }
 
                 String virtualAccountNumber = virtualAccountResponse.getHolder_account_number();
                 userCredential.setVAccountNumber(virtualAccountNumber);
@@ -504,13 +503,15 @@ public class AuthService {
 
             Card card = customMapper.mapUserToCard(modelMapper.map(userCredential, UserCredentialResponse.class));
             userCredentialResponse.setCardDetails(card);
+            if (card != null){
+                userCredentialResponse.setCardExists(true);
+            }
+
 
 
 
 //        userCredentialResponse.setCreatedAt(userCredential.getCreatedAt().format(DateTimeFormatter.ISO_DATE));
         log.info("Card details: {}", card);
-
-            userCredentialResponse.setCardDetails(card);
 
 
         return ResponseEntity.ok(CustomResponse.builder()

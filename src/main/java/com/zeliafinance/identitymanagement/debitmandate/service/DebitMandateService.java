@@ -62,6 +62,27 @@ public class DebitMandateService {
                                 .cvv(cardRequest.getCvv())
                                 .build())
                 .build());
+        int currentCentury = Year.now().getValue()/100;
+        int year = Integer.parseInt(currentCentury + cardRequest.getExpiryYear());
+        int month = Integer.parseInt(cardRequest.getExpiryMonth());
+
+        YearMonth yearMonth = YearMonth.of(year, month);
+        LocalDate expiryDate = LocalDate.of(year, month, yearMonth.atEndOfMonth().getDayOfMonth());
+
+        if (expiryDate.isBefore(LocalDate.now())){
+            return ResponseEntity.ok(CustomResponse.builder()
+                    .statusCode(400)
+                    .responseMessage(CARD_EXPIRED)
+                    .responseBody(expiryDate)
+                    .build());
+        }
+
+        if (!payStackResponse.isStatus()){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                    .statusCode(400)
+                    .responseMessage(INSUFFICIENT_BALANCE)
+                    .build());
+        }
 
 
 
@@ -73,30 +94,10 @@ public class DebitMandateService {
                         .createdAt(LocalDateTime.now())
                         .transactionType("CARD SETUP")
                         .transactionStatus("COMPLETED")
+                        .transactionCategory("DEBIT")
                 .build());
 
         //Check is card expired
-        int currentCentury = Year.now().getValue()/100;
-        int year = Integer.parseInt(currentCentury + cardRequest.getExpiryYear());
-        int month = Integer.parseInt(cardRequest.getExpiryMonth());
-
-        YearMonth yearMonth = YearMonth.of(year, month);
-        LocalDate expiryDate = LocalDate.of(year, month, yearMonth.atEndOfMonth().getDayOfMonth());
-
-        if (expiryDate.isBefore(LocalDate.now())){
-            return ResponseEntity.ok(CustomResponse.builder()
-                            .statusCode(400)
-                            .responseMessage(CARD_EXPIRED)
-                            .responseBody(expiryDate)
-                    .build());
-        }
-
-        if (!payStackResponse.isStatus()){
-            return ResponseEntity.badRequest().body(CustomResponse.builder()
-                            .statusCode(400)
-                            .responseMessage(INSUFFICIENT_BALANCE)
-                    .build());
-        }
 
         CreateFundResponse refundResponse = payStackService.refundAccount(CreateRefundRequest.builder()
                         .transaction(payStackResponse.getData().getReference())
@@ -105,12 +106,13 @@ public class DebitMandateService {
         if (refundResponse.isStatus()){
             transactionService.saveTransaction(Transactions.builder()
                             .transactionStatus("COMPLETED")
-                            .transactionAmount(5000)
+                            .transactionAmount(50)
                             .transactionType("CARD_REFUND")
                             .transactionRef(generateTxnRef("REFUND"))
                             .createdAt(LocalDateTime.now())
                             .walletId(userCredential.getWalletId())
                             .externalRefNumber(payStackResponse.getData().getReference())
+                            .transactionCategory("CREDIT")
                     .build());
         }
         boolean isCardExist = cardRepository.existsByWalletId(userCredential.getWalletId());
@@ -128,7 +130,7 @@ public class DebitMandateService {
 
             cardRepository.save(existingCard);
         } else {
-            com.zeliafinance.identitymanagement.debitmandate.entity.Card customerCard = cardRepository.save(com.zeliafinance.identitymanagement.debitmandate.entity.Card.builder()
+            cardToReturn = cardRepository.save(com.zeliafinance.identitymanagement.debitmandate.entity.Card.builder()
                     .walletId(userCredential.getWalletId())
                     .bin(cardRequest.getCardNumber().replaceAll(" ", "").substring(0, 6))
                     .lastFour(cardRequest.getCardNumber().substring(cardRequest.getCardNumber().length()-4))
@@ -136,7 +138,6 @@ public class DebitMandateService {
                     .cardExpiry(expiryDate)
                     .cardType(payStackResponse.getData().getAuthorization().getCard_type())
                     .build());
-            cardToReturn = customerCard;
         }
 
 

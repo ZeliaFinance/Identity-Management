@@ -18,4 +18,5 @@ public class TransactionsResponse {
     private String createdAt;
     private String transactionStatus;
     private String externalRefNumber;
+    private String transactionCategory;
 }

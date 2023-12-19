@@ -69,6 +69,8 @@ public class LoanApplicationResponse {
     private String businessAccountName;
     private String coSignerFirstName;
     private String coSignerLastName;
+    private String coSignerEmail;
+    private String coSignerEmailVerificationStatus;
     private String coSignerAddress;
     private String coSignerPhoneNumber;
     private String coSignerEmploymentType;
@@ -81,4 +83,6 @@ public class LoanApplicationResponse {
     private DisbursalRequest loanDisbursal;
     private List<DisbursalRequest> disbursalList;
     private List<LoanOfferingResponse> loanOfferingResponses;
+    private boolean canApplyForLoan;
+
 }

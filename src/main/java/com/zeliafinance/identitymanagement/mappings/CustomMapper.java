@@ -78,7 +78,11 @@ public class CustomMapper {
                         repaymentResponse.setPrincipal(loanApplication.getLoanAmount());
                         repaymentResponse.setInterest(loanApplication.getInterest());
                         if (loanApplication.getLoanTenor() <= 30){
-                            repaymentResponse.setRepaymentMonths(1);
+                            repaymentResponse.setAmountPaid(repayment.getAmountPaid());
+                            if (repaymentResponse.getAmountPaid() >= loanApplication.getAmountToPayBack()){
+                                repaymentResponse.setRepaymentStatus("PAID");
+                            }
+                                repaymentResponse.setRepaymentMonths(1);
                             RepaymentData  repaymentData = new RepaymentData();
                             repaymentData.setMonthCount(1);
                             if (loanApplication.getDateDisbursed() == null){
@@ -96,7 +100,12 @@ public class CustomMapper {
                             log.info("Number of repayments: {}", numberOfRepayments);
                             int monthCount = 1;
                             RepaymentData repaymentData = new RepaymentData();
-                            repaymentData.setRepaymentDate(String.valueOf(LocalDate.from(loanApplication.getCreatedAt().plusDays(loanApplication.getLoanTenor()))));
+                            if (!repayment.getRepaymentStatus().equals("PAID")){
+                                repaymentData.setRepaymentDate(String.valueOf(LocalDate.from(loanApplication.getCreatedAt().plusDays(loanApplication.getLoanTenor()))));
+                            } else {
+                                repaymentData.setRepaymentDate(null);
+                            }
+
                             repaymentData.setMonthCount(monthCount);
                             repaymentData.setRepaymentStatus(loanApplication.getRepaymentStatus());
                             repaymentData.setExpectedAmount(loanApplication.getAmountToPayBack()/numberOfRepayments);
@@ -107,11 +116,14 @@ public class CustomMapper {
                                 double monthlyRepayment = loanApplication.getAmountToPayBack()/numberOfRepayments;
                                 String repaymentStatus;
                                 if (loanApplication.getAmountRepaid() == (repaymentData.getExpectedAmount()*monthCount)){
-                                    repaymentStatus = "REPAID";
+                                    repaymentStatus = "PAID";
                                 } else {
                                     repaymentStatus = "PENDING";
                                 }
-                                repaymentData.setRepaymentDate(LocalDate.parse(repaymentData.getRepaymentDate(), DateTimeFormatter.ISO_DATE).plusDays(30).toString());
+                                if (repaymentData.getRepaymentDate() != null){
+                                    repaymentData.setRepaymentDate(LocalDate.parse(repaymentData.getRepaymentDate(), DateTimeFormatter.ISO_DATE).plusDays(30).toString());
+                                }
+
                                 repaymentDataList.add(RepaymentData.builder()
                                                 .monthCount(++monthCount)
                                                 .repaymentDate(repaymentData.getRepaymentDate())

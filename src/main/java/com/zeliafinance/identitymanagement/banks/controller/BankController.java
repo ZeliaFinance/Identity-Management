@@ -29,7 +29,7 @@ public class BankController {
         return bankService.saveBanks(request);
     }
 
-    @GetMapping("nameEnquiry")
+    @PostMapping("nameEnquiry")
     public ResponseEntity<CustomResponse> nameEnquiry(@RequestBody NameEnquiryRequest nameEnquiryRequest){
         return bankService.verifyAccount(nameEnquiryRequest);
     }

@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @Builder
 @Entity
+@Data
 public class LoanDisbursal {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

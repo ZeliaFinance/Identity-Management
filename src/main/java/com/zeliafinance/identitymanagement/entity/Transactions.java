@@ -2,6 +2,7 @@ package com.zeliafinance.identitymanagement.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
@@ -20,7 +21,9 @@ public class Transactions {
     private String walletId;
     private String transactionType;
     private double transactionAmount;
+    @CreationTimestamp
     private LocalDateTime createdAt;
     private String transactionStatus;
     private String externalRefNumber;
+    private String transactionCategory;
 }

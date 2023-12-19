@@ -22,4 +22,5 @@ public class PayoutRequest {
     private String sender_amount;
     private String sender_currency;
     private String transfer_note;
+    private String transfer_ext_ref;
 }

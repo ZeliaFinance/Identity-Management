@@ -27,6 +27,9 @@ import com.zeliafinance.identitymanagement.loanRepayment.dto.RepaymentData;
 import com.zeliafinance.identitymanagement.loanRepayment.dto.RepaymentResponse;
 import com.zeliafinance.identitymanagement.loanRepayment.repository.RepaymentsRepository;
 import com.zeliafinance.identitymanagement.mappings.CustomMapper;
+import com.zeliafinance.identitymanagement.otp.dto.OtpRequest;
+import com.zeliafinance.identitymanagement.otp.dto.OtpValidationRequest;
+import com.zeliafinance.identitymanagement.otp.service.OtpService;
 import com.zeliafinance.identitymanagement.repository.UserCredentialRepository;
 import com.zeliafinance.identitymanagement.service.EmailService;
 import com.zeliafinance.identitymanagement.service.impl.AuthService;
@@ -62,11 +65,16 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
     private LoanDisbursalService loanDisbursalService;
     private CustomMapper customMapper;
     private LoanOfferingService loanOfferingService;
+    private final OtpService otpService;
 
     private boolean checkIfUserHasApprovedLoan(List<LoanApplication> loanApplications){
         List<String> loanStatuses = loanApplications.stream()
                 .map(LoanApplication::getLoanApplicationStatus).toList();
         return loanStatuses.contains("APPROVED");
+    }
+
+    private List<LoanProduct> isLoanProductRestricted(List<LoanProduct> loanProducts){
+        return loanProducts.stream().filter(loanProduct -> loanProduct.getStatus().equalsIgnoreCase("INACTIVE")).toList();
     }
 
     @Override
@@ -80,11 +88,26 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
         boolean isLastLoanRepaid = false;
         if (!loanApplications.isEmpty()){
             loanApplications = loanApplications.stream().sorted(Comparator.comparing(LoanApplication::getCreatedAt)).toList();
-            isLastLoanRepaid = loanApplications.get(loanApplications.size()-1).getLoanApplicationStatus().equalsIgnoreCase("REPAID") ||
+            isLastLoanRepaid = loanApplications.get(loanApplications.size()-1).getLoanApplicationStatus().equalsIgnoreCase("PAID") ||
             loanApplications.get(loanApplications.size()-1).getLoanApplicationStatus().equals("REJECTED")
             || loanApplications.get(loanApplications.size()-1).getLoanApplicationStatus().equalsIgnoreCase("CANCELED")
             ;
         }
+        //get Number of loansRepaid
+        int numberOfLoansRepaid = repaymentsRepository.findByWalletId(walletId).stream().filter(repayments -> repayments.getRepaymentStatus().equalsIgnoreCase("PAID")).toList().size();
+        log.info("Number loans repaid: {}", numberOfLoansRepaid);
+        log.info("Loan Amount: {}", request.getLoanAmount());
+        log.info("Loan Type: {}", request.getLoanType());
+        if((numberOfLoansRepaid < 1 && request.getLoanType().equalsIgnoreCase("Student Personal Loan") && request.getLoanAmount() >= 12001)
+        || (numberOfLoansRepaid < 2 && request.getLoanType().equalsIgnoreCase("Student Personal Loan") && request.getLoanAmount() >= 30001)
+        ){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .statusCode(400)
+                            .responseMessage("Improve your credit rating to unlock more loans")
+                            .canApplyForLoan(false)
+                    .build());
+        }
+
 
         //check if user has an approved loan
         if (checkIfUserHasApprovedLoan(loanApplications)){
@@ -418,6 +441,8 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
                 loanApplication.setCoSignerFirstName(loanApplicationRequest.getCoSignerFirstName());
                 loanApplication.setCoSignerLastName(loanApplicationRequest.getCoSignerLastName());
                 loanApplication.setCoSignerAddress(loanApplicationRequest.getCoSignerAddress());
+                loanApplication.setCoSignerEmail(loanApplicationRequest.getCoSignerEmail());
+                loanApplication.setCoSignerEmailVerificationStatus("UNVERIFIED");
                 loanApplication.setCoSignerRelationship(loanApplicationRequest.getCoSignerRelationship());
                 loanApplication.setCoSignerPhoneNumber(loanApplicationRequest.getCoSignerPhoneNumber());
                 loanApplication.setCoSignerEmploymentType(loanApplicationRequest.getCoSignerEmploymentType());
@@ -631,6 +656,89 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
     }
 
     @Override
+    public ResponseEntity<CustomResponse> initiateCosignerVerification(String loanRefNo) {
+//        Fetch Loan Object
+        //return error message if loan is not found
+        //Send otp
+        //return object
+
+        Optional<LoanApplication> loanApplication = loanApplicationRepository.findByLoanRefNo(loanRefNo);
+        if(loanApplication.isEmpty()){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .statusCode(400)
+                            .responseMessage(AccountUtils.LOAN_NOT_FOUND)
+                    .build());
+        }
+        if (checkCanceledLoan(loanRefNo)){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                    .statusCode(400)
+                    .responseMessage("Loan with reference No " + loanRefNo + "has been canceled")
+                    .build());
+        }
+        if (checkDeniedLoan(loanRefNo)){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                    .statusCode(400)
+                    .responseMessage("This loan application has been denied")
+                    .build());
+        }
+
+        if(checkIfUserHasApprovedLoan(loanApplicationRepository.findByWalletId(loanApplication.get().getWalletId()).get())){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                    .statusCode(400)
+                    .responseMessage(AccountUtils.APPROVED_LOAN_CHECKS)
+                    .build());
+        }
+        if(loanApplication.get().getLoanApplicationStatus().equalsIgnoreCase("APPROVED") ||
+                loanApplication.get().getLoanApplicationStatus().equalsIgnoreCase("DISBURSED")){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                    .statusCode(400)
+                    .responseMessage(AccountUtils.LOAN_APPROVED_ERROR)
+                    .build());
+        }
+
+        otpService.sendOtp(OtpRequest.builder()
+                        .email(loanApplication.get().getCoSignerEmail())
+                .build());
+
+        return ResponseEntity.ok(CustomResponse.builder()
+                        .statusCode(200)
+                        .responseMessage(AccountUtils.OTP_SENT_MESSAGE)
+                .build());
+    }
+
+    @Override
+    public ResponseEntity<CustomResponse> validateCosignerEmail(String loanRefNo, OtpValidationRequest otpValidationRequest) {
+        Optional<LoanApplication> loanApplication = loanApplicationRepository.findByLoanRefNo(loanRefNo);
+        if (loanApplication.isEmpty()){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .statusCode(400)
+                            .responseMessage(AccountUtils.LOAN_NOT_FOUND)
+                    .build());
+        }
+
+        CustomResponse otpResponse = otpService.validateOtp(OtpValidationRequest.builder()
+                        .email(loanApplication.get().getCoSignerEmail())
+                        .otp(otpValidationRequest.getOtp())
+                .build()).getBody();
+
+        assert otpResponse != null;
+
+        if (otpResponse.getOtpStatus()){
+            return ResponseEntity.ok(CustomResponse.builder()
+                            .statusCode(200)
+                            .responseMessage(AccountUtils.OTP_SENT_MESSAGE)
+                    .build());
+        }
+        else {
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .statusCode(200)
+                            .responseMessage(AccountUtils.SUCCESS_MESSAGE)
+                            .responseBody(otpResponse)
+                    .build());
+        }
+    }
+
+    @Override
     public ResponseEntity<CustomResponse> fetchAllLoanApplications(int pageNo, int pageSize) {
         List<LoanApplication> allLoans = loanApplicationRepository.findAll();
         List<LoanApplication> loanApplications = loanApplicationRepository.findAll()
@@ -714,49 +822,57 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
 
     @Override
     public ResponseEntity<CustomResponse> loanApplicationHistory(int pageNo, int pageSize) {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        UserCredential userCredential = userCredentialRepository.findByEmail(email).get();
-        String walletId = userCredential.getWalletId();
-        List<LoanApplicationResponse> loanApplicationList = loanApplicationRepository.findAll().stream()
-                .filter(loanApplication -> loanApplication.getWalletId().equals(walletId))
-                .skip(pageNo-1).limit(pageSize).sorted(Comparator.comparing(LoanApplication::getCreatedAt).reversed())
-                .map(loanApplication -> {
+        try {
+            String email = SecurityContextHolder.getContext().getAuthentication().getName();
+            UserCredential userCredential = userCredentialRepository.findByEmail(email).get();
+            String walletId = userCredential.getWalletId();
+            List<LoanApplicationResponse> loanApplicationList = loanApplicationRepository.findAll().stream()
+                    .filter(loanApplication -> loanApplication.getWalletId().equals(walletId))
+                    .skip(pageNo - 1).limit(pageSize).sorted(Comparator.comparing(LoanApplication::getCreatedAt).reversed())
+                    .map(loanApplication -> {
 
-                    List<LoanProduct> loanProduct = loanProductRepository.findAll().stream().filter(loanProduct1 -> loanProduct1.getLoanProductName().equalsIgnoreCase(loanApplication.getLoanType())
-                    && loanProduct1.getMaxAmount() >= loanApplication.getLoanAmount() && loanProduct1.getMinAmount() <= loanApplication.getLoanAmount() && loanProduct1.getMinDuration() <= loanApplication.getLoanTenor()
-                            && loanProduct1.getMaxDuration() >= loanApplication.getLoanTenor() && loanProduct1.getInterestRate() == (loanApplication.getInterestRate())
-                    ).toList();
+                        List<LoanProduct> loanProduct = loanProductRepository.findAll().stream().filter(loanProduct1 -> loanProduct1.getLoanProductName().equalsIgnoreCase(loanApplication.getLoanType())
+                                && loanProduct1.getMaxAmount() >= loanApplication.getLoanAmount() && loanProduct1.getMinAmount() <= loanApplication.getLoanAmount() && loanProduct1.getMinDuration() <= loanApplication.getLoanTenor()
+                                && loanProduct1.getMaxDuration() >= loanApplication.getLoanTenor() && loanProduct1.getInterestRate() == (loanApplication.getInterestRate())
+                        ).toList();
 
-                    log.info("Interest Rate: {}", loanApplication.getInterestRate());
-                    LoanApplicationResponse response = modelMapper.map(loanApplication, LoanApplicationResponse.class);
-                    response.setLoanProduct(loanProduct);
-                    response.setUserDetails(modelMapper.map(userCredential, UserCredentialResponse.class));
-                    List<LoanOfferingResponse> loanOfferingResponses = loanOfferingService.fetchLoanOfferingByProductName(response.getLoanType());
-                    response.setLoanOfferingResponses(loanOfferingResponses);
+                        log.info("Interest Rate: {}", loanApplication.getInterestRate());
+                        LoanApplicationResponse response = modelMapper.map(loanApplication, LoanApplicationResponse.class);
+                        response.setLoanProduct(loanProduct);
+                        response.setUserDetails(modelMapper.map(userCredential, UserCredentialResponse.class));
+                        List<LoanOfferingResponse> loanOfferingResponses = loanOfferingService.fetchLoanOfferingByProductName(response.getLoanType());
+                        response.setLoanOfferingResponses(loanOfferingResponses);
 
-                    //List of Disbursals, List of repayments
-                    List<LoanDisbursal> disbursalRequests = loanDisbursalRepository.findByWalletId(loanApplication.getWalletId());
-                    List<DisbursalRequest> requestList = disbursalRequests.stream().map(loanDisbursal -> modelMapper.map(loanDisbursal, DisbursalRequest.class)).toList();
-                    response.setDisbursalList(requestList);
+                        //List of Disbursals, List of repayments
+                        List<LoanDisbursal> disbursalRequests = loanDisbursalRepository.findByWalletId(loanApplication.getWalletId());
+                        List<DisbursalRequest> requestList = disbursalRequests.stream().map(loanDisbursal -> modelMapper.map(loanDisbursal, DisbursalRequest.class)).toList();
+                        response.setDisbursalList(requestList);
 
-                    response.setRepaymentsList(customMapper.mapLoanApplicationToRepayment(loanApplication));
-                    return response;
-                })
-                .toList();
+                        response.setRepaymentsList(customMapper.mapLoanApplicationToRepayment(loanApplication));
+                        return response;
+                    })
+                    .toList();
 
 
-
-        return ResponseEntity.ok(CustomResponse.builder()
-                        .info(Info.builder()
-                            .totalElements((long)loanApplicationList.size())
+            return ResponseEntity.ok(CustomResponse.builder()
+                    .info(Info.builder()
+                            .totalElements((long) loanApplicationList.size())
                             .pageSize(pageSize)
-                            .totalPages(loanApplicationList.size()/pageSize)
+                            .totalPages(loanApplicationList.size() / pageSize)
                             .build())
-                        .statusCode(200)
-                        .responseMessage(AccountUtils.SUCCESS_MESSAGE)
-                        .responseBody(loanApplicationList)
+                    .statusCode(200)
+                    .responseMessage(AccountUtils.SUCCESS_MESSAGE)
+                    .responseBody(loanApplicationList)
 
-                .build());
+                    .build());
+        } catch (Exception e) {
+            log.error("Error in loanApplicationHistory endpoint", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(CustomResponse.builder()
+                            .statusCode(500)
+                            .responseMessage("Internal Server Error")
+                            .build());
+        }
     }
 
     @Override

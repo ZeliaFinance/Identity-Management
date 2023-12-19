@@ -28,6 +28,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 import static com.zeliafinance.identitymanagement.utils.AccountUtils.*;
 
@@ -75,11 +76,11 @@ public class LoanDisbursalService {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         //loanapplication -> walletId
         log.info("Wallet Id: {}\n and username: {}", loanApplication.getWalletId(), userCredentialRepository.findByWalletId(walletId).get().getEmail());
-        LoanCalculatorResponse loanCalculatorResponse = loanCalculatorService.calculateLoan(LoanCalculatorRequest.builder()
-                        .loanAmount(request.getAmountDisbursed())
-                        .loanType(loanApplication.getLoanType())
-                        .loanTenor(loanApplication.getLoanTenor())
-                .build()).getBody().getLoanCalculatorResponse();
+        LoanCalculatorResponse loanCalculatorResponse = Objects.requireNonNull(loanCalculatorService.calculateLoan(LoanCalculatorRequest.builder()
+                .loanAmount(request.getAmountDisbursed())
+                .loanType(loanApplication.getLoanType())
+                .loanTenor(loanApplication.getLoanTenor())
+                .build()).getBody()).getLoanCalculatorResponse();
 
         double amountToPayBack = loanCalculatorResponse.getAmountToPayBack();
         log.info("Amount to pay back: {}", amountToPayBack);
@@ -131,6 +132,7 @@ public class LoanDisbursalService {
                         .transactionAmount(disbursal.getAmountDisbursed())
                         .transactionRef(generateTxnRef("CREDIT"))
                         .createdAt(LocalDateTime.now())
+                        .transactionCategory("CREDIT")
                 .build());
         return ResponseEntity.ok(CustomResponse.builder()
                         .statusCode(200)

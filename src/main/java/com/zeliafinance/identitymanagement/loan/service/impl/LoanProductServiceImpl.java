@@ -8,6 +8,8 @@ import com.zeliafinance.identitymanagement.loan.entity.LoanProduct;
 import com.zeliafinance.identitymanagement.loan.repository.LoanProductRepository;
 import com.zeliafinance.identitymanagement.loan.service.LoanOfferingService;
 import com.zeliafinance.identitymanagement.loan.service.LoanProductService;
+import com.zeliafinance.identitymanagement.loanRepayment.repository.RepaymentsRepository;
+import com.zeliafinance.identitymanagement.repository.UserCredentialRepository;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -31,6 +33,8 @@ public class LoanProductServiceImpl implements LoanProductService {
     private LoanProductRepository loanProductRepository;
     private LoanOfferingService loanOfferingService;
     private ModelMapper modelMapper;
+    private RepaymentsRepository repaymentsRepository;
+    private UserCredentialRepository userCredentialRepository;
 
     @Override
     public ResponseEntity<CustomResponse> saveLoanProduct(LoanProductRequest request) {
@@ -54,11 +58,34 @@ public class LoanProductServiceImpl implements LoanProductService {
                         .responseBody(savedProduct)
                 .build());
     }
-
+//    String email = SecurityContextHolder.getContext().getAuthentication().getName();
+//    String walletId = userCredentialRepository.findByEmail(email).get().getWalletId();
+//    long numberOfRepayments = repaymentsRepository.findByWalletId(walletId).stream().filter(repayments -> repayments.getRepaymentStatus().equalsIgnoreCase("PAID")).count();
+//        for (int i = 1; i < spl.size(); i++){
+//        spl.get(0).setStatus("OPEN");
+//        if (numberOfRepayments < i){
+//            spl.get(i).setStatus("LOCKED");
+//        }
+//    }
     public ResponseEntity<CustomResponse> fetchAllLoanProducts(){
-        List<LoanProductRequest> productList = loanProductRepository.findAll().stream().filter(loanProduct -> loanProduct.getStatus().equalsIgnoreCase("ACTIVE"))
-                .map(loanProduct -> modelMapper.map(loanProduct, LoanProductRequest.class)).toList();
-
+        List<LoanProductRequest> productList = loanProductRepository.findAll().stream()
+                .map(loanProduct -> {
+                    LoanProductRequest loanProductRequests = modelMapper.map(loanProduct, LoanProductRequest.class);
+                    String email = SecurityContextHolder.getContext().getAuthentication().getName();
+                    String walletId = userCredentialRepository.findByEmail(email).get().getWalletId();
+                    long numberOfRepayments = repaymentsRepository.findByWalletId(walletId).stream().filter(repayments -> repayments.getRepaymentStatus().equalsIgnoreCase("PAID")).count();
+                    if (loanProductRequests.getLoanProductName().equalsIgnoreCase("Student Personal Loan") && loanProductRequests.getMinAmount() == 12001 && numberOfRepayments < 1){
+                        loanProductRequests.setCanApplyForLoan(false);
+                        loanProductRequests.setStatus("LOCKED");
+                    } else if (loanProductRequests.getLoanProductName().equalsIgnoreCase("Student Personal Loan") && loanProductRequests.getMinAmount() == 30001 && numberOfRepayments < 2){
+                        loanProductRequests.setCanApplyForLoan(false);
+                        loanProductRequests.setStatus("LOCKED");
+                    } else {
+                        loanProductRequests.setCanApplyForLoan(true);
+                        loanProductRequests.setStatus("OPEN");
+                    }
+                    return loanProductRequests;
+                }).toList();
         Map<String, List<LoanProductRequest>> loanProductMap = productList.stream().map(loanProduct -> {
             LoanOfferingResponse loanOfferingResponse = new LoanOfferingResponse();
             loanOfferingResponse.setLoanProduct(loanProduct.getLoanProductName());
@@ -90,6 +117,29 @@ public class LoanProductServiceImpl implements LoanProductService {
                 .filter(product -> product.getLoanProductName().equalsIgnoreCase(loanProductName))
                 .sorted(Comparator.comparing(LoanProduct::getInterestRate))
                 .toList();
+
+        if (loanProductName.equalsIgnoreCase("Student Personal Loan")){
+            List<LoanProduct> spl = loanProductRepository.findAll().stream().filter(loanProduct -> loanProduct.getLoanProductName().equalsIgnoreCase("Student Personal Loan")).sorted(Comparator.comparing(LoanProduct::getMinAmount)).toList();
+            String email = SecurityContextHolder.getContext().getAuthentication().getName();
+            String walletId = userCredentialRepository.findByEmail(email).get().getWalletId();
+            long numberOfRepayments = repaymentsRepository.findByWalletId(walletId).stream().filter(repayments -> repayments.getRepaymentStatus().equalsIgnoreCase("PAID")).count();
+            for (int i = 1; i < spl.size(); i++){
+                spl.get(0).setStatus("OPEN");
+                if (numberOfRepayments < i){
+                    spl.get(i).setStatus("LOCKED");
+                }
+            }
+            return ResponseEntity.ok(CustomResponse.builder()
+                    .statusCode(HttpStatus.OK.value())
+                    .responseMessage(SUCCESS_MESSAGE)
+                    .responseBody(spl)
+                    .info(Info.builder()
+                            .totalElements((long)loanProducts.size())
+                            .build())
+                    .build());
+        }
+
+
 
         return ResponseEntity.ok(CustomResponse.builder()
                         .statusCode(HttpStatus.OK.value())
