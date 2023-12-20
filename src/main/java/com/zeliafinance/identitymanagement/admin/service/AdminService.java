@@ -78,7 +78,7 @@ public class AdminService {
                 .email(request.getEmail())
                 .role(Role.valueOf(request.getRole()))
                 .createdBy(loggedInUser)
-                .modifiedby(loggedInUser)
+                .modifiedBy(loggedInUser)
                 .inviteAccepted(false)
                 .invitationLinkExpiry(LocalDateTime.now().plusHours(24))
                 .build();

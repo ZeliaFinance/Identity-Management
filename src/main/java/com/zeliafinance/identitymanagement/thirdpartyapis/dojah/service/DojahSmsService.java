@@ -24,6 +24,8 @@ public class DojahSmsService {
     private String privateKey;
     @Value("${dojah.base-url}")
     private String baseUrl;
+    @Value("${dojah.api.authorization}")
+    private String authorization;
 
     public DojahSmsResponse sendSms(DojahSmsRequest request) {
         RestTemplate restTemplate = new RestTemplate();
@@ -141,6 +143,68 @@ public class DojahSmsService {
         ResponseEntity<IntPassportResponse> responseEntity = restTemplate().exchange(url, HttpMethod.GET, entity, IntPassportResponse.class);
         return responseEntity.getBody();
     }
+
+    /*   public LookupNubanResponse nubanLookup(NubanLookupRequest request){
+        RestTemplate restTemplate = new RestTemplate();
+        restTemplate.getMessageConverters().add(new MappingJackson2HttpMessageConverter());
+        String url = baseUrl + "api/v1/kyc/nuban?account_number="+request.getAccountNumber()+"?bank_code="+request.getBankCode();
+        log.info("full url: {}", url);
+        HttpEntity<?> entity = new HttpEntity<>(headers());
+        ResponseEntity<LookupNubanResponse> responseEntity = restTemplate.exchange(url, HttpMethod.GET, entity, LookupNubanResponse.class);
+        LookupNubanResponse response = responseEntity.getBody();
+        log.info("Response: {}", response);
+        return response;
+    }
+
+ */
+    public CACBasicResponse cacBasicResponse(CACBasicRequest cacBasicRequest){
+        RestTemplate restTemplate = new RestTemplate();
+        restTemplate.getMessageConverters().add(new MappingJackson2HttpMessageConverter());
+        String url = baseUrl + "/api/v1/kyc/cac?rc_number="+cacBasicRequest.getRcNumber()+"?company_name="+cacBasicRequest.getCompanyName();
+        log.info("full url: {}", url);
+        HttpEntity<?> entity = new HttpEntity<>(headers());
+        ResponseEntity<CACBasicResponse> responseEntity = restTemplate.exchange
+                (url, HttpMethod.GET, entity, CACBasicResponse.class);
+        CACBasicResponse cacBasicResponse = responseEntity.getBody();
+        log.info("Response: {}", cacBasicResponse);
+        return cacBasicResponse;
+    }
+
+    public CACAdvanceResponse cacAdvanceResponse(CACAdvanceRequest cacAdvanceRequest){
+        RestTemplate restTemplate = new RestTemplate();
+        restTemplate.getMessageConverters().add(new MappingJackson2HttpMessageConverter());
+        String url = baseUrl + "/api/v1/kyc/cac/advance?rc="+cacAdvanceRequest.getRc()+"?class="
+                +cacAdvanceRequest.getClass()+"?type="+cacAdvanceRequest.getType();
+        log.info("full url: {}", url);
+        HttpEntity<?> entity = new HttpEntity<>(headers());
+        ResponseEntity<CACAdvanceResponse> responseEntity = restTemplate.exchange
+                (url, HttpMethod.GET, entity, CACAdvanceResponse.class);
+        CACAdvanceResponse cacAdvanceResponse = responseEntity.getBody();
+        log.info("Response: {}", cacAdvanceResponse);
+        return cacAdvanceResponse;
+    }
+
+    public LookUpUserAccountResponse lookUpUserAccountResponse(LookUpUserAccountRequest lookUpUserAccountRequest){
+        RestTemplate restTemplate = new RestTemplate();
+        restTemplate.getMessageConverters().add(new MappingJackson2HttpMessageConverter());
+        String url = baseUrl + "/api/v1/kyc/accounts?mobile_number="+lookUpUserAccountRequest.getMobileNumber()+
+                "?bvn="+lookUpUserAccountRequest.getBvn();
+        log.info("full url: {}", url);
+        HttpEntity<?> entity = new HttpEntity<>(headers());
+        ResponseEntity<LookUpUserAccountResponse> responseEntity = restTemplate.exchange
+                (url, HttpMethod.GET, entity, LookUpUserAccountResponse.class);
+        LookUpUserAccountResponse lookUpUserAccountResponse = responseEntity.getBody();
+        log.info("Response: {}", lookUpUserAccountResponse);
+        return lookUpUserAccountResponse;
+
+
+
+
+
+
+
+    }
+
 
 
 

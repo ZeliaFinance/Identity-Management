@@ -70,4 +70,22 @@ public class DojahSmsController {
     public ResponseEntity<IntPassportResponse> intPassportLookup(@RequestBody IntPassportRequest request){
         return ResponseEntity.ok(service.intPassportLookup(request));
     }
+
+
+    @GetMapping("/cacBasicInfo")
+    public  ResponseEntity<CACBasicResponse> cacBasicResponse(@RequestBody CACBasicRequest cacBasicRequest){
+        return ResponseEntity.ok(service.cacBasicResponse(cacBasicRequest));
+    }
+
+    @GetMapping("/cacAdvanceInfo")
+    public ResponseEntity<CACAdvanceResponse> cacAdvanceResponse(@RequestBody CACAdvanceRequest cacAdvanceRequest){
+        return ResponseEntity.ok(service.cacAdvanceResponse(cacAdvanceRequest));
+    }
+
+    @GetMapping("/lookUpUserAccount")
+    public ResponseEntity<LookUpUserAccountResponse> lookUpUserAccountResponse(@RequestBody LookUpUserAccountRequest lookUpUserAccountRequest,
+                                                                               @RequestParam(name = "class") String className){
+        return ResponseEntity.ok(service.lookUpUserAccountResponse(lookUpUserAccountRequest));
+
+    }
 }
