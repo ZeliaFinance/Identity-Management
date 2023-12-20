@@ -28,4 +28,9 @@ public class TransactionsController {
     public ResponseEntity<CustomResponse> walletToWalletTransfer(@RequestBody TransferRequest transferRequest){
         return transactionService.walletToWalletTransfer(transferRequest);
     }
+
+    @PostMapping("walletToCommercialBankTransfer")
+    public ResponseEntity<CustomResponse> walletToCommercialBankTransfer(@RequestBody TransferRequest transferRequest){
+        return transactionService.walletToCommercialBankTransfer(transferRequest);
+    }
 }

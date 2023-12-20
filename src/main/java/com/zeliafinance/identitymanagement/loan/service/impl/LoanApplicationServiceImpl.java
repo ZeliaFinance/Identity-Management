@@ -441,8 +441,12 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
                 loanApplication.setCoSignerFirstName(loanApplicationRequest.getCoSignerFirstName());
                 loanApplication.setCoSignerLastName(loanApplicationRequest.getCoSignerLastName());
                 loanApplication.setCoSignerAddress(loanApplicationRequest.getCoSignerAddress());
-                loanApplication.setCoSignerEmail(loanApplicationRequest.getCoSignerEmail());
-                loanApplication.setCoSignerEmailVerificationStatus("UNVERIFIED");
+                if (loanApplicationRequest.getCoSignerEmail() != null){
+                    loanApplication.setCoSignerEmail(loanApplicationRequest.getCoSignerEmail());
+                    loanApplication.setCoSignerEmailVerificationStatus("UNVERIFIED");
+                    initiateCosignerVerification(loanRefNo);
+                }
+
                 loanApplication.setCoSignerRelationship(loanApplicationRequest.getCoSignerRelationship());
                 loanApplication.setCoSignerPhoneNumber(loanApplicationRequest.getCoSignerPhoneNumber());
                 loanApplication.setCoSignerEmploymentType(loanApplicationRequest.getCoSignerEmploymentType());
@@ -731,8 +735,8 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
         }
         else {
             return ResponseEntity.badRequest().body(CustomResponse.builder()
-                            .statusCode(200)
-                            .responseMessage(AccountUtils.SUCCESS_MESSAGE)
+                            .statusCode(400)
+                            .responseMessage("Error validating otp")
                             .responseBody(otpResponse)
                     .build());
         }

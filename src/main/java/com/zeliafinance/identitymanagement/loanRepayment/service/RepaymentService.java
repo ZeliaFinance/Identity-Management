@@ -2,6 +2,7 @@ package com.zeliafinance.identitymanagement.loanRepayment.service;
 
 import com.zeliafinance.identitymanagement.debitmandate.repository.CardRepository;
 import com.zeliafinance.identitymanagement.dto.CustomResponse;
+import com.zeliafinance.identitymanagement.dto.EmailDetails;
 import com.zeliafinance.identitymanagement.entity.Transactions;
 import com.zeliafinance.identitymanagement.entity.UserCredential;
 import com.zeliafinance.identitymanagement.loan.entity.LoanApplication;
@@ -13,6 +14,7 @@ import com.zeliafinance.identitymanagement.loanRepayment.entity.Repayments;
 import com.zeliafinance.identitymanagement.loanRepayment.repository.RepaymentsRepository;
 import com.zeliafinance.identitymanagement.repository.TransactionRepository;
 import com.zeliafinance.identitymanagement.repository.UserCredentialRepository;
+import com.zeliafinance.identitymanagement.service.EmailService;
 import com.zeliafinance.identitymanagement.thirdpartyapis.paystack.dto.request.ChargeCardRequest;
 import com.zeliafinance.identitymanagement.thirdpartyapis.paystack.dto.response.ChargeCardResponse;
 import com.zeliafinance.identitymanagement.thirdpartyapis.paystack.service.PayStackService;
@@ -37,6 +39,7 @@ public class RepaymentService {
     private final PayStackService payStackService;
     private final LoanDisbursalRepository loanDisbursalRepository;
     private final LoanApplicationRepository loanApplicationRepository;
+    private final EmailService emailService;
 
     public ResponseEntity<CustomResponse> userRepaymentHistory(){
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -68,6 +71,7 @@ public class RepaymentService {
         log.info("Amount to pay back: {}", amountToRepay);
         LoanApplication loanApplication = loanApplicationRepository.findByLoanRefNo(payOffLoanRequest.getLoanRefNo()).get();
         if (payOffLoanRequest.getChannel().equals("Wallet")){
+
             userCredential.get().setAccountBalance(userCredential.get().getAccountBalance()- amountToRepay);
             List<Repayments> repayments = repaymentsRepository.findByLoanRefNo(payOffLoanRequest.getLoanRefNo());
             repayments.get(0).setAmountPaid(repayments.get(0).getAmountPaid()+ amountToRepay);
@@ -75,6 +79,17 @@ public class RepaymentService {
             if (repayments.get(0).getAmountPaid() >= disbursedLoan.getAmountToPayBack()){
                 repayments.get(0).setRepaymentStatus("PAID");
                 loanApplication.setLoanApplicationStatus("PAID");
+            }
+            if(userCredential.get().getAccountBalance() < disbursedLoan.getAmountToPayBack()){
+                emailService.sendEmailAlert(EmailDetails.builder()
+                                .subject("FAILED LOAN REPAYMENT!")
+                                .recipient(userCredential.get().getEmail())
+                                .messageBody("Your attempted loan repayment failed. Ensure you repay the sum of " + disbursedLoan.getAmountToPayBack() + " your loan before the due date on " + repayments.get(0).getRepaymentDate())
+                        .build());
+                return ResponseEntity.badRequest().body(CustomResponse.builder()
+                                .statusCode(400)
+                                .responseMessage("Pay off failed!")
+                        .build());
             }
             else {
                 repayments.get(0).setRepaymentStatus("ONGOING");

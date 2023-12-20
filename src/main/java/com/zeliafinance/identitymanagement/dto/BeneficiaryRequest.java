@@ -13,4 +13,5 @@ public class BeneficiaryRequest {
     private String walletId;
     private String beneficiaryAccountNumber;
     private String beneficiaryBank;
+    private String accountName;
 }

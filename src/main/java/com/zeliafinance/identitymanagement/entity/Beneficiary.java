@@ -19,4 +19,5 @@ public class Beneficiary {
     private String walletId;
     private String beneficiaryAccountNumber;
     private String beneficiaryBank;
+    private String beneficiaryName;
 }

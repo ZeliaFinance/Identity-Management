@@ -35,6 +35,7 @@ public class TransactionService {
     private ModelMapper modelMapper;
     private BaniService baniService;
     private BankRepository bankRepository;
+    private BeneficiaryService beneficiaryService;
 
     public void saveTransaction(Transactions transactions){
         Transactions newTransaction = Transactions.builder()
@@ -48,7 +49,7 @@ public class TransactionService {
                 .transactionCategory(transactions.getTransactionCategory())
                 .build();
 
-        Transactions savedTransaction = transactionRepository.save(transactions);
+        Transactions savedTransaction = transactionRepository.save(newTransaction);
 
     }
 
@@ -162,6 +163,7 @@ public class TransactionService {
         log.info("Wallet Id: {}", walletId);
         log.info("Transaction Ref: {}", transactionRef);
         log.info("Zelia Request: {}", transferRequest);
+        log.info("List code: {}", bank.getBankCode());
         PayoutRequest payoutRequest = PayoutRequest.builder()
                 .payout_step("direct")
                 .receiver_currency("NGN")
@@ -170,11 +172,12 @@ public class TransactionService {
                 .transfer_receiver_type("personal")
                 .receiver_account_num(transferRequest.getBeneficiaryAccountNumber())
                 .receiver_country_code("NG")
-                .receiver_sort_code(bank.getListCode())
+                .receiver_sort_code(bank.getBankCode())
                 .receiver_account_name(transferRequest.getAccountName())
                 .sender_amount(String.valueOf(transferRequest.getAmount()))
                 .sender_currency("NGN")
                 .transfer_note("Wallet to Bank Transfer")
+                .transfer_ext_ref(transactionRef)
                 .build();
         log.info("Bani Request: {}", payoutRequest);
         PayoutResponse payoutResponse = baniService.payout(payoutRequest);
@@ -187,6 +190,14 @@ public class TransactionService {
                     .build());
         }
         else {
+            if (transferRequest.isSaveBeneficiary()){
+                beneficiaryService.saveBeneficiary(BeneficiaryRequest.builder()
+                                .walletId(walletId)
+                                .beneficiaryBank(transferRequest.getBankName())
+                                .beneficiaryAccountNumber(transferRequest.getBeneficiaryAccountNumber())
+                                .accountName(transferRequest.getAccountName())
+                        .build());
+            }
             //update transactions, update account balance
             Transactions transactions = Transactions.builder()
                     .walletId(walletId)
