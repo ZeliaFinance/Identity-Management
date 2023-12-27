@@ -1,11 +1,10 @@
 package com.zeliafinance.identitymanagement.thirdpartyapis.paystack.controller;
 
-import com.zeliafinance.identitymanagement.thirdpartyapis.paystack.dto.request.ChargeCardRequest;
-import com.zeliafinance.identitymanagement.thirdpartyapis.paystack.dto.request.CreateChargeRequest;
-import com.zeliafinance.identitymanagement.thirdpartyapis.paystack.dto.request.CreateRefundRequest;
+import com.zeliafinance.identitymanagement.thirdpartyapis.paystack.dto.request.*;
 import com.zeliafinance.identitymanagement.thirdpartyapis.paystack.dto.response.ChargeCardResponse;
 import com.zeliafinance.identitymanagement.thirdpartyapis.paystack.dto.response.CreateChargeResponse;
 import com.zeliafinance.identitymanagement.thirdpartyapis.paystack.dto.response.CreateFundResponse;
+import com.zeliafinance.identitymanagement.thirdpartyapis.paystack.dto.response.SubmitPinResponse;
 import com.zeliafinance.identitymanagement.thirdpartyapis.paystack.service.PayStackService;
 import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -36,4 +35,36 @@ public class PayStackController {
     public ChargeCardResponse chargeCard(@RequestBody ChargeCardRequest chargeCardRequest){
         return payStackService.chargeCard(chargeCardRequest);
     }
+
+    @PostMapping("submitPin")
+    public SubmitPinResponse submitPin(@RequestBody SubmitPinRequest submitPinRequest){
+        return payStackService.submitPin(submitPinRequest);
+    }
+
+    @PostMapping("submitOtp")
+    public SubmitPinResponse submitOtp(@RequestBody SubmitOtpRequest submitOtpRequest){
+        return payStackService.submitOtp(submitOtpRequest);
+    }
+
+    @PostMapping("submitPhone")
+    public SubmitPinResponse submitPhone(@RequestBody SubmitPhoneRequest submitPhoneRequest){
+        return payStackService.submitPhone(submitPhoneRequest);
+    }
+
+    @PostMapping("submitBirthday")
+    public SubmitPinResponse submitBirthday(@RequestBody SubmitBirthDayRequest birthDayRequest){
+        return payStackService.submitBirthday(birthDayRequest);
+    }
+
+    @PostMapping("submitAddress")
+    public SubmitPinResponse submitAddress(@RequestBody SubmitAddressRequest addressRequest){
+        return payStackService.submitAddress(addressRequest);
+    }
+
+    @GetMapping("/pendingTransaction/{reference}")
+    public SubmitPinResponse pendingCharge(@PathVariable String reference){
+        return payStackService.pendingTransaction(reference);
+    }
+
+
 }

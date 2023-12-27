@@ -144,7 +144,7 @@ public class DebitMandateService {
         return ResponseEntity.ok(CustomResponse.builder()
                         .statusCode(200)
                         .responseMessage(SUCCESS_MESSAGE)
-                        .responseBody(cardToReturn)
+                        .responseBody(payStackResponse)
                 .build());
     }
 

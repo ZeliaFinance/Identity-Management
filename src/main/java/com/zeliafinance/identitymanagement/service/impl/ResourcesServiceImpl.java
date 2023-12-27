@@ -52,7 +52,7 @@ public class ResourcesServiceImpl implements ResourcesService {
         List<Resources> resourcesList = resourcesRepository.findAll();
         List<ResourcesDto> resourcesDtos = resourcesList.stream()
                 .map(resource -> modelMapper.map(resource, ResourcesDto.class))
-                .skip(pageNo-1).limit(pageSize)
+                .skip((long) (pageNo-1) * pageSize).limit(pageSize)
                 .sorted(Comparator.comparing(ResourcesDto::getLookupCode))
                 .toList();
         Map<String, List<ResourcesDto>> resourcesMap = resourcesDtos.stream().collect(Collectors.groupingBy(ResourcesDto::getLookupCode));

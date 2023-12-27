@@ -18,4 +18,6 @@ public class TransferRequest {
     private String bankName;
     private String accountName;
     private boolean saveBeneficiary;
+    private String narration;
+    private String pin;
 }

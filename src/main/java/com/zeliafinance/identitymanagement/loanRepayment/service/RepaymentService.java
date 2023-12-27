@@ -73,12 +73,15 @@ public class RepaymentService {
         if (payOffLoanRequest.getChannel().equals("Wallet")){
 
             userCredential.get().setAccountBalance(userCredential.get().getAccountBalance()- amountToRepay);
+
             List<Repayments> repayments = repaymentsRepository.findByLoanRefNo(payOffLoanRequest.getLoanRefNo());
             repayments.get(0).setAmountPaid(repayments.get(0).getAmountPaid()+ amountToRepay);
+
             loanApplication.setAmountRepaid(amountToRepay);
             if (repayments.get(0).getAmountPaid() >= disbursedLoan.getAmountToPayBack()){
                 repayments.get(0).setRepaymentStatus("PAID");
                 loanApplication.setLoanApplicationStatus("PAID");
+                repaymentsRepository.save(repayments.get(0));
             }
             if(userCredential.get().getAccountBalance() < disbursedLoan.getAmountToPayBack()){
                 emailService.sendEmailAlert(EmailDetails.builder()
@@ -127,6 +130,7 @@ public class RepaymentService {
         String payStackRef = chargeCardResponse.getData().getReference();
         List<Repayments> repayments = repaymentsRepository.findByLoanRefNo(payOffLoanRequest.getLoanRefNo());
         repayments.get(0).setAmountPaid(repayments.get(0).getAmountPaid()+ amountToRepay);
+        repaymentsRepository.save(repayments.get(0));
         Transactions transactions = Transactions.builder()
                 .transactionCategory("DEBIT")
                 .transactionStatus("COMPLETED")

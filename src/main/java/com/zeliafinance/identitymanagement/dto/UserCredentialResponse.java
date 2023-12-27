@@ -1,7 +1,7 @@
 package com.zeliafinance.identitymanagement.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.zeliafinance.identitymanagement.debitmandate.entity.Card;
+import com.zeliafinance.identitymanagement.debitmandate.dto.CardResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -48,6 +48,6 @@ public class UserCredentialResponse {
     private String customerRef;
     private String createdAt;
     private String lastLoggedIn;
-    private Card cardDetails;
+    private CardResponse cardDetails;
     private boolean isCardExists;
 }

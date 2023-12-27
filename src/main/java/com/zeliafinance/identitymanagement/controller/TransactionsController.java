@@ -1,5 +1,6 @@
 package com.zeliafinance.identitymanagement.controller;
 
+import com.zeliafinance.identitymanagement.dto.AuthorizeCardRequest;
 import com.zeliafinance.identitymanagement.dto.CustomResponse;
 import com.zeliafinance.identitymanagement.dto.TransferRequest;
 import com.zeliafinance.identitymanagement.service.impl.TransactionService;
@@ -32,5 +33,10 @@ public class TransactionsController {
     @PostMapping("walletToCommercialBankTransfer")
     public ResponseEntity<CustomResponse> walletToCommercialBankTransfer(@RequestBody TransferRequest transferRequest){
         return transactionService.walletToCommercialBankTransfer(transferRequest);
+    }
+
+    @PostMapping("cardAuthorization")
+    public ResponseEntity<CustomResponse> cardAuthorization(@RequestBody AuthorizeCardRequest authorizeCardRequest){
+        return transactionService.authorizeCard(authorizeCardRequest);
     }
 }

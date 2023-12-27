@@ -4,6 +4,7 @@ import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.zeliafinance.identitymanagement.config.JwtTokenProvider;
+import com.zeliafinance.identitymanagement.debitmandate.dto.CardResponse;
 import com.zeliafinance.identitymanagement.debitmandate.entity.Card;
 import com.zeliafinance.identitymanagement.debitmandate.repository.CardRepository;
 import com.zeliafinance.identitymanagement.dto.*;
@@ -120,7 +121,7 @@ public class AuthService {
         assert otpResponse != null;
         String otp = otpResponse.getReferenceId().substring(0, 6);
         String referenceId = otpResponse.getReferenceId().substring(6);
-        LocalDateTime expiryDate = otpResponse.getExpiry();
+        LocalDateTime expiryDate = LocalDateTime.parse(otpResponse.getExpiry());
 
         savedUser.setOtp(otp);
         savedUser.setReferenceId(referenceId);
@@ -144,7 +145,7 @@ public class AuthService {
                 .responseMessage(AccountUtils.ACCOUNT_CREATION_SUCCESS_MESSAGE)
                 .responseBody(response)
                         .referenceId(userCredential.getReferenceId())
-                        .expiry(userCredential.getOtpExpiryDate())
+                        .expiry(otpResponse.getExpiry())
                         .token(token)
                 .build());
     }
@@ -502,9 +503,10 @@ public class AuthService {
         UserCredentialResponse userCredentialResponse = modelMapper.map(userCredential, UserCredentialResponse.class);
 
             Card card = customMapper.mapUserToCard(modelMapper.map(userCredential, UserCredentialResponse.class));
-            userCredentialResponse.setCardDetails(card);
+
             if (card != null){
                 userCredentialResponse.setCardExists(true);
+                userCredentialResponse.setCardDetails(modelMapper.map(card, CardResponse.class));
             }
 
 
@@ -565,12 +567,15 @@ public class AuthService {
 
         List<UserCredentialResponse> usersList = userCredentialRepository.findAll()
                 .stream()
-                .skip(pageNo-1)
+                .skip((long) (pageNo-1) * pageSize)
                 .limit(pageSize).sorted(Comparator.comparing(UserCredential::getCreatedAt).reversed())
                 .map(userCredential -> {
                     UserCredentialResponse userCredentialResponse = modelMapper.map(userCredential, UserCredentialResponse.class);
-                    Card card = customMapper.mapUserToCard(userCredentialResponse);
-                    userCredentialResponse.setCardDetails(card);
+                    if (userCredentialResponse.getCardDetails() != null){
+                        Card card = customMapper.mapUserToCard(userCredentialResponse);
+                        userCredentialResponse.setCardDetails(modelMapper.map(card, CardResponse.class));
+                    }
+
                     return userCredentialResponse;
                 })
                 .toList();
@@ -597,7 +602,7 @@ public class AuthService {
         UserCredential userCredential = userCredentialRepository.findById(userId).orElseThrow();
         UserCredentialResponse response = modelMapper.map(userCredential, UserCredentialResponse.class);
         Card card = customMapper.mapUserToCard(response);
-        response.setCardDetails(card);
+        response.setCardDetails(modelMapper.map(card, CardResponse.class));
         return ResponseEntity.ok(CustomResponse.builder()
                         .statusCode(HttpStatus.OK.value())
                 .responseMessage(AccountUtils.SUCCESS_MESSAGE)
@@ -648,7 +653,7 @@ public class AuthService {
         assert otpResponse != null;
         String otp = otpResponse.getReferenceId().substring(0, 6);
         String referenceId = otpResponse.getReferenceId().substring(6);
-        LocalDateTime expiryDate = otpResponse.getExpiry();
+        LocalDateTime expiryDate = LocalDateTime.parse(otpResponse.getExpiry());
 
         userCredential.setOtp(otp);
         userCredential.setReferenceId(referenceId);
@@ -835,7 +840,7 @@ public class AuthService {
         UserCredentialResponse userCredentialResponse = modelMapper.map(userCredential, UserCredentialResponse.class);
         Card card = customMapper.mapUserToCard(userCredentialResponse);
         if (card!=null){
-            userCredentialResponse.setCardDetails(card);
+            userCredentialResponse.setCardDetails(modelMapper.map(card, CardResponse.class));
         }
 
         if (!isEmailExists){
@@ -917,7 +922,7 @@ public class AuthService {
                         .statusCode(HttpStatus.OK.value())
                         .responseMessage(AccountUtils.OTP_SENT_MESSAGE)
                         .referenceId(referenceId)
-                        .expiry(expiryDate)
+                        .expiry(expiryDate.toString())
                 .build());
     }
 

@@ -5,8 +5,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
-
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -16,7 +14,7 @@ public class DisbursalRequest {
     private String loanRefNo;
     private double appliedAmount;
     private double amountDisbursed;
-    private LocalDateTime dateDisbursed;
+    private String dateDisbursed;
     private String disbursedBy;
     private double amountToPayBack;
 }

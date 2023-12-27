@@ -4,9 +4,10 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.zeliafinance.identitymanagement.loan.dto.LoanCalculatorResponse;
 import com.zeliafinance.identitymanagement.loan.dto.LoanOfferingResponse;
 import com.zeliafinance.identitymanagement.loanDisbursal.dto.DisbursalRequest;
-import lombok.*;
-
-import java.time.LocalDateTime;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @Builder
@@ -23,7 +24,7 @@ public class CustomResponse{
     private Info info;
     private Boolean otpStatus;
     private String referenceId;
-    private LocalDateTime expiry;
+    private String expiry;
     private LoanCalculatorResponse loanCalculatorResponse;
     private Boolean pinVerificationStatus;
     private Boolean minInterestRate;

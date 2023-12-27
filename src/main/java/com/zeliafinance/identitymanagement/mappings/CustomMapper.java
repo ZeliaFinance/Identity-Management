@@ -1,5 +1,6 @@
 package com.zeliafinance.identitymanagement.mappings;
 
+import com.zeliafinance.identitymanagement.debitmandate.dto.CardResponse;
 import com.zeliafinance.identitymanagement.debitmandate.entity.Card;
 import com.zeliafinance.identitymanagement.debitmandate.repository.CardRepository;
 import com.zeliafinance.identitymanagement.dto.UserCredentialResponse;
@@ -46,7 +47,8 @@ public class CustomMapper {
             if (card == null){
                 userCredentialResponse.setCardExists(false);
             } else {
-                userCredentialResponse.setCardDetails(card);
+                userCredentialResponse.setCardExists(true);
+                userCredentialResponse.setCardDetails(modelMapper.map(card, CardResponse.class));
             }
 
 
@@ -133,7 +135,7 @@ public class CustomMapper {
                             }
                             repaymentResponse.setRepaymentMonths(loanApplication.getLoanTenor()/30);
                         }
-                        repaymentResponse.setNextRepayment(loanApplication.getDateDisbursed());
+                        repaymentResponse.setNextRepayment(loanApplication.getDateDisbursed().toString());
                         repaymentResponse.setRepaymentData(repaymentDataList);
                     }
 
@@ -146,7 +148,7 @@ public class CustomMapper {
         Card card = cardRepository.findByWalletId(userCredentialResponse.getWalletId());
         if (card != null){
             userCredentialResponse.setCardExists(true);
-            userCredentialResponse.setCardDetails(card);
+            userCredentialResponse.setCardDetails(modelMapper.map(card, CardResponse.class));
             return cardRepository.findByWalletId(userCredentialResponse.getWalletId());
         }
         userCredentialResponse.setCardExists(false);

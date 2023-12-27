@@ -5,7 +5,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -19,7 +18,7 @@ public class RepaymentResponse {
     private String loanType;
     private int loanTenor;
     private double monthlyRepayment;
-    private LocalDateTime nextRepayment;
+    private String nextRepayment;
     private double amountPaid;
     private List<RepaymentData> repaymentData;
     private double interest;

@@ -11,6 +11,9 @@ import com.zeliafinance.identitymanagement.service.EmailService;
 import com.zeliafinance.identitymanagement.thirdpartyapis.bani.dto.request.PayoutRequest;
 import com.zeliafinance.identitymanagement.thirdpartyapis.bani.dto.response.PayoutResponse;
 import com.zeliafinance.identitymanagement.thirdpartyapis.bani.service.BaniService;
+import com.zeliafinance.identitymanagement.thirdpartyapis.paystack.dto.request.*;
+import com.zeliafinance.identitymanagement.thirdpartyapis.paystack.dto.response.SubmitPinResponse;
+import com.zeliafinance.identitymanagement.thirdpartyapis.paystack.service.PayStackService;
 import com.zeliafinance.identitymanagement.utils.AccountUtils;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +39,9 @@ public class TransactionService {
     private BaniService baniService;
     private BankRepository bankRepository;
     private BeneficiaryService beneficiaryService;
+    private PayStackService payStackService;
+    private AccountUtils accountUtils;
+
 
     public void saveTransaction(Transactions transactions){
         Transactions newTransaction = Transactions.builder()
@@ -160,10 +166,22 @@ public class TransactionService {
                             .responseMessage("INSUFFICIENT BALANCE")
                     .build());
         }
+
+        if (!verifyPin(transferRequest.getPin(), userCredential)){
+            return ResponseEntity.badRequest().body(CustomResponse.builder()
+                            .statusCode(400)
+                            .responseMessage(AccountUtils.INVALID_PIN_MESSAGE)
+                    .build());
+        }
+        ;
         log.info("Wallet Id: {}", walletId);
         log.info("Transaction Ref: {}", transactionRef);
         log.info("Zelia Request: {}", transferRequest);
         log.info("List code: {}", bank.getBankCode());
+        String narration = transferRequest.getNarration();
+        if (transferRequest.getNarration() == null){
+            narration = "Some narration";
+        }
         PayoutRequest payoutRequest = PayoutRequest.builder()
                 .payout_step("direct")
                 .receiver_currency("NGN")
@@ -176,7 +194,7 @@ public class TransactionService {
                 .receiver_account_name(transferRequest.getAccountName())
                 .sender_amount(String.valueOf(transferRequest.getAmount()))
                 .sender_currency("NGN")
-                .transfer_note("Wallet to Bank Transfer")
+                .transfer_note(narration)
                 .transfer_ext_ref(transactionRef)
                 .build();
         log.info("Bani Request: {}", payoutRequest);
@@ -203,7 +221,7 @@ public class TransactionService {
                     .walletId(walletId)
                     .transactionStatus("COMPLETED")
                     .transactionRef(transactionRef)
-                    .transactionType("Wallet to Bank Transfer")
+                    .transactionType(narration)
                     .transactionAmount(transferRequest.getAmount())
                     .transactionCategory("DEBIT")
                     .externalRefNumber(null)
@@ -220,5 +238,74 @@ public class TransactionService {
 
         }
 
+    }
+
+    public ResponseEntity<CustomResponse> authorizeCard(AuthorizeCardRequest authorizeCardRequest){
+        if (authorizeCardRequest.getPin() != null){
+            SubmitPinResponse submitPinResponse = payStackService.submitPin(SubmitPinRequest.builder()
+                            .pin(authorizeCardRequest.getPin())
+                            .reference(authorizeCardRequest.getReference())
+                    .build());
+
+            return ResponseEntity.ok(CustomResponse.builder()
+                            .statusCode(200)
+                            .responseMessage(AccountUtils.SUCCESS_MESSAGE)
+                            .responseBody(submitPinResponse)
+                    .build());
+        }
+        if (authorizeCardRequest.getOtp() != null){
+            SubmitPinResponse submitOtpResponse = payStackService.submitOtp(SubmitOtpRequest.builder()
+                            .otp(authorizeCardRequest.getOtp())
+                            .reference(authorizeCardRequest.getReference())
+                    .build());
+            return ResponseEntity.ok(CustomResponse.builder()
+                            .statusCode(200)
+                            .responseMessage(AccountUtils.SUCCESS_MESSAGE)
+                            .responseBody(submitOtpResponse)
+                    .build());
+        }
+        if (authorizeCardRequest.getPhone()!=null){
+            SubmitPinResponse phoneResponse = payStackService.submitPhone(SubmitPhoneRequest.builder()
+                            .phone(authorizeCardRequest.getPhone())
+                            .reference(authorizeCardRequest.getReference())
+                    .build());
+            return ResponseEntity.ok(CustomResponse.builder()
+                            .statusCode(200)
+                            .responseMessage(AccountUtils.SUCCESS_MESSAGE)
+                            .responseBody(phoneResponse)
+                    .build());
+        }
+        if(authorizeCardRequest.getBirthday() != null){
+            SubmitPinResponse birthResponse = payStackService.submitBirthday(SubmitBirthDayRequest.builder()
+                            .birthday(authorizeCardRequest.getBirthday())
+                            .reference(authorizeCardRequest.getReference())
+                    .build());
+            return ResponseEntity.ok(CustomResponse.builder()
+                            .statusCode(200)
+                            .responseMessage(AccountUtils.SUCCESS_MESSAGE)
+                            .responseBody(birthResponse)
+                    .build());
+        } else {
+            SubmitPinResponse addressResponse = payStackService.submitAddress(SubmitAddressRequest.builder()
+                            .address(authorizeCardRequest.getAddress())
+                            .zip_code(authorizeCardRequest.getZipCode())
+                            .city(authorizeCardRequest.getCity())
+                            .state(authorizeCardRequest.getState())
+                            .reference(authorizeCardRequest.getReference())
+                    .build());
+
+            return ResponseEntity.ok(CustomResponse.builder()
+                            .statusCode(200)
+                            .responseMessage(addressResponse.getData().getMessage())
+                            .responseBody(addressResponse)
+                    .build());
+        }
+    }
+
+    private boolean verifyPin(String pin, UserCredential userCredential){
+        log.info("Pin: {}", userCredential.getPin());
+        String savedPin = accountUtils.decodePin(userCredential.getPin());
+        log.info("Saved Pin: {}", savedPin);
+        return pin.equals(savedPin);
     }
 }

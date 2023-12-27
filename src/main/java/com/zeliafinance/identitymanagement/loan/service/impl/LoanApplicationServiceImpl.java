@@ -3,6 +3,7 @@ package com.zeliafinance.identitymanagement.loan.service.impl;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.zeliafinance.identitymanagement.debitmandate.dto.CardResponse;
 import com.zeliafinance.identitymanagement.debitmandate.entity.Card;
 import com.zeliafinance.identitymanagement.dto.*;
 import com.zeliafinance.identitymanagement.entity.UserCredential;
@@ -746,7 +747,7 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
     public ResponseEntity<CustomResponse> fetchAllLoanApplications(int pageNo, int pageSize) {
         List<LoanApplication> allLoans = loanApplicationRepository.findAll();
         List<LoanApplication> loanApplications = loanApplicationRepository.findAll()
-                .stream().skip(pageNo-1).limit(pageSize)
+                .stream().skip((long) (pageNo - 1) * pageSize).limit(pageSize)
                 .sorted(Comparator.comparing(LoanApplication::getCreatedAt).reversed())
                 .toList();
 
@@ -832,7 +833,7 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
             String walletId = userCredential.getWalletId();
             List<LoanApplicationResponse> loanApplicationList = loanApplicationRepository.findAll().stream()
                     .filter(loanApplication -> loanApplication.getWalletId().equals(walletId))
-                    .skip(pageNo - 1).limit(pageSize).sorted(Comparator.comparing(LoanApplication::getCreatedAt).reversed())
+                    .skip((long) (pageNo - 1) * pageSize).limit(pageSize).sorted(Comparator.comparing(LoanApplication::getCreatedAt).reversed())
                     .map(loanApplication -> {
 
                         List<LoanProduct> loanProduct = loanProductRepository.findAll().stream().filter(loanProduct1 -> loanProduct1.getLoanProductName().equalsIgnoreCase(loanApplication.getLoanType())
@@ -848,9 +849,11 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
                         response.setLoanOfferingResponses(loanOfferingResponses);
 
                         //List of Disbursals, List of repayments
-                        List<LoanDisbursal> disbursalRequests = loanDisbursalRepository.findByWalletId(loanApplication.getWalletId());
-                        List<DisbursalRequest> requestList = disbursalRequests.stream().map(loanDisbursal -> modelMapper.map(loanDisbursal, DisbursalRequest.class)).toList();
-                        response.setDisbursalList(requestList);
+                        LoanDisbursal disbursalRequests = loanDisbursalRepository.findByLoanRefNo(loanApplication.getLoanRefNo());
+                        if(disbursalRequests != null){
+                            DisbursalRequest request = modelMapper.map(disbursalRequests, DisbursalRequest.class);
+                            response.setDisbursalList(Collections.singletonList(request));
+                        }
 
                         response.setRepaymentsList(customMapper.mapLoanApplicationToRepayment(loanApplication));
                         return response;
@@ -1049,7 +1052,7 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
         UserCredential userCredential = userCredentialRepository.findByWalletId(loanApplicationResponse.getWalletId()).get();
         UserCredentialResponse userCredentialResponse = modelMapper.map(userCredential, UserCredentialResponse.class);
         Card card = customMapper.mapUserToCard(userCredentialResponse);
-        userCredentialResponse.setCardDetails(card);
+        userCredentialResponse.setCardDetails(modelMapper.map(card, CardResponse.class));
         loanApplicationResponse.setUserDetails(userCredentialResponse);
 
 

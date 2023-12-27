@@ -9,10 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -53,11 +50,9 @@ public class LoanApplicationResponse {
     private String loanRefNo;
     private String facultyName;
     private String departmentName;
-    @CreationTimestamp
-    private LocalDateTime createdAt;
+    private String createdAt;
     private String createdBy;
-    @UpdateTimestamp
-    private LocalDateTime modifiedAt;
+    private String modifiedAt;
     private String modifiedBy;
     private int loanApplicationLevel;
     private String salaryAccount;
