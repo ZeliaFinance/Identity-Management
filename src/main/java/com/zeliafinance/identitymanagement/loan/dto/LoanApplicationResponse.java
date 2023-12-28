@@ -1,6 +1,7 @@
 package com.zeliafinance.identitymanagement.loan.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.zeliafinance.identitymanagement.dto.DocumentDetails;
 import com.zeliafinance.identitymanagement.dto.UserCredentialResponse;
 import com.zeliafinance.identitymanagement.loan.entity.LoanProduct;
 import com.zeliafinance.identitymanagement.loanDisbursal.dto.DisbursalRequest;
@@ -40,6 +41,7 @@ public class LoanApplicationResponse {
     private String employmentType;
     private double monthlySalary;
     private String companyIdCard;
+    private String studentIdCard;
     private String companyOfferLetter;
     private String businessBankName;
     private String accountName;
@@ -79,5 +81,6 @@ public class LoanApplicationResponse {
     private List<DisbursalRequest> disbursalList;
     private List<LoanOfferingResponse> loanOfferingResponses;
     private boolean canApplyForLoan;
+    private DocumentDetails documentDetails;
 
 }

@@ -3,12 +3,14 @@ package com.zeliafinance.identitymanagement.mappings;
 import com.zeliafinance.identitymanagement.debitmandate.dto.CardResponse;
 import com.zeliafinance.identitymanagement.debitmandate.entity.Card;
 import com.zeliafinance.identitymanagement.debitmandate.repository.CardRepository;
+import com.zeliafinance.identitymanagement.dto.DocumentDetails;
 import com.zeliafinance.identitymanagement.dto.UserCredentialResponse;
 import com.zeliafinance.identitymanagement.entity.UserCredential;
 import com.zeliafinance.identitymanagement.loan.dto.LoanApplicationResponse;
 import com.zeliafinance.identitymanagement.loan.entity.LoanApplication;
 import com.zeliafinance.identitymanagement.loan.repository.LoanApplicationRepository;
 import com.zeliafinance.identitymanagement.loan.repository.LoanProductRepository;
+import com.zeliafinance.identitymanagement.loanDisbursal.repository.LoanDisbursalRepository;
 import com.zeliafinance.identitymanagement.loanRepayment.dto.RepaymentData;
 import com.zeliafinance.identitymanagement.loanRepayment.dto.RepaymentResponse;
 import com.zeliafinance.identitymanagement.loanRepayment.entity.Repayments;
@@ -36,6 +38,7 @@ public class CustomMapper {
     private final UserCredentialRepository userCredentialRepository;
     private final ModelMapper modelMapper;
     private final CardRepository cardRepository;
+    private final LoanDisbursalRepository loanDisbursalRepository;
 
     public LoanApplicationResponse mapLoanApplicationToUserCredential(LoanApplication loanApplication) {
         Optional<UserCredential> userCredentialOptional = userCredentialRepository.findByWalletId(loanApplication.getWalletId());
@@ -54,6 +57,18 @@ public class CustomMapper {
 
             LoanApplicationResponse loanApplicationResponse = modelMapper.map(loanApplication, LoanApplicationResponse.class);
             loanApplicationResponse.setUserDetails(userCredentialResponse);
+            DocumentDetails documentDetails = new DocumentDetails();
+            if (loanApplicationResponse.getCompanyIdCard() != null){
+                documentDetails.setCompanyIdCard(loanApplicationResponse.getCompanyIdCard());
+            }
+            if (loanApplicationResponse.getWardIdCard() != null){
+                documentDetails.setWardIdCard(loanApplicationResponse.getWardIdCard());
+            }
+            if (loanApplicationResponse.getCompanyOfferLetter() != null){
+                documentDetails.setCompanyOfferLetter(loanApplicationResponse.getCompanyOfferLetter());
+            }
+            loanApplicationResponse.setDocumentDetails(documentDetails);
+
 
             return loanApplicationResponse;
         } else {
@@ -87,9 +102,7 @@ public class CustomMapper {
                                 repaymentResponse.setRepaymentMonths(1);
                             RepaymentData  repaymentData = new RepaymentData();
                             repaymentData.setMonthCount(1);
-                            if (loanApplication.getDateDisbursed() == null){
-                                repaymentData.setRepaymentDate(null);
-                            }
+
                             repaymentData.setRepaymentDate(String.valueOf(LocalDate.from(loanApplication.getCreatedAt().plusDays(loanApplication.getLoanTenor()))));
                             repaymentData.setRepaymentStatus(loanApplication.getRepaymentStatus());
                             repaymentData.setExpectedAmount(loanApplication.getAmountToPayBack());
@@ -135,7 +148,7 @@ public class CustomMapper {
                             }
                             repaymentResponse.setRepaymentMonths(loanApplication.getLoanTenor()/30);
                         }
-                        repaymentResponse.setNextRepayment(loanApplication.getDateDisbursed().toString());
+                        repaymentResponse.setNextRepayment(repaymentResponse.getNextRepayment());
                         repaymentResponse.setRepaymentData(repaymentDataList);
                     }
 
@@ -155,4 +168,5 @@ public class CustomMapper {
         return null;
 
     }
+
 }

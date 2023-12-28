@@ -80,7 +80,6 @@ public class LoanApplication {
     private LoanProduct loanProduct;
     @ManyToOne
     private UserCredential loanApplicant;
-    private LocalDateTime dateDisbursed;
     private double amountDisbursed;
     private String matriculationNumber;
 }

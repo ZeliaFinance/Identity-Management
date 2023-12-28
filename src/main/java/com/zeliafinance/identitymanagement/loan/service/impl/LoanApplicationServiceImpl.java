@@ -756,6 +756,7 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
 
                     LoanApplicationResponse loanApplicationResponse = customMapper.mapLoanApplicationToUserCredential(loanApplication);
                     log.info("Loan Application Response: {}", loanApplicationResponse);
+
                     if(repaymentsRepository.findByLoanRefNo(loanApplication.getLoanRefNo()) != null){
                         loanApplicationResponse.setRepaymentsList(customMapper.mapLoanApplicationToRepayment(loanApplication));
                     } else {
