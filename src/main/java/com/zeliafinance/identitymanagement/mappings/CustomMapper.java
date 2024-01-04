@@ -10,6 +10,7 @@ import com.zeliafinance.identitymanagement.loan.dto.LoanApplicationResponse;
 import com.zeliafinance.identitymanagement.loan.entity.LoanApplication;
 import com.zeliafinance.identitymanagement.loan.repository.LoanApplicationRepository;
 import com.zeliafinance.identitymanagement.loan.repository.LoanProductRepository;
+import com.zeliafinance.identitymanagement.loanDisbursal.entity.LoanDisbursal;
 import com.zeliafinance.identitymanagement.loanDisbursal.repository.LoanDisbursalRepository;
 import com.zeliafinance.identitymanagement.loanRepayment.dto.RepaymentData;
 import com.zeliafinance.identitymanagement.loanRepayment.dto.RepaymentResponse;
@@ -21,8 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -41,6 +41,7 @@ public class CustomMapper {
     private final LoanDisbursalRepository loanDisbursalRepository;
 
     public LoanApplicationResponse mapLoanApplicationToUserCredential(LoanApplication loanApplication) {
+
         Optional<UserCredential> userCredentialOptional = userCredentialRepository.findByWalletId(loanApplication.getWalletId());
 
         if (userCredentialOptional.isPresent()) {
@@ -88,6 +89,15 @@ public class CustomMapper {
         return repayments.stream()
                 .map(repayment -> {
                     RepaymentResponse repaymentResponse = new RepaymentResponse();
+                    LoanDisbursal loanDisbursal = loanDisbursalRepository.findByLoanRefNo(loanApplication.getLoanRefNo());
+                    int numberOfRepayments = loanApplication.getLoanTenor()/30;
+                    double monthlyRepayment;
+                    if(loanApplication.getLoanTenor()>30){
+                        monthlyRepayment = loanApplication.getAmountToPayBack()/numberOfRepayments;
+                    } else {
+                        monthlyRepayment = loanApplication.getAmountToPayBack();
+                    }
+
                     List<RepaymentData> repaymentDataList = new ArrayList<>();
                     if (loanApplication.getLoanApplicationStatus().equalsIgnoreCase("DENIED")){
                         repaymentResponse = null;
@@ -96,61 +106,66 @@ public class CustomMapper {
                         repaymentResponse.setInterest(loanApplication.getInterest());
                         if (loanApplication.getLoanTenor() <= 30){
                             repaymentResponse.setAmountPaid(repayment.getAmountPaid());
-                            if (repaymentResponse.getAmountPaid() >= loanApplication.getAmountToPayBack()){
+                            if (repayment.getAmountPaid() >= loanApplication.getAmountToPayBack()){
                                 repaymentResponse.setRepaymentStatus("PAID");
+                            }
+                            if (repayment.getAmountPaid() < loanApplication.getAmountToPayBack()){
+                                repaymentResponse.setRepaymentStatus("PENDING");
+                            }
+                            if (repayment.getAmountPaid() < loanApplication.getAmountToPayBack() && LocalDateTime.now().isAfter(loanDisbursal.getDateDisbursed().plusDays(loanApplication.getLoanTenor()))){
+                                repaymentResponse.setRepaymentStatus("DEFAULT");
                             }
                                 repaymentResponse.setRepaymentMonths(1);
                             RepaymentData  repaymentData = new RepaymentData();
                             repaymentData.setMonthCount(1);
 
-                            repaymentData.setRepaymentDate(String.valueOf(LocalDate.from(loanApplication.getCreatedAt().plusDays(loanApplication.getLoanTenor()))));
+                            repaymentData.setRepaymentDate(String.valueOf(LocalDateTime.from(loanDisbursal.getDateDisbursed().plusDays(loanApplication.getLoanTenor()))));
                             repaymentData.setRepaymentStatus(loanApplication.getRepaymentStatus());
                             repaymentData.setExpectedAmount(loanApplication.getAmountToPayBack());
                             repaymentData.setInterest(loanApplication.getInterest());
-                            repaymentData.setAmountPaid(loanApplication.getAmountRepaid());
+                            repaymentData.setAmountPaid(repayment.getAmountPaid());
                             repaymentDataList.add(repaymentData);
 
-                        } else {
-                            int numberOfRepayments = loanApplication.getLoanTenor()/30;
-                            log.info("Number of repayments: {}", numberOfRepayments);
-                            int monthCount = 1;
-                            RepaymentData repaymentData = new RepaymentData();
-                            if (!repayment.getRepaymentStatus().equals("PAID")){
-                                repaymentData.setRepaymentDate(String.valueOf(LocalDate.from(loanApplication.getCreatedAt().plusDays(loanApplication.getLoanTenor()))));
-                            } else {
-                                repaymentData.setRepaymentDate(null);
-                            }
-
-                            repaymentData.setMonthCount(monthCount);
-                            repaymentData.setRepaymentStatus(loanApplication.getRepaymentStatus());
-                            repaymentData.setExpectedAmount(loanApplication.getAmountToPayBack()/numberOfRepayments);
-                            repaymentData.setInterest(loanApplication.getInterest());
-                            repaymentData.setAmountPaid(loanApplication.getAmountRepaid());
-                            repaymentDataList.add(repaymentData);
-                            while (monthCount < numberOfRepayments){
-                                double monthlyRepayment = loanApplication.getAmountToPayBack()/numberOfRepayments;
-                                String repaymentStatus;
-                                if (loanApplication.getAmountRepaid() == (repaymentData.getExpectedAmount()*monthCount)){
-                                    repaymentStatus = "PAID";
-                                } else {
-                                    repaymentStatus = "PENDING";
-                                }
-                                if (repaymentData.getRepaymentDate() != null){
-                                    repaymentData.setRepaymentDate(LocalDate.parse(repaymentData.getRepaymentDate(), DateTimeFormatter.ISO_DATE).plusDays(30).toString());
-                                }
-
-                                repaymentDataList.add(RepaymentData.builder()
-                                                .monthCount(++monthCount)
-                                                .repaymentDate(repaymentData.getRepaymentDate())
-                                                .repaymentStatus(repaymentStatus)
-                                                .expectedAmount(monthlyRepayment)
-                                        .build());
-                            }
-                            repaymentResponse.setRepaymentMonths(loanApplication.getLoanTenor()/30);
                         }
-                        repaymentResponse.setNextRepayment(repaymentResponse.getNextRepayment());
-                        repaymentResponse.setRepaymentData(repaymentDataList);
+                        int monthCount = 0;
+                        if (loanApplication.getLoanTenor() > 30){
+                            for (monthCount = 1; monthCount <= numberOfRepayments; monthCount++) {
+                                RepaymentData newRepaymentData = new RepaymentData();
+                                newRepaymentData.setMonthCount(monthCount);
+                                newRepaymentData.setExpectedAmount(monthlyRepayment);
+                                newRepaymentData.setInterest(loanApplication.getInterest() / numberOfRepayments);
+                                newRepaymentData.setRepaymentDate(loanDisbursal.getDateDisbursed().plusDays(monthCount * 30L).toString());
+                                if (repayment.getAmountPaid() >= (monthCount * monthlyRepayment)) {
+                                    newRepaymentData.setAmountPaid(monthlyRepayment);
+                                    newRepaymentData.setRepaymentStatus("PAID");
+                                } else if (repayment.getAmountPaid() == 0 || repayment.getAmountPaid() != (monthCount * monthlyRepayment)) {
+                                    newRepaymentData.setAmountPaid(0);
+                                    newRepaymentData.setRepaymentStatus("PENDING");
+                                } else if (LocalDateTime.now().isAfter(loanDisbursal.getDateDisbursed().plusDays(monthCount * 30L)) && repayment.getAmountPaid() < monthCount * monthlyRepayment) {
+                                    newRepaymentData.setAmountPaid(0);
+                                    newRepaymentData.setRepaymentStatus("DEFAULT");
+                                }
+
+                                repaymentDataList.add(newRepaymentData);
+                            }
+                        }}
+                    assert repaymentResponse != null;
+                    repaymentResponse.setRepaymentMonths(numberOfRepayments);
+                    if (repayment.getAmountPaid() < loanApplication.getAmountToPayBack()){
+                        repaymentResponse.setRepaymentStatus("PENDING");
                     }
+                    if (repaymentResponse.getRepaymentMonths() < loanApplication.getAmountToPayBack() && (LocalDateTime.now().isAfter(loanDisbursal.getDateDisbursed().plusDays(loanApplication.getLoanTenor())))){
+                        repaymentResponse.setRepaymentStatus("DEFAULT");
+                    }
+                    if (repayment.getAmountPaid() >= loanApplication.getAmountToPayBack()){
+                        repaymentResponse.setRepaymentStatus("PAID");
+                    }
+                    repaymentResponse.setLoanType(loanApplication.getLoanType());
+                    repaymentResponse.setMonthlyRepayment(monthlyRepayment);
+                    repaymentResponse.setAmountPaid(repayment.getAmountPaid());
+                    repaymentResponse.setRepaymentData(repaymentDataList);
+                    repaymentResponse.setWalletId(loanApplicationResponse.getWalletId());
+                    repaymentResponse.setLoanTenor(loanApplication.getLoanTenor());
 
                     return repaymentResponse;
 

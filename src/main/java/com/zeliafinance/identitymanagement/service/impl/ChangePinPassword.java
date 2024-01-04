@@ -4,6 +4,8 @@ import com.zeliafinance.identitymanagement.dto.*;
 import com.zeliafinance.identitymanagement.entity.UserCredential;
 import com.zeliafinance.identitymanagement.repository.UserCredentialRepository;
 import com.zeliafinance.identitymanagement.utils.AccountUtils;
+import freemarker.template.TemplateException;
+import jakarta.mail.MessagingException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -11,6 +13,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.io.IOException;
 
 @Service
 @AllArgsConstructor
@@ -23,7 +27,7 @@ public class ChangePinPassword {
     private final AccountUtils accountUtils;
     private final PasswordEncoder passwordEncoder;
 
-    public ResponseEntity<CustomResponse> checkSecurityQuestionResponse(ChangePinRequest changePinRequest){
+    public ResponseEntity<CustomResponse> checkSecurityQuestionResponse(ChangePinRequest changePinRequest) throws MessagingException, TemplateException, IOException {
         log.info("Request: {}", changePinRequest);
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         log.info("Email: {}", email);

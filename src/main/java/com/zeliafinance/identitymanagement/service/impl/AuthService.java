@@ -24,9 +24,11 @@ import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.dto.request.NinR
 import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.dto.response.NinLookupResponse;
 import com.zeliafinance.identitymanagement.thirdpartyapis.dojah.service.DojahSmsService;
 import com.zeliafinance.identitymanagement.utils.AccountUtils;
+import freemarker.template.TemplateException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import jakarta.mail.MessagingException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
@@ -72,8 +74,9 @@ public class AuthService {
     private CustomMapper customMapper;
     private CardRepository cardRepository;
     private LoanApplicationRepository loanApplicationRepository;
+    private HtmlTemplateService htmlTemplateService;
 
-    public ResponseEntity<CustomResponse> signUp(SignUpRequest request){
+    public ResponseEntity<CustomResponse> signUp(SignUpRequest request) throws MessagingException, TemplateException, IOException {
         boolean isEmailExist = userCredentialRepository.existsByEmail(request.getEmail());
         if (isEmailExist){
             return ResponseEntity.badRequest().body(CustomResponse.builder()
@@ -129,12 +132,14 @@ public class AuthService {
 
         userCredentialRepository.save(savedUser);
 
+
         EmailDetails emailDetails = EmailDetails.builder()
                 .recipient(request.getEmail())
-                .subject(AccountUtils.ACCOUNT_CONFIRMATION_SUBJECT)
-                .messageBody(AccountUtils.ACCOUNT_CONFIRMATION_MESSAGE)
+                .messageBody(otp)
+                .type("Email Verification")
                 .build();
-        emailService.sendEmailAlert(emailDetails);
+        htmlTemplateService.sendEmail(emailDetails);
+//        emailService.sendEmailAlert(emailDetails);
 
         String token = generateToken(request.getEmail());
 
@@ -361,7 +366,7 @@ public class AuthService {
                 .build());
     }
 
-    public ResponseEntity<CustomResponse> updateUserSecurityQuestion(UserProfileRequest request){
+    public ResponseEntity<CustomResponse> updateUserSecurityQuestion(UserProfileRequest request) throws MessagingException, TemplateException, IOException {
         String email = getLoggedInUserEmail();
         boolean isUserExist = userCredentialRepository.existsByEmail(email);
         UserCredential userCredential = userCredentialRepository.findByEmail(email).get();
@@ -431,11 +436,22 @@ public class AuthService {
 
                 String virtualAccountNumber = virtualAccountResponse.getHolder_account_number();
                 userCredential.setVAccountNumber(virtualAccountNumber);
+                if (virtualAccountNumber != null){
+                    EmailDetails welcomeMessage = EmailDetails.builder()
+                            .type("Welcome")
+                            .recipient(userCredential.getEmail())
+                            .build();
+                    htmlTemplateService.sendEmail(welcomeMessage);
+                }
             }
 
             UserCredential updatedUser = userCredentialRepository.save(userCredential);
             //Sending email alert
-
+            EmailDetails welcomeMessage = EmailDetails.builder()
+                    .type("Welcome")
+                    .recipient(updatedUser.getEmail())
+                    .build();
+            htmlTemplateService.sendEmail(welcomeMessage);
             //building response object
             Object response = modelMapper.map(updatedUser, UserCredentialResponse.class);
             return ResponseEntity.ok(CustomResponse.builder()
@@ -454,7 +470,7 @@ public class AuthService {
     }
 
 
-    public ResponseEntity<CustomResponse> login(LoginDto loginDto){
+    public ResponseEntity<CustomResponse> login(LoginDto loginDto) throws MessagingException, TemplateException, IOException {
         Authentication authentication=null;
         UserCredential userCredential = userCredentialRepository.findByEmail(loginDto.getEmail()).get();
         boolean isUserExists = userCredentialRepository.existsByEmail(loginDto.getEmail());
@@ -464,18 +480,11 @@ public class AuthService {
                             .responseMessage(AccountUtils.USER_NOT_EXIST_MESSAGE)
                     .build());
         }
-        if (loginDto.getAuthMethod().equalsIgnoreCase("biometric")){
-            log.info("using biometric login");
-            authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(loginDto.getEmail(), accountUtils.decode(userCredential.getHashedPassword(), 3))
-            );
 
-
-        } else if(loginDto.getAuthMethod().equalsIgnoreCase("nonBiometric")){
-            authentication = authenticationManager.authenticate(
+        authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(loginDto.getEmail(), loginDto.getPassword())
             );
-        }
+
 
         assert authentication != null;
         if (!authentication.isAuthenticated()){
@@ -491,12 +500,11 @@ public class AuthService {
 
         log.info(authentication.getName());
         EmailDetails loginAlert = EmailDetails.builder()
-                .subject("YOU'RE LOGGED IN!")
                 .recipient(loginDto.getEmail())
-                .messageBody("You logged into your account!!!")
+                .messageBody(userCredential.getLastName())
+                .type("Login")
                 .build();
-
-        emailService.sendEmailAlert(loginAlert);
+        htmlTemplateService.sendEmail(loginAlert);
         userCredential.setLastLoggedIn(LocalDateTime.now());
         userCredentialRepository.save(userCredential);
 
@@ -629,7 +637,7 @@ public class AuthService {
 
     }
 
-    public ResponseEntity<CustomResponse> resetPassword(String email){
+    public ResponseEntity<CustomResponse> resetPassword(String email) throws MessagingException, TemplateException, IOException {
         UserCredential userCredential = userCredentialRepository.findByEmail(email).orElseThrow();
         boolean isUserExists = userCredentialRepository.existsByEmail(email);
         if (!isUserExists){
@@ -649,6 +657,7 @@ public class AuthService {
         CustomResponse otpResponse = sendOtp(OtpDto.builder()
                 .email(email)
                 .build()).getBody();
+        log.info("otp response: {}", otpResponse);
 
         assert otpResponse != null;
         String otp = otpResponse.getReferenceId().substring(0, 6);
@@ -890,8 +899,9 @@ public class AuthService {
 
     }
 
-    public ResponseEntity<CustomResponse> sendOtp(OtpDto request){
+    public ResponseEntity<CustomResponse> sendOtp(OtpDto request) throws MessagingException, TemplateException, IOException {
         String otp = accountUtils.generateOtp();
+        log.info("otp: {}", otp);
         String referenceId = otp + UUID.randomUUID();
         LocalDateTime expiryDate = LocalDateTime.now().plusMinutes(10);
 
@@ -911,12 +921,14 @@ public class AuthService {
 
         userCredentialRepository.save(userCredential);
 
+        EmailDetails emailDetails = EmailDetails.builder()
+                .messageBody(otp + userCredential.getLastName())
+                .recipient(request.getEmail())
+                .type("Password Reset")
+                .build();
+        log.info("Email Details: {}", emailDetails.toString());
+        htmlTemplateService.sendEmail(emailDetails);
 
-        emailService.sendEmailAlert(EmailDetails.builder()
-                        .messageBody("Your pending Otp from zelia is " + otp + ". Valid for 8 minutes. PLEASE DO NOT DISCLOSE!")
-                        .subject("ZELIAFINANCE")
-                        .recipient(request.getEmail())
-                .build());
 
         return ResponseEntity.ok(CustomResponse.builder()
                         .statusCode(HttpStatus.OK.value())

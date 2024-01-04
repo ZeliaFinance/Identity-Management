@@ -3,7 +3,11 @@ package com.zeliafinance.identitymanagement.loan.service;
 import com.zeliafinance.identitymanagement.dto.CustomResponse;
 import com.zeliafinance.identitymanagement.loan.dto.LoanApplicationRequest;
 import com.zeliafinance.identitymanagement.otp.dto.OtpValidationRequest;
+import freemarker.template.TemplateException;
+import jakarta.mail.MessagingException;
 import org.springframework.http.ResponseEntity;
+
+import java.io.IOException;
 
 public interface LoanApplicationService {
     ResponseEntity<CustomResponse> stageOne(LoanApplicationRequest request);
@@ -22,6 +26,6 @@ public interface LoanApplicationService {
     ResponseEntity<CustomResponse> deleteLoan(Long loanId);
     ResponseEntity<CustomResponse> cancelLoan(String loanRefNo);
     ResponseEntity<CustomResponse> fetchByLoanRefNo(String loanRefNo);
-    ResponseEntity<CustomResponse> approveLoan(String loanRefNo);
-    ResponseEntity<CustomResponse> denyLoan(String loanRefNo);
+    ResponseEntity<CustomResponse> approveLoan(String loanRefNo) throws MessagingException, TemplateException, IOException;
+    ResponseEntity<CustomResponse> denyLoan(String loanRefNo) throws MessagingException, TemplateException, IOException;
 }

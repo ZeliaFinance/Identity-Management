@@ -19,7 +19,10 @@ import com.zeliafinance.identitymanagement.loanRepayment.repository.RepaymentsRe
 import com.zeliafinance.identitymanagement.mappings.CustomMapper;
 import com.zeliafinance.identitymanagement.repository.UserCredentialRepository;
 import com.zeliafinance.identitymanagement.service.EmailService;
+import com.zeliafinance.identitymanagement.service.impl.HtmlTemplateService;
 import com.zeliafinance.identitymanagement.service.impl.TransactionService;
+import freemarker.template.TemplateException;
+import jakarta.mail.MessagingException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -27,6 +30,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
@@ -47,8 +51,9 @@ public class LoanDisbursalService {
     private final CustomMapper customMapper;
     private final CardRepository cardRepository;
     private final EmailService emailService;
+    private final HtmlTemplateService htmlTemplateService;
 
-    public ResponseEntity<CustomResponse> disburseLoan(DisbursalRequest request){
+    public ResponseEntity<CustomResponse> disburseLoan(DisbursalRequest request) throws MessagingException, TemplateException, IOException {
         //check for double disbursements
         LoanDisbursal checkingDisbursal = loanDisbursalRepository.findByLoanRefNo(request.getLoanRefNo());
         if (checkingDisbursal != null){
@@ -102,6 +107,13 @@ public class LoanDisbursalService {
         UserCredential userCredential = userCredentialRepository.findByWalletId(walletId).get();
         userCredential.setAccountBalance(userCredential.getAccountBalance()+ disbursal.getAmountDisbursed());
         userCredentialRepository.save(userCredential);
+        EmailDetails disbursementNotification = EmailDetails.builder()
+                .recipient(userCredential.getEmail())
+                .type("Loan Disbursed")
+                .messageBody(userCredential.getLastName())
+                .build();
+
+        htmlTemplateService.sendEmail(disbursementNotification);
 
         //Transaction Notification
         emailService.sendEmailAlert(EmailDetails.builder()

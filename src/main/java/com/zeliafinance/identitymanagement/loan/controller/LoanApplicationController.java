@@ -4,10 +4,14 @@ import com.zeliafinance.identitymanagement.dto.CustomResponse;
 import com.zeliafinance.identitymanagement.loan.dto.LoanApplicationRequest;
 import com.zeliafinance.identitymanagement.loan.service.LoanApplicationService;
 import com.zeliafinance.identitymanagement.otp.dto.OtpValidationRequest;
+import freemarker.template.TemplateException;
+import jakarta.mail.MessagingException;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.io.IOException;
 
 @RestController
 @AllArgsConstructor
@@ -97,13 +101,13 @@ public class LoanApplicationController {
 
     @PostMapping("/approveLoan")
     @PreAuthorize("{hasRole('ROLE_SUPER_ADMIN')}")
-    public ResponseEntity<CustomResponse> approveLoan(@RequestParam String loanRefNo){
+    public ResponseEntity<CustomResponse> approveLoan(@RequestParam String loanRefNo) throws MessagingException, TemplateException, IOException {
         return service.approveLoan(loanRefNo);
     }
 
     @PostMapping("/denyLoan")
     @PreAuthorize("{hasRole('ROLE_SUPER_ADMIN')}")
-    public ResponseEntity<CustomResponse> denyLoan(@RequestParam String loanRefNo){
+    public ResponseEntity<CustomResponse> denyLoan(@RequestParam String loanRefNo) throws MessagingException, TemplateException, IOException {
         return service.denyLoan(loanRefNo);
     }
 

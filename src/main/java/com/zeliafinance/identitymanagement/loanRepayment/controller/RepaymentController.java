@@ -23,4 +23,9 @@ public class RepaymentController {
     public ResponseEntity<CustomResponse> payOffLoan(@RequestBody PayOffLoanRequest payOffLoanRequest){
         return repaymentService.payOffLoan(payOffLoanRequest);
     }
+
+    @PostMapping("payOffInstalment")
+    public ResponseEntity<CustomResponse> payOffInstalment(@RequestBody PayOffLoanRequest payOffLoanRequest){
+        return repaymentService.payOffLoanInstallments(payOffLoanRequest);
+    }
 }

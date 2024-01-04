@@ -2,6 +2,8 @@ package com.zeliafinance.identitymanagement.controller;
 
 import com.zeliafinance.identitymanagement.dto.*;
 import com.zeliafinance.identitymanagement.service.impl.AuthService;
+import freemarker.template.TemplateException;
+import jakarta.mail.MessagingException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -11,6 +13,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
@@ -28,7 +31,7 @@ public class UserCredentialsController {
     }
 
     @PostMapping("/registerUser")
-    public ResponseEntity<CustomResponse> registerUser(@RequestBody SignUpRequest request){
+    public ResponseEntity<CustomResponse> registerUser(@RequestBody SignUpRequest request) throws MessagingException, TemplateException, IOException {
         return service.signUp(request);
     }
 
@@ -48,12 +51,12 @@ public class UserCredentialsController {
     }
 
     @PutMapping("/updateSecurityQuestion")
-    public ResponseEntity<CustomResponse> updateUserSecurityQuestion(@RequestBody UserProfileRequest request){
+    public ResponseEntity<CustomResponse> updateUserSecurityQuestion(@RequestBody UserProfileRequest request) throws MessagingException, TemplateException, IOException {
         return service.updateUserSecurityQuestion(request);
     }
 
     @PostMapping("/login")
-    public ResponseEntity<CustomResponse> login(@RequestBody LoginDto loginDto){
+    public ResponseEntity<CustomResponse> login(@RequestBody LoginDto loginDto) throws MessagingException, TemplateException, IOException {
         return service.login(loginDto);
     }
 
@@ -84,7 +87,7 @@ public class UserCredentialsController {
     }
 
     @PostMapping("/resetPassword")
-    public ResponseEntity<CustomResponse> sendResetPasswordLink(@RequestParam String email){
+    public ResponseEntity<CustomResponse> sendResetPasswordLink(@RequestParam String email) throws MessagingException, TemplateException, IOException {
         return service.resetPassword(email);
     }
 
@@ -119,7 +122,7 @@ public class UserCredentialsController {
     }
 
     @PostMapping("/sendOtp")
-    public ResponseEntity<CustomResponse> sendOtp(@RequestBody OtpDto otpDto){
+    public ResponseEntity<CustomResponse> sendOtp(@RequestBody OtpDto otpDto) throws MessagingException, TemplateException, IOException {
         return service.sendOtp(otpDto);
     }
 

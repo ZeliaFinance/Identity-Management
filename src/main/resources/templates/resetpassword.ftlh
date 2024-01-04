@@ -48,15 +48,16 @@
                 style="width: 100%; height: 100%"           src="https://i.imgur.com/p5LYCEH.png" alt="zelia-logo">
     </div>
     <div class="mb-6">
-        <h4 class="mb-2">Hello 👋🏽</h4>
-        <p class="mb-2">You're almost there! 😊</p>
-        <p>To finish setting up your Zelia account, please verify your email address with the code below.</p>
+        <h4 class="mb-2">Reset Your Password</h4>
+        <p class="mb-2">Hi there, ${username} 😊</p>
+        <p>We see you've forgotten your password? Its okay. We got you.</p>
+        <p>Please use the otp below to reset your password</p>
     </div>
     <table width="100%" style="border-radius: 24px;
 background: #F9FAFB; padding: 38px" class="mb-6">
         <tbody>
         <tr align="center">
-            <td><h5 class="font-inter" style="font-size: 40px; color: #3A60CB">000000</h5></td>
+            <td><h5 class="font-inter" style="font-size: 40px; color: #3A60CB">${otp}</h5></td>
         </tr>
         </tbody>
     </table>
